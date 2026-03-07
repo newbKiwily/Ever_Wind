@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8220a8ad858fac45b57d9a8c559e6c9, type: 3}
+  m_Name: OtherPlayerAniSet
+  m_EditorClassIdentifier: 
+  KeyIdle: {fileID: 7400000, guid: 09a7229705975f8458367d80eb1118a4, type: 2}
+  KeyMove: {fileID: 7400000, guid: aa7dd9b68fd7e9d4bb3e1e93636b9cd1, type: 2}
+  KeyOneshot: {fileID: 7400000, guid: bae1a5100187d13428019750f5fa24ba, type: 2}
+  KeyDamaged: {fileID: 7400000, guid: 943e279584e7cd747a5551044814f48f, type: 2}
+  KeyAttack: {fileID: 7400000, guid: 068da3d94c5229849b971de670cfb704, type: 2}
+  IdleNormal: {fileID: 7400000, guid: 09a7229705975f8458367d80eb1118a4, type: 2}
+  IdleCombat: {fileID: 7400000, guid: 2758e70430184fa4e9f623c81c3b0a2c, type: 2}
+  MoveNormal: {fileID: 7400000, guid: aa7dd9b68fd7e9d4bb3e1e93636b9cd1, type: 2}
+  MoveCombat: {fileID: 7400000, guid: 09488847782230449aaf2602bdb6d6af, type: 2}
+  OS_Success: {fileID: 7400000, guid: cd7092c203bfd2946a79402a0159b7b0, type: 2}
+  Damaged1: {fileID: 7400000, guid: 943e279584e7cd747a5551044814f48f, type: 2}
+  Damaged2: {fileID: 7400000, guid: 5b8dfd6af03a56a46b7a8e07d7484753, type: 2}
+  Damaged3: {fileID: 7400000, guid: 65fbbefdad7fe954d91144a380662d0e, type: 2}
+  Attack1: {fileID: 7400000, guid: 6adc95cb818ac4b478dc905a6f233384, type: 2}
+  Attack2: {fileID: 7400000, guid: 42b92935b0db85c43be49d4ddbcbf3b3, type: 2}
+  Attack3: {fileID: 7400000, guid: b39c7452a742c584abe1e77e4a5b940f, type: 2}
+  Attack4: {fileID: 7400000, guid: 6adc95cb818ac4b478dc905a6f233384, type: 2}
+  Attack5: {fileID: 7400000, guid: 6adc95cb818ac4b478dc905a6f233384, type: 2}
+  Dead: {fileID: 7400000, guid: 3b321e2a7cbdafa4fb8957c53bcf2aa0, type: 2}

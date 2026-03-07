@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e323d53187ad6b47be2fd7ea0adafff, type: 3}
+  m_Name: CampFire
+  m_EditorClassIdentifier: 
+  ResultItemName: CampFire
+  Ingredients:
+  - IngredientItem: {fileID: 11400000, guid: fbb845551d220a64589a1286ca231557, type: 2}
+    Amount: 1
+  - IngredientItem: {fileID: 11400000, guid: d40f8ef0f3a896b438579653c2717070, type: 2}
+    Amount: 1
