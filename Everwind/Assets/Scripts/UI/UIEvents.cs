@@ -7,8 +7,9 @@ public static class UIEvents
     public static bool IsPopupOpen { get; private set; }
 
     public static event Action<DisplayUIManager.ProfileState, float> OnProfileChangeRequested;
+    public static event Action<int, float, bool> OnSkillCooldownChanged;
     public static event Action<List<GameObject>> OnEnemyListUpdated;
-    public static event Action<Vector3, int> OnEnemyDamageTextRequested;
+    public static event Action<Vector3, int> OnDamageTextRequested;
     public static event Action OnDeadUiOpenRequested;
     public static event Action OnDeadUiCloseRequested;
     public static event Action OnReviveRequested;
@@ -18,14 +19,19 @@ public static class UIEvents
         OnProfileChangeRequested?.Invoke(state, duration);
     }
 
+    public static void RaiseSkillCooldownChanged(int skillIndex, float ratio, bool isReady)
+    {
+        OnSkillCooldownChanged?.Invoke(skillIndex, ratio, isReady);
+    }
+
     public static void RaiseEnemyListUpdated(List<GameObject> enemies)
     {
         OnEnemyListUpdated?.Invoke(enemies);
     }
 
-    public static void RaiseEnemyDamageTextRequested(Vector3 worldPos, int damage)
+    public static void RaiseDamageTextRequested(Vector3 worldPos, int damage)
     {
-        OnEnemyDamageTextRequested?.Invoke(worldPos, damage);
+        OnDamageTextRequested?.Invoke(worldPos, damage);
     }
 
     public static void RaiseDeadUiOpenRequested()

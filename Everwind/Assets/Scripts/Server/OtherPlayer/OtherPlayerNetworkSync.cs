@@ -23,7 +23,7 @@ public class OtherPlayerNetworkSync : MonoBehaviour
         if (dir.sqrMagnitude > 0.0001f)
             transform.rotation = Quaternion.LookRotation(dir.normalized);
 
-        // ªÁ∏¡¿Ã∞≈≥™ ªÛ»£¿€øÎ ¡ﬂ¿œ ∂ß¥¬ ∞»±‚/¥Î±‚ æ÷¥œ∏ﬁ¿Ãº«¿∏∑Œ µ§æÓæ∫øÏ¡ˆ æ ¿Ω
+        // ÏÇ¨ÎßùÏù¥Í±∞ÎÇò ÏÉÅÌò∏ÏûëÏö© Ï§ëÏùº ÎïåÎäî Í±∑Í∏∞/ÎåÄÍ∏∞ Ïï†ÎãàÎ©îÏù¥ÏÖòÏúºÎ°ú ÎçÆÏñ¥ÏîåÏö∞ÏßÄ ÏïäÏùå
         if (IsDead || IsInteracting) return;
 
         if (speed > 0.03f)
@@ -38,33 +38,42 @@ public class OtherPlayerNetworkSync : MonoBehaviour
 
     public void OnReceiveOneshot(int animCode)
     {
-        if (IsDead) return; // ¡◊æÓ¿÷¿ª ∂ß¥¬ ø¯º¶ ∏º« π´Ω√
+        if (IsDead) return; // Ï£ΩÏñ¥ÏûàÏùÑ ÎïåÎäî ÏõêÏÉ∑ Î™®ÏÖò Î¨¥Ïãú
 
         OneshotAnimKey key = (OneshotAnimKey)animCode;
         switch (key)
         {
             case OneshotAnimKey.Attack1:
                 _animContexter.PlayAttack(1);
+                PlayAttackEffect(1);
                 break;
             case OneshotAnimKey.Attack2:
-                _animContexter.PlayAttack(2); break;
+                _animContexter.PlayAttack(2);
+                PlayAttackEffect(2);
+                break;
             case OneshotAnimKey.Attack3:
                 _animContexter.PlayAttack(3);
+                PlayAttackEffect(3);
                 break;
             case OneshotAnimKey.Attack4:
                 _animContexter.PlayAttack(4);
+                PlayAttackEffect(4);
                 break;
             case OneshotAnimKey.Attack5:
                 _animContexter.PlayAttack(5);
+                PlayAttackEffect(5);
                 break;
             case OneshotAnimKey.Damaged1:
                 _animContexter.PlayDamaged(1);
+                PlayDamagedEffect();
                 break;
             case OneshotAnimKey.Damaged2:
                 _animContexter.PlayDamaged(2);
+                PlayDamagedEffect();
                 break;
             case OneshotAnimKey.Damaged3:
                 _animContexter.PlayDamaged(3);
+                PlayDamagedEffect();
                 break;
             case OneshotAnimKey.Success:
                 _animContexter.PlayOneshot(OneshotAni.Success);
@@ -109,5 +118,33 @@ public class OtherPlayerNetworkSync : MonoBehaviour
         }
 
         IsNormalState = true;
+    }
+
+    private void PlayAttackEffect(int skillIndex)
+    {
+        string effectKey = null;
+
+        switch (skillIndex)
+        {
+            case 1:
+                effectKey = "Skill_normal";
+                break;
+            case 2:
+                effectKey = "Skill_smash";
+                break;
+            case 3:
+                effectKey = "Skill_windmill";
+                break;
+        }
+
+        if (string.IsNullOrEmpty(effectKey))
+            return;
+
+        SingletonManager.Instance.GetSingleton<EffectManager>().PlayEffect(effectKey, transform.position);
+    }
+
+    private void PlayDamagedEffect()
+    {
+        SingletonManager.Instance.GetSingleton<EffectManager>().PlayEffect("Damaged", transform.position);
     }
 }

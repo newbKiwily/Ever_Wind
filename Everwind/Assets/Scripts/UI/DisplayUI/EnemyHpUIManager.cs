@@ -7,7 +7,7 @@ public class EnemyHpUIManager : SingletonBase<EnemyHpUIManager>
     public override bool IsPersistent => false;
 
     [SerializeField]
-    private GameObject _hpBarPrefab; // ?꾨━??吏곸젒 ?좊떦
+    private GameObject _hpBarPrefab;
 
     private List<GameObject> _hpBars = new List<GameObject>();
     private HashSet<GameObject> _activeEnemies = new HashSet<GameObject>();
@@ -39,13 +39,13 @@ public class EnemyHpUIManager : SingletonBase<EnemyHpUIManager>
     private void OnEnable()
     {
         UIEvents.OnEnemyListUpdated += UpdateEnemyList;
-        UIEvents.OnEnemyDamageTextRequested += ShowDamageText;
+        UIEvents.OnDamageTextRequested += ShowDamageText;
     }
 
     private void OnDisable()
     {
         UIEvents.OnEnemyListUpdated -= UpdateEnemyList;
-        UIEvents.OnEnemyDamageTextRequested -= ShowDamageText;
+        UIEvents.OnDamageTextRequested -= ShowDamageText;
     }
 
     void Start()

@@ -54,6 +54,7 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
         BindToPlayer();
         _skillButtonManager = GetComponentInChildren<SkillButtonManager>();
         _skillButtonManager.Init(_combatManager);
+        _combatManager.BroadcastSkillCooldownStates();
     }
 
     private void BindToPlayer()

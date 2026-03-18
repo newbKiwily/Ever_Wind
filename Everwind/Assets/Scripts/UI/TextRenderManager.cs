@@ -121,7 +121,6 @@ public class TextRenderManager : SingletonBase<TextRenderManager>
 
         TextMeshProUGUI.text = textToDisplay;
 
-        // 3. ?섏씠????+ ?꾨즺 ??肄쒕갚 ?덉떆 (濡쒓렇 異쒕젰)
         yield return CanvasGroup.DOFade(1f, FadeDuration)
             .OnComplete(() => Debug.Log($"{textToDisplay} ?쒖떆 ?꾨즺!"))
             .WaitForCompletion();
@@ -144,16 +143,12 @@ public class TextRenderManager : SingletonBase<TextRenderManager>
             _currentIndex = i;
             TextMeshProUGUI.text = texts[i];
 
-            // ?섏씠????
             yield return CanvasGroup.DOFade(1f, FadeDuration).WaitForCompletion();
 
-            // ?좎?
             yield return new WaitForSecondsRealtime(displayTime);
 
-            // ?섏씠???꾩썐 (留덉?留?臾몄옣???꾨땺 ?뚮쭔 ?뱀? 痍⑦뼢猿?
             yield return CanvasGroup.DOFade(0f, FadeDuration)
                 .OnComplete(() => {
-                    // ?섏씠???꾩썐 ?꾨즺 ??肄쒕갚?쇰줈 ?ㅼ쓬 ?④퀎 以鍮?媛??
                     TextMeshProUGUI.text = "";
                 })
                 .WaitForCompletion();

@@ -3,7 +3,7 @@ using UnityEngine;
 public abstract class Enemy : MonoBehaviour, IDamageable
 {
     public int InstanceNum;
-    [SerializeField] protected float Hp = 100f; // 로컬 연산용이 아닌 서버 동기화용 HP
+    [SerializeField] protected float Hp = 100f; 
 
     protected Animator Animator;
     protected AnimatorOverrideController OverrideController;
@@ -56,7 +56,6 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         byte[] attackPkt = PacketMethod.BuildAttackReq(this.InstanceNum, damage);
         SingletonManager.Instance.GetSingleton<NetworkClient>().Send(attackPkt);
 
-        Debug.Log($"[{gameObject.name}] 서버로 공격 판정 요청 (계산된 데미지 : {damage})");
     }
 
     public virtual void SyncDamage(float serverHp, float damageAmount)
@@ -66,9 +65,8 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Hp = serverHp;
 
         SingletonManager.Instance.GetSingleton<EffectManager>().PlayEffect("Damaged", this.transform.position);
-        UIEvents.RaiseEnemyDamageTextRequested(transform.position, (int)damageAmount);
+        UIEvents.RaiseDamageTextRequested(transform.position, Mathf.RoundToInt(damageAmount));
 
-        Debug.Log($"[{gameObject.name}] 서버 동기화 완료 - 남은 HP : {Hp}");
     }
 
     public virtual void Die()
@@ -76,11 +74,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (IsDead) return;
         IsDead = true;
 
-        // 콜라이더 끄기 (더 이상 타겟팅되거나 길을 막지 않음)
         Collider col = GetComponent<Collider>();
         if (col != null) col.enabled = false;
 
-        // CharacterController 끄기
         CharacterController cc = GetComponent<CharacterController>();
         if (cc != null)
             cc.enabled = false;
@@ -90,7 +86,6 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         
 
         Destroy(gameObject);
-        Debug.Log($"[{gameObject.name}] 사망 (서버 판정)");
     }
 
     public float GetHp()

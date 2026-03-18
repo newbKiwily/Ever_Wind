@@ -66,7 +66,10 @@ public class CombatManager : MonoBehaviour
         for (int i = 0; i < _skillCooldownRemain.Length; i++)
         {
             if (_skillCooldownRemain[i] > 0)
-                _skillCooldownRemain[i] -= Time.deltaTime;
+            {
+                _skillCooldownRemain[i] = Mathf.Max(0f, _skillCooldownRemain[i] - Time.deltaTime);
+                NotifySkillCooldownChanged(i);
+            }
         }
 
         UpdateTargetingUI();
@@ -84,8 +87,7 @@ public class CombatManager : MonoBehaviour
         Vector3 offset = new Vector3(0, 4.2f, 0);
         TargetingUI.transform.position = TargetEnemy.transform.position + offset;
 
-        TargetingUI.transform.LookAt(TargetingUI.transform.position + Camera.main.transform.rotation * Vector3.forward,
-                                     Camera.main.transform.rotation * Vector3.up);
+        TargetingUI.transform.LookAt(TargetingUI.transform.position + Camera.main.transform.rotation * Vector3.forward,Camera.main.transform.rotation * Vector3.up);
     }
 
     public void KnockBack()
@@ -185,11 +187,32 @@ public class CombatManager : MonoBehaviour
 
     public void Attack()
     {
-        _skillCooldownMax[CurrentCastingSkillIndex] = CurrentCastingSkill.CoolTime;
-        _skillCooldownRemain[CurrentCastingSkillIndex] = CurrentCastingSkill.CoolTime;
+        if (CurrentCastingSkill == null)
+        {
+            Debug.LogWarning("CombatManager.Attack was called without a current casting skill.");
+            return;
+        }
 
-        if (CurrentCastingSkill != null)
-            CurrentCastingSkill.Cast(this.transform);
+        if (CurrentCastingSkillIndex < 0 || CurrentCastingSkillIndex >= Skills.Length)
+        {
+            Debug.LogWarning($"CombatManager.Attack received an invalid skill index: {CurrentCastingSkillIndex}");
+            return;
+        }
+
+        Skill castingSkill = CurrentCastingSkill;
+
+        _skillCooldownMax[CurrentCastingSkillIndex] = castingSkill.CoolTime;
+        _skillCooldownRemain[CurrentCastingSkillIndex] = castingSkill.CoolTime;
+        NotifySkillCooldownChanged(CurrentCastingSkillIndex);
+        castingSkill.Cast(this.transform);
+    }
+
+    public void BroadcastSkillCooldownStates()
+    {
+        for (int i = 0; i < Skills.Length; i++)
+        {
+            NotifySkillCooldownChanged(i);
+        }
     }
 
     public void AttackEnd()
@@ -367,5 +390,13 @@ public class CombatManager : MonoBehaviour
 
             _skillCooldownRemain[i] = 0f;
         }
+    }
+
+    private void NotifySkillCooldownChanged(int index)
+    {
+        if (index < 0 || index >= Skills.Length)
+            return;
+
+        UIEvents.RaiseSkillCooldownChanged(index, GetSkillCooldownRatio(index), IsSkillReady(index));
     }
 }
