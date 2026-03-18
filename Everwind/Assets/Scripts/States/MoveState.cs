@@ -9,21 +9,17 @@ public class MoveState : IState
     {
         controller.GetAnimationContexter().PlayMove(true);
         controller.player.GetCombatManager().DamagedCount = 0;
-        controller.player.StopMoveto();
-    }
+        Transform target = controller.CurrentTarget;
 
-    public void EnterState(PlayerStateContexter controller, Transform target)
-    {
         if (target != null)
         {
-            controller.GetAnimationContexter().PlayMove(true);
             controller.player.StartMoveto(target);
             _onArriveAction = () => OnArrive(controller);
             controller.player.EvArrive += _onArriveAction;
         }
         else
         {
-            EnterState(controller);
+            controller.player.StopMoveto();
         }
     }
 
@@ -34,6 +30,7 @@ public class MoveState : IState
             controller.TransitionState(States.Idle);
             return;
         }
+
         if (inputManager.GetEnterCombatDown())
         {
             controller.TransitionState(States.CombatIdle);
@@ -45,7 +42,7 @@ public class MoveState : IState
             var target = controller.player.DetectObtainable();
             if (target != null)
             {
-                controller.player.StartMoveto(target.transform);
+                controller.TransitionState(States.Move, target.transform);
                 return;
             }
         }

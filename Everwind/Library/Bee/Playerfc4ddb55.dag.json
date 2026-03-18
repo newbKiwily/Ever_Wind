@@ -349,7 +349,7 @@
       "DisplayName": "Writing boot.config_tyr4.info",
       "ActionType": "WriteFile",
       "PayloadOffset": 83,
-      "PayloadLength": 16796,
+      "PayloadLength": 17256,
       "PayloadDebugContentSnippet": "{\"System.Object\":null,\"Bee.Tun",
       "Inputs": [],
       "Outputs": [
@@ -447,26 +447,26 @@
         "C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/Variations/mono/Managed/UnityEngine.WindModule.dll",
         "C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/Variations/mono/Managed/UnityEngine.XRModule.dll",
         "C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/Variations/mono/Managed/UnityEngine.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Assembly-CSharp-firstpass.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Assembly-CSharp.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Stl.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/KinoBloom.Runtime.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.Core.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/UnityEngine.UI.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Csg.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.Flow.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.Timeline.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/AYellowpaper.SerializedCollections.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/CFXRRuntime.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Poly2Tri.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/CFXRDemo.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.KdTree.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.TextMeshPro.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.State.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Cinemachine.dll",
-        "C:/Users/tlsal/projects/Everwind/Assets/Plugins/Demigiant/DOTween/DOTween.dll",
-        "C:/Users/tlsal/projects/Everwind/Library/PackageCache/com.unity.visualscripting@1.9.1/Runtime/VisualScripting.Flow/Dependencies/NCalc/Unity.VisualScripting.Antlr3.Runtime.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Assembly-CSharp-firstpass.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Assembly-CSharp.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Stl.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/KinoBloom.Runtime.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.Core.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/UnityEngine.UI.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Csg.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.Flow.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.Timeline.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/AYellowpaper.SerializedCollections.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/CFXRRuntime.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Poly2Tri.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/CFXRDemo.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.KdTree.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.TextMeshPro.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.State.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Cinemachine.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Assets/Plugins/Demigiant/DOTween/DOTween.dll",
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/PackageCache/com.unity.visualscripting@1.9.1/Runtime/VisualScripting.Flow/Dependencies/NCalc/Unity.VisualScripting.Antlr3.Runtime.dll",
         "C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32/Facades/netstandard.dll",
         "C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32/Mono.Security.dll",
         "C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32/System.ComponentModel.Composition.dll",
@@ -1372,7 +1372,7 @@
       "DisplayName": "Copying Assembly-CSharp-firstpass.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Assembly-CSharp-firstpass.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Assembly-CSharp-firstpass.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Assembly-CSharp-firstpass.dll"
@@ -1384,7 +1384,7 @@
       "DisplayName": "Copying Assembly-CSharp.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Assembly-CSharp.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Assembly-CSharp.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Assembly-CSharp.dll"
@@ -1396,7 +1396,7 @@
       "DisplayName": "Copying Unity.ProBuilder.Stl.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Stl.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Stl.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.ProBuilder.Stl.dll"
@@ -1408,7 +1408,7 @@
       "DisplayName": "Copying Unity.ProBuilder.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.ProBuilder.dll"
@@ -1420,7 +1420,7 @@
       "DisplayName": "Copying KinoBloom.Runtime.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/KinoBloom.Runtime.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/KinoBloom.Runtime.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/KinoBloom.Runtime.dll"
@@ -1432,7 +1432,7 @@
       "DisplayName": "Copying Unity.VisualScripting.Core.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.Core.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.Core.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.VisualScripting.Core.dll"
@@ -1444,7 +1444,7 @@
       "DisplayName": "Copying UnityEngine.UI.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/UnityEngine.UI.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/UnityEngine.UI.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/UnityEngine.UI.dll"
@@ -1456,7 +1456,7 @@
       "DisplayName": "Copying Unity.ProBuilder.Csg.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Csg.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Csg.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.ProBuilder.Csg.dll"
@@ -1468,7 +1468,7 @@
       "DisplayName": "Copying Unity.VisualScripting.Flow.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.Flow.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.Flow.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.VisualScripting.Flow.dll"
@@ -1480,7 +1480,7 @@
       "DisplayName": "Copying Unity.Timeline.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.Timeline.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.Timeline.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.Timeline.dll"
@@ -1492,7 +1492,7 @@
       "DisplayName": "Copying AYellowpaper.SerializedCollections.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/AYellowpaper.SerializedCollections.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/AYellowpaper.SerializedCollections.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/AYellowpaper.SerializedCollections.dll"
@@ -1504,7 +1504,7 @@
       "DisplayName": "Copying CFXRRuntime.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/CFXRRuntime.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/CFXRRuntime.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/CFXRRuntime.dll"
@@ -1516,7 +1516,7 @@
       "DisplayName": "Copying Unity.ProBuilder.Poly2Tri.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Poly2Tri.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.Poly2Tri.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.ProBuilder.Poly2Tri.dll"
@@ -1528,7 +1528,7 @@
       "DisplayName": "Copying CFXRDemo.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/CFXRDemo.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/CFXRDemo.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/CFXRDemo.dll"
@@ -1540,7 +1540,7 @@
       "DisplayName": "Copying Unity.ProBuilder.KdTree.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.KdTree.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.ProBuilder.KdTree.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.ProBuilder.KdTree.dll"
@@ -1552,7 +1552,7 @@
       "DisplayName": "Copying Unity.TextMeshPro.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.TextMeshPro.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.TextMeshPro.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.TextMeshPro.dll"
@@ -1564,7 +1564,7 @@
       "DisplayName": "Copying Unity.VisualScripting.State.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.State.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Unity.VisualScripting.State.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.VisualScripting.State.dll"
@@ -1576,7 +1576,7 @@
       "DisplayName": "Copying Cinemachine.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/Bee/PlayerScriptAssemblies/Cinemachine.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/PlayerScriptAssemblies/Cinemachine.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Cinemachine.dll"
@@ -1588,7 +1588,7 @@
       "DisplayName": "Copying DOTween.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Assets/Plugins/Demigiant/DOTween/DOTween.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Assets/Plugins/Demigiant/DOTween/DOTween.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/DOTween.dll"
@@ -1600,7 +1600,7 @@
       "DisplayName": "Copying Unity.VisualScripting.Antlr3.Runtime.dll",
       "ActionType": "CopyFiles",
       "Inputs": [
-        "C:/Users/tlsal/projects/Everwind/Library/PackageCache/com.unity.visualscripting@1.9.1/Runtime/VisualScripting.Flow/Dependencies/NCalc/Unity.VisualScripting.Antlr3.Runtime.dll"
+        "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/PackageCache/com.unity.visualscripting@1.9.1/Runtime/VisualScripting.Flow/Dependencies/NCalc/Unity.VisualScripting.Antlr3.Runtime.dll"
       ],
       "Outputs": [
         "C:/Users/tlsal/OneDrive/바탕 화면/새 폴더 (2)/Everwind_Data/Managed/Unity.VisualScripting.Antlr3.Runtime.dll"
@@ -1863,7 +1863,7 @@
       "Annotation": "WriteText Library/Bee/artifacts/WinPlayerBuildProgram/Data/app.info",
       "DisplayName": "Writing app.info",
       "ActionType": "WriteFile",
-      "PayloadOffset": 16968,
+      "PayloadOffset": 17428,
       "PayloadLength": 23,
       "PayloadDebugContentSnippet": "DefaultCompany\nEverwind",
       "Inputs": [],
@@ -2542,6 +2542,6 @@
   "SharedResources": [],
   "Scanners": [],
   "Identifier": "Library/Bee/Playerfc4ddb55.dag.json",
-  "PayloadsFile": "C:/Users/tlsal/projects/Everwind/Library/Bee/Playerfc4ddb55.dag.payloads",
+  "PayloadsFile": "C:/Users/tlsal/OneDrive/문서/GitHub/EverWind/Everwind/Library/Bee/Playerfc4ddb55.dag.payloads",
   "RelativePathToRoot": "../.."
 }

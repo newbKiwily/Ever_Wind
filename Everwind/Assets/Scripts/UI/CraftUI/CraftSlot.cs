@@ -10,7 +10,7 @@ public class CraftSlot : ButtonSlot
 
     protected override void Awake()
     {
-        SlotImage = transform.Find("ItemImage").GetComponent<Image>();
+        SlotImage = transform.Find("ItemImagePanel/ItemImage").GetComponent<Image>();
         ItemName = transform.Find("ItemName").GetComponent<TextMeshProUGUI>();
         _selectButton = transform.Find("SelectBotton").GetComponent<Button>();
 

@@ -88,9 +88,10 @@ public class CraftUI : MonoBehaviour
 
         _selectedRecipe = slot.TargetRecipe;
 
+        _craftItemImage.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
         _craftItemImage.sprite = slot.SlotImage.sprite;
         _craftItemName.text = slot.ItemName.text;
-
+        
         InstanceIngredientSlot(_selectedRecipe.Ingredients);
         _craftButton.interactable = CanCraft(_selectedRecipe);
     }
@@ -99,6 +100,7 @@ public class CraftUI : MonoBehaviour
     {
         _selectedRecipe = null;
 
+        _craftItemImage.color = new Color(1.0f, 1.0f, 1.0f, 0.0f);
         _craftItemImage.sprite = null;
         _craftItemName.text = "";
         _craftButton.interactable = false;

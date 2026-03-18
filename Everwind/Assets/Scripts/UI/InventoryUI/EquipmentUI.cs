@@ -53,7 +53,8 @@ public class EquipmentUI : MonoBehaviour
     }
 
     public void ClearUI(EquipmentSlot slot)
-    {
+    {   
+   
         slot.Clear();
     }
 

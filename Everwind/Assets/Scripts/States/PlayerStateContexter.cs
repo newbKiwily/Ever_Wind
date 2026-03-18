@@ -33,6 +33,8 @@ public class PlayerStateContexter : MonoBehaviour
 
     private Dictionary<States, IState> _stateTable = new Dictionary<States, IState>();
 
+    public Transform CurrentTarget { get; private set; }
+
     public void Init(Player player, InputManager inputManager)
     {
         this.player = player;
@@ -45,37 +47,14 @@ public class PlayerStateContexter : MonoBehaviour
         return _animationContexter;
     }
 
-    public void TransitionState(States targetState, Transform target)
+    public void TransitionState(States targetState, Transform target = null)
     {
         if (_currentState != null)
             _currentState.ExitState(this);
 
         _prevState = _currentState;
 
-        if (targetState == States.Move)
-        {
-            var tempState = new MoveState();
-            _currentState = tempState;
-            tempState.EnterState(this, target);
-        }
-        else if (targetState == States.CombatRun)
-        {
-            var tempState = new CombatRunState();
-            _currentState = tempState;
-            tempState.EnterState(this, target);
-        }
-        else
-        {
-            TransitionState(targetState);
-        }
-    }
-
-    public void TransitionState(States targetState)
-    {
-        if (_currentState != null)
-            _currentState.ExitState(this);
-
-        _prevState = _currentState;
+        CurrentTarget = target;
         _currentState = _stateTable[targetState];
 
         _currentState.EnterState(this);

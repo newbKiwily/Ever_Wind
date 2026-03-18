@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ResultItemName: BasicHelmet
   Ingredients:
-  - IngredientItem: {fileID: 11400000, guid: fbb845551d220a64589a1286ca231557, type: 2}
+  - IngredientItem: {fileID: 11400000, guid: 9af72be9c3f67de4e841541795c16d1a, type: 2}
     Amount: 1

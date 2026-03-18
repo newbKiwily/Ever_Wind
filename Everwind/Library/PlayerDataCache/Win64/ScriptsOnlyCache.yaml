@@ -104,6 +104,7 @@ ScriptsOnlyBuild:
     - AYellowpaper.SerializedCollections.SerializedDictionary`2[System.String,InventoryItem]
     - AYellowpaper.SerializedCollections.SerializedDictionary`2[System.String,UnityEngine.ParticleSystem]
     - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[DisplayUIManager/ProfileState,UnityEngine.Sprite]
+    - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[EquipmentItem/EquipmentType,EquipmentSlot]
     - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[System.Int32,UnityEngine.GameObject]
     - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[System.String,InventoryItem]
     - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[System.String,UnityEngine.ParticleSystem]
@@ -472,8 +473,6 @@ ScriptsOnlyBuild:
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
-      Script: {instanceID: 0}
-    - Class: 135
       Script: {instanceID: 0}
     - Class: 136
       Script: {instanceID: 0}

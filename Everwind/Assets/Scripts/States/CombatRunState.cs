@@ -3,22 +3,17 @@ using System;
 
 public class CombatRunState : IState
 {
-
     private Action _onArriveAction;
 
     public void EnterState(PlayerStateContexter controller)
     {
-
         controller.GetAnimationContexter().PlayMove(false);
         controller.player.GetCombatManager().DamagedCount = 0;
-        controller.player.StopMoveto();
-    }
 
-    public void EnterState(PlayerStateContexter controller, Transform target)
-    {
+        Transform target = controller.CurrentTarget;
+
         if (target != null)
         {
-            controller.GetAnimationContexter().PlayMove(false);
             controller.player.StartMoveto(target);
 
             _onArriveAction = () => OnArrive(controller);
@@ -26,7 +21,7 @@ public class CombatRunState : IState
         }
         else
         {
-            EnterState(controller);
+            controller.player.StopMoveto();
         }
     }
 
@@ -61,7 +56,11 @@ public class CombatRunState : IState
 
     public void ExitState(PlayerStateContexter controller)
     {
-        // 이벤트 해제 로직이 필요할 경우 여기서 _onArriveAction을 활용할 수 있습니다.
+        if (_onArriveAction != null)
+        {
+            controller.player.EvArrive -= _onArriveAction;
+            _onArriveAction = null;
+        }
     }
 
     private void OnArrive(PlayerStateContexter controller)

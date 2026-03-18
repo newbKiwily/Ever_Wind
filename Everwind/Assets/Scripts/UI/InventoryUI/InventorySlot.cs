@@ -12,7 +12,7 @@ public class InventorySlot : ButtonSlot
     {
         base.Awake();
         _countText = transform.Find("Count").GetComponent<TextMeshProUGUI>();
-        _itemImage = GetComponent<Image>();
+        _itemImage = transform.Find("ItemSlot").GetComponent<Image>();
     }
 
 
