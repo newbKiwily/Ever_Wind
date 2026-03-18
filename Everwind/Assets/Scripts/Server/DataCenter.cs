@@ -4,9 +4,11 @@ using UnityEngine;
 
 public class DataCenter : SingletonBase<DataCenter>
 {
+    public override bool IsPersistent => true;
+
     protected override void Awake()
     {
-        Priority = -5;
+        Priority = -80;
         base.Awake();
     }
 

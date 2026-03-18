@@ -8,7 +8,7 @@ public class MoveState : IState
     public void EnterState(PlayerStateContexter controller)
     {
         controller.GetAnimationContexter().PlayMove(true);
-        controller.player.GetCombatManager().DamagedCount = 0;
+        controller.player.GetCombatManager().ResetDamageCombo();
         Transform target = controller.CurrentTarget;
 
         if (target != null)
@@ -61,4 +61,4 @@ public class MoveState : IState
     {
         controller.TransitionState(States.Interact);
     }
-}   
+}

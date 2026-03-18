@@ -456,6 +456,7 @@
 "Assets/Scripts/UI/LoginUI.cs"
 "Assets/Scripts/UI/PopUpUIManager.cs"
 "Assets/Scripts/UI/TextRenderManager.cs"
+"Assets/Scripts/UI/UIEvents.cs"
 -langversion:9.0
 /unsafe+
 /deterministic

@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class EffectManager : SingletonBase<EffectManager>
 {
+    public override bool IsPersistent => false;
+
     [SerializeField]
     private SerializedDictionary<string, ParticleSystem> _particleTable = new SerializedDictionary<string, ParticleSystem>();
 
@@ -16,7 +18,7 @@ public class EffectManager : SingletonBase<EffectManager>
 
     protected override void Awake()
     {
-        Priority = 7;
+        Priority = 70;
         base.Awake();
     }
 

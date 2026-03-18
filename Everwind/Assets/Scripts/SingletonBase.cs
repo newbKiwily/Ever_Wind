@@ -26,13 +26,25 @@ public class SingletonBase<T> : SingletonBasest where T : MonoBehaviour
         if (_instance == null)
         {
             _instance = this as T;
-            if (transform.parent == null) DontDestroyOnLoad(gameObject);
+            if (IsPersistent)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
 
             SingletonManager.Instance.Register(this);
         }
         else if (_instance != this)
         {
             Destroy(gameObject);
+        }
+    }
+
+    protected virtual void OnDestroy()
+    {
+        if (_instance == this as T)
+        {
+            SingletonManager.Instance?.Unregister(this);
+            _instance = null;
         }
     }
 

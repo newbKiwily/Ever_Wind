@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class EnemyHpUIManager : SingletonBase<EnemyHpUIManager>
 {
+    public override bool IsPersistent => false;
+
     [SerializeField]
-    private GameObject _hpBarPrefab; // «¡∏Æ∆’ ¡˜¡¢ «“¥Á
+    private GameObject _hpBarPrefab; // ?Íæ®‚îÅ??ÔßûÍ≥∏Ï†í ?Ï¢äÎñ¶
 
     private List<GameObject> _hpBars = new List<GameObject>();
     private HashSet<GameObject> _activeEnemies = new HashSet<GameObject>();
@@ -30,8 +32,20 @@ public class EnemyHpUIManager : SingletonBase<EnemyHpUIManager>
 
     protected override void Awake()
     {
-        Priority = 6;
+        Priority = 60;
         base.Awake();
+    }
+
+    private void OnEnable()
+    {
+        UIEvents.OnEnemyListUpdated += UpdateEnemyList;
+        UIEvents.OnEnemyDamageTextRequested += ShowDamageText;
+    }
+
+    private void OnDisable()
+    {
+        UIEvents.OnEnemyListUpdated -= UpdateEnemyList;
+        UIEvents.OnEnemyDamageTextRequested -= ShowDamageText;
     }
 
     void Start()

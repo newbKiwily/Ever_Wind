@@ -3,7 +3,7 @@ using UnityEngine;
 public abstract class Enemy : MonoBehaviour, IDamageable
 {
     public int InstanceNum;
-    [SerializeField] protected float Hp = 100f; // ·ÎÄÃ ¿¬»ê¿ëÀÌ ¾Æ´Ñ ¼­¹ö µ¿±âÈ­¿ë HP
+    [SerializeField] protected float Hp = 100f; // ë¡œì»¬ ì—°ì‚°ìš©ì´ ì•„ë‹Œ ì„œë²„ ë™ê¸°í™”ìš© HP
 
     protected Animator Animator;
     protected AnimatorOverrideController OverrideController;
@@ -56,7 +56,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         byte[] attackPkt = PacketMethod.BuildAttackReq(this.InstanceNum, damage);
         SingletonManager.Instance.GetSingleton<NetworkClient>().Send(attackPkt);
 
-        Debug.Log($"[{gameObject.name}] ¼­¹ö·Î °ø°İ ÆÇÁ¤ ¿äÃ» (°è»êµÈ µ¥¹ÌÁö : {damage})");
+        Debug.Log($"[{gameObject.name}] ì„œë²„ë¡œ ê³µê²© íŒì • ìš”ì²­ (ê³„ì‚°ëœ ë°ë¯¸ì§€ : {damage})");
     }
 
     public virtual void SyncDamage(float serverHp, float damageAmount)
@@ -66,9 +66,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Hp = serverHp;
 
         SingletonManager.Instance.GetSingleton<EffectManager>().PlayEffect("Damaged", this.transform.position);
-        SingletonManager.Instance.GetSingleton<EnemyHpUIManager>().ShowDamageText(transform.position, (int)damageAmount);
+        UIEvents.RaiseEnemyDamageTextRequested(transform.position, (int)damageAmount);
 
-        Debug.Log($"[{gameObject.name}] ¼­¹ö µ¿±âÈ­ ¿Ï·á - ³²Àº HP : {Hp}");
+        Debug.Log($"[{gameObject.name}] ì„œë²„ ë™ê¸°í™” ì™„ë£Œ - ë‚¨ì€ HP : {Hp}");
     }
 
     public virtual void Die()
@@ -76,11 +76,11 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (IsDead) return;
         IsDead = true;
 
-        // Äİ¶óÀÌ´õ ²ô±â (´õ ÀÌ»ó Å¸°ÙÆÃµÇ°Å³ª ±æÀ» ¸·Áö ¾ÊÀ½)
+        // ì½œë¼ì´ë” ë„ê¸° (ë” ì´ìƒ íƒ€ê²ŸíŒ…ë˜ê±°ë‚˜ ê¸¸ì„ ë§‰ì§€ ì•ŠìŒ)
         Collider col = GetComponent<Collider>();
         if (col != null) col.enabled = false;
 
-        // CharacterController ²ô±â
+        // CharacterController ë„ê¸°
         CharacterController cc = GetComponent<CharacterController>();
         if (cc != null)
             cc.enabled = false;
@@ -90,7 +90,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         
 
         Destroy(gameObject);
-        Debug.Log($"[{gameObject.name}] »ç¸Á (¼­¹ö ÆÇÁ¤)");
+        Debug.Log($"[{gameObject.name}] ì‚¬ë§ (ì„œë²„ íŒì •)");
     }
 
     public float GetHp()

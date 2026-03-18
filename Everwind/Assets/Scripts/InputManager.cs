@@ -6,10 +6,11 @@ public class InputManager : SingletonBase<InputManager>
     private TutorialGuide _tutorialGuide;
 
     private bool _isRestricted = false;
+    public override bool IsPersistent => true;
 
     protected override void Awake()
     {
-        Priority = 1;
+        Priority = 10;
         base.Awake();
     }
 
@@ -46,14 +47,14 @@ public class InputManager : SingletonBase<InputManager>
 
     public bool GetExitGameKeyDown()
     {
-        if (!SingletonManager.Instance.GetSingleton<PopUpUIManager>().IsPopUpOn)
+        if (!UIEvents.IsPopupOpen)
         {
             return Input.GetKeyDown(KeyCode.Escape);
         }
         return GetUICloseKeyDown();
     }
 
-    // 이동 입력
+    // Move input
     public float GetHorizontal()
     {
         if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _isRestricted)
@@ -69,7 +70,7 @@ public class InputManager : SingletonBase<InputManager>
         return Input.GetAxis("Vertical");
     }
 
-    // 점프 입력 (상호작용으로 사용 중)
+    // Interact input
     public bool GetInteractDown()
     {
         if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move ||
@@ -78,17 +79,17 @@ public class InputManager : SingletonBase<InputManager>
         return Input.GetKeyDown(KeyCode.Space);
     }
 
-    // 공격 입력
+    // Attack input
     public bool GetEnterCombatDown()
     {
         if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move || _isRestricted)
             return false;
-        return Input.GetMouseButtonDown(0); // 왼쪽 클릭
+        return Input.GetMouseButtonDown(0); // Left click
     }
 
     public bool GetControlCamera()
     {
-        return Input.GetMouseButton(1); // 오른쪽 클릭 (코드상 1)
+        return Input.GetMouseButton(1); // Right click
     }
 
     public bool GetChangeTargetDown()
@@ -98,7 +99,7 @@ public class InputManager : SingletonBase<InputManager>
         return Input.GetKeyDown(KeyCode.E);
     }
 
-    // "아무 키 입력" (마우스 제외)
+    // Any key input except mouse buttons
     public bool AnyKeyDownExcludeMouse()
     {
         if (Input.anyKeyDown)
@@ -117,9 +118,9 @@ public class InputManager : SingletonBase<InputManager>
         {
             KeyCode key = (KeyCode)((int)KeyCode.Alpha0 + i);
             if (Input.GetKeyDown(key))
-                return i; // 1~5 반환
+                return i; // Returns 1 to 5
         }
-        return 0; // 입력 없음
+        return 0; // No input
     }
 
     public void LockMoveAndAttack()

@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 public class SingletonManager : SingletonBase<SingletonManager>
 {
-
     private List<SingletonBasest> _ingameSingletonsForInit = new List<SingletonBasest>();
     private List<SingletonBasest> _serverSingletonsForInit = new List<SingletonBasest>();
     private Dictionary<Type, SingletonBasest> _singletons = new Dictionary<Type, SingletonBasest>();
 
     public new static SingletonManager Instance => SingletonBase<SingletonManager>.Instance;
+    public override bool IsPersistent => true;
 
     protected override void Awake()
     {
@@ -33,6 +34,22 @@ public class SingletonManager : SingletonBase<SingletonManager>
 
             _singletons.Add(type, manager);
         }
+    }
+
+    public void Unregister(SingletonBasest manager)
+    {
+        if (manager == null)
+            return;
+
+        Type type = manager.GetType();
+
+        if (_singletons.TryGetValue(type, out var registered) && registered == manager)
+        {
+            _singletons.Remove(type);
+        }
+
+        _serverSingletonsForInit.Remove(manager);
+        _ingameSingletonsForInit.Remove(manager);
     }
 
     public T GetSingleton<T>() where T : SingletonBasest

@@ -6,6 +6,8 @@ using UnityEngine;
 
 public class NetworkClient : SingletonBase<NetworkClient>
 {
+    public override bool IsPersistent => true;
+
     private TcpClient _client;
     public NetworkStream Stream;
     private Thread _recvThread;
@@ -14,7 +16,7 @@ public class NetworkClient : SingletonBase<NetworkClient>
     protected override void Awake()
     {
         Application.runInBackground = true;
-        Priority = -6;
+        Priority = -90;
         base.Awake();
         Application.wantsToQuit += Logout;
     }
@@ -100,7 +102,6 @@ public class NetworkClient : SingletonBase<NetworkClient>
         var statPkt = PacketMethod.BuildStatPkt(UserDbId, stat);
         Send(statPkt);
 
-        Debug.Log("로그아웃 송신");
         return true;
     }
 

@@ -19,7 +19,7 @@ public class AttackState : IState
             controller.player.LookAtTarget(tempCombatManager.TargetEnemy.transform);
         }
 
-        // ÀÌÀü ´Ü°è¿¡¼­ ¼öÁ¤ÇÑ PlayAttack È£Ãâ
+        // ì´ì „ ë‹¨ê³„ì—ì„œ ìˆ˜ì •í•œ PlayAttack í˜¸ì¶œ
         controller.GetAnimationContexter().PlayAttack(currSkillIdx + 1);
 
         NetworkClient networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
@@ -29,11 +29,12 @@ public class AttackState : IState
 
     public void UpdateState(PlayerStateContexter controller, InputManager inputManager)
     {
+        controller.player.GetCombatManager().TryBufferSkillInput();
     }
 
     public void ExitState(PlayerStateContexter controller)
     {
-        // ÀÌÀü ´Ü°è¿¡¼­ ¼öÁ¤ÇÑ ExitInteract È£Ãâ
+        // ì´ì „ ë‹¨ê³„ì—ì„œ ìˆ˜ì •í•œ ExitInteract í˜¸ì¶œ
         controller.GetAnimationContexter().ExitInteract();
         _currSkill = null;
     }

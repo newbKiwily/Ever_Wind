@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class PopUpUIManager : SingletonBase<PopUpUIManager>
 {
+    public override bool IsPersistent => false;
+
     public Inventory Inventory { get; private set; }
     public CraftUI CraftUI { get; private set; }
     public ItemTooltip ItemTooltip { get; private set; }
@@ -17,13 +19,26 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
 
     protected override void Awake()
     {
-        Priority = 4;
+        Priority = 40;
         base.Awake();
+    }
+
+    private void OnEnable()
+    {
+        UIEvents.OnDeadUiOpenRequested += PopUpDeadUI;
+        UIEvents.OnDeadUiCloseRequested += CloseDeadUI;
+    }
+
+    private void OnDisable()
+    {
+        UIEvents.OnDeadUiOpenRequested -= PopUpDeadUI;
+        UIEvents.OnDeadUiCloseRequested -= CloseDeadUI;
     }
 
     public override void Init()
     {
         IsPopUpOn = false;
+        UIEvents.SetPopupOpenState(IsPopUpOn);
 
         _cameraMoving.OffPreviCam();
 
@@ -52,6 +67,7 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
     {
         DeadUI.ShowDeadUI();
         IsPopUpOn = true;
+        UIEvents.SetPopupOpenState(IsPopUpOn);
         _currentUI = DeadUI.gameObject;
         return;
     }
@@ -60,6 +76,7 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
     {
         DeadUI.gameObject.SetActive(false);
         IsPopUpOn = false;
+        UIEvents.SetPopupOpenState(IsPopUpOn);
         _currentUI = null;
         return;
     }
@@ -69,6 +86,7 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
         if (IsPopUpOn) return;
 
         IsPopUpOn = true;
+        UIEvents.SetPopupOpenState(IsPopUpOn);
         Inventory.gameObject.SetActive(true);
         _currentUI = Inventory.gameObject;
         Inventory.UpdateInventory();
@@ -81,6 +99,7 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
         if (IsPopUpOn) return;
 
         IsPopUpOn = true;
+        UIEvents.SetPopupOpenState(IsPopUpOn);
         CraftUI.gameObject.SetActive(true);
         _currentUI = CraftUI.gameObject;
         CraftUI.FlushCraftZone();
@@ -94,6 +113,7 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
         _currentUI.gameObject.SetActive(false);
         _currentUI = null;
         IsPopUpOn = false;
+        UIEvents.SetPopupOpenState(IsPopUpOn);
         ItemTooltip.tooltipWindow.SetActive(false);
         _cameraMoving.OffPreviCam();
     }

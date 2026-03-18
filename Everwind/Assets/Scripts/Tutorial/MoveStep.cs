@@ -10,7 +10,7 @@ public class MoveStep : ITutorialStep
         step.moveT_taretBox.SetActive(true);
         _deleteAction += () => ClearEvent(step, textRenderManager);
         Player.OnMoveTClear += _deleteAction;
-        Debug.Log("MoveT½ÃÀÛ");
+        Debug.Log("MoveTì‹œìž‘");
         textRenderManager.StartShow("MoveT");
         textRenderManager.AutoShow(0, 1);
     }

@@ -8,7 +8,7 @@ public class CombatRunState : IState
     public void EnterState(PlayerStateContexter controller)
     {
         controller.GetAnimationContexter().PlayMove(false);
-        controller.player.GetCombatManager().DamagedCount = 0;
+        controller.player.GetCombatManager().ResetDamageCombo();
 
         Transform target = controller.CurrentTarget;
 

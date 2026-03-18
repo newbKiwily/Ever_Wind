@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class DisplayUIManager : SingletonBase<DisplayUIManager>
 {
+    public override bool IsPersistent => false;
+
     public enum ProfileState
     {
         Normal,
@@ -31,8 +33,18 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
 
     protected override void Awake()
     {
-        Priority = 5;
+        Priority = 50;
         base.Awake();
+    }
+
+    private void OnEnable()
+    {
+        UIEvents.OnProfileChangeRequested += HandleProfileChangeRequested;
+    }
+
+    private void OnDisable()
+    {
+        UIEvents.OnProfileChangeRequested -= HandleProfileChangeRequested;
     }
 
     public override void Init()
@@ -75,6 +87,11 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
     public void ChangeProfile(ProfileState state, float time)
     {
         StartCoroutine(ChangeProfileCoroutine(state, time));
+    }
+
+    private void HandleProfileChangeRequested(ProfileState state, float duration)
+    {
+        ChangeProfile(state, duration);
     }
 
     private IEnumerator ChangeProfileCoroutine(ProfileState state, float time)

@@ -50,7 +50,7 @@ public class DeadUI : MonoBehaviour
             if (_timer > 0)
             {
                 _timer -= Time.deltaTime;
-                introductionDead.text = $"´ç½ÅÀº Á×¾ú½À´Ï´Ù.\n{Mathf.CeilToInt(_timer)}ÃÊ ÈÄ¿¡ »ì¾Æ³¯ ¼ö ÀÖ½À´Ï´Ù...";
+                introductionDead.text = $"ë‹¹ì‹ ì€ ì£½ì—ˆìŠµë‹ˆë‹¤.\n{Mathf.CeilToInt(_timer)}ì´ˆ í›„ì— ì‚´ì•„ë‚  ìˆ˜ ìˆìŠµë‹ˆë‹¤...";
             }
             else
             {
@@ -63,7 +63,7 @@ public class DeadUI : MonoBehaviour
     {
         _isCountingDown = false;
         _timer = 0;
-        introductionDead.text = "ÀÌÁ¦ ºÎÈ°ÇÒ ¼ö ÀÖ½À´Ï´Ù!\nÆ÷±âÇÏÁö¸¶¼¼¿ä.";
+        introductionDead.text = "ì´ì œ ë¶€í™œí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤!\ní¬ê¸°í•˜ì§€ë§ˆì„¸ìš”.";
 
         if (revive != null)
         {
@@ -79,6 +79,7 @@ public class DeadUI : MonoBehaviour
             popUpUIManager.CloseDeadUI();
         }
 
+        UIEvents.RaiseReviveRequested();
         OnRevived?.Invoke();
     }
 }

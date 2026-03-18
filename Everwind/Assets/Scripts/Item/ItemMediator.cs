@@ -5,37 +5,39 @@ using UnityEngine;
 
 public class ItemMediator : SingletonBase<ItemMediator>
 {
+    public override bool IsPersistent => false;
+
     public SerializedDictionary<string, InventoryItem> ItemTable = new SerializedDictionary<string, InventoryItem>();
     public SerializedDictionary<int, GameObject> FieldItemTable = new SerializedDictionary<int, GameObject>();
 
     protected override void Awake()
     {
-        Priority = 3;
+        Priority = 30;
         base.Awake();
     }
 
     public void Mediation(string key)
     {
         var target = ItemTable[key];
-        Debug.Log("ÀÎº¥Åä¸® ¾ÆÀÌÅÛ »ı¼º‰Î");
+        Debug.Log("ì¸ë²¤í† ë¦¬ ì•„ì´í…œ ìƒì„±ëŒ");
         SingletonManager.Instance.GetSingleton<PopUpUIManager>().Inventory.PutItem(target);
-        //ÀÎº¥Åä¸®·Î Àü¼Û
+        //ì¸ë²¤í† ë¦¬ë¡œ ì „ì†¡
     }
 
-    // ¾ÆÀÌÅÛÀ» ºñÈ°¼ºÈ­ÇÏ°í ÀÏÁ¤ ½Ã°£ µÚ¿¡ ´Ù½Ã È°¼ºÈ­ÇÏ´Â ¸Ş¼­µå
+    // ì•„ì´í…œì„ ë¹„í™œì„±í™”í•˜ê³  ì¼ì • ì‹œê°„ ë’¤ì— ë‹¤ì‹œ í™œì„±í™”í•˜ëŠ” ë©”ì„œë“œ
     public void ItemRespawn(GameObject itemObject, float delay)
     {
         itemObject.SetActive(false);
         StartCoroutine(RespawnAfterDelay(itemObject, delay));
     }
 
-    // ¿ÀºêÁ§Æ®¸¦ ÀÏÁ¤ ½Ã°£ ÈÄ¿¡ ´Ù½Ã È°¼ºÈ­ÇÏ´Â ÄÚ·çÆ¾
+    // ì˜¤ë¸Œì íŠ¸ë¥¼ ì¼ì • ì‹œê°„ í›„ì— ë‹¤ì‹œ í™œì„±í™”í•˜ëŠ” ì½”ë£¨í‹´
     private IEnumerator RespawnAfterDelay(GameObject obj, float delay)
     {
         yield return new WaitForSeconds(delay);
         obj.SetActive(true);
 
-        // FieldItem ÄÄÆ÷³ÍÆ®¸¦ °¡Á®¿Í¼­ ÃÊ±âÈ­
+        // FieldItem ì»´í¬ë„ŒíŠ¸ë¥¼ ê°€ì ¸ì™€ì„œ ì´ˆê¸°í™”
         FieldItem fieldItem = obj.GetComponent<FieldItem>();
         if (fieldItem != null)
         {

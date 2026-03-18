@@ -10,8 +10,8 @@ public class DeadState : IState
 
         controller.GetAnimationContexter().PlayDead();
 
-        SingletonManager.Instance.GetSingleton<PopUpUIManager>().PopUpDeadUI();
-        SingletonManager.Instance.GetSingleton<PopUpUIManager>().DeadUI.OnRevived += HandleRevive;
+        UIEvents.OnReviveRequested += HandleRevive;
+        UIEvents.RaiseDeadUiOpenRequested();
 
         NetworkClient networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
         var pkt = PacketMethod.BuildDeadSyncReq(networkClient.UserDbId, true);
@@ -28,10 +28,11 @@ public class DeadState : IState
 
     public void ExitState(PlayerStateContexter controller)
     {
-        SingletonManager.Instance.GetSingleton<PopUpUIManager>().DeadUI.OnRevived -= HandleRevive;
+        UIEvents.OnReviveRequested -= HandleRevive;
+        UIEvents.RaiseDeadUiCloseRequested();
         SingletonManager.Instance.GetSingleton<InputManager>().UnlockMoveAndAttack();
 
-        // ExitDead (PascalCase) ¿˚øÎ
+        // ExitDead (PascalCase) Ï†ÅÏö©
         controller.GetAnimationContexter().ExitDead();
 
         NetworkClient networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();

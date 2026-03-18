@@ -4,11 +4,13 @@ using UnityEngine;
 
 public class EnemySpawner : SingletonBase<EnemySpawner>
 {
+    public override bool IsPersistent => false;
+
     private Dictionary<int, Enemy> _instancedEnemies = new Dictionary<int, Enemy>();
 
     protected override void Awake()
     {
-        Priority = 10;
+        Priority = 80;
         base.Awake();
     }
 

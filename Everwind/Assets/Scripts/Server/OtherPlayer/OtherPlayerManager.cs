@@ -3,11 +3,13 @@ using UnityEngine;
 
 public class OtherPlayerManager : SingletonBase<OtherPlayerManager>
 {
+    public override bool IsPersistent => false;
+
     private Dictionary<int, OtherPlayer> _instancedPlayers = new Dictionary<int, OtherPlayer>();
 
     protected override void Awake()
     {
-        Priority = 11;
+        Priority = 90;
         base.Awake();
     }
 

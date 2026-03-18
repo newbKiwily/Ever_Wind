@@ -23,7 +23,7 @@ public class CombatStep : ITutorialStep
 
         if (!_cleared && enemy1Dead && enemy2Dead)
         {
-            ClearEvent(step, textRenderManager);  // ÅØ½ºÆ® Ãâ·Â
+            ClearEvent(step, textRenderManager);  // í…ìŠ¤íŠ¸ ì¶œë ¥
             return;
         }
 

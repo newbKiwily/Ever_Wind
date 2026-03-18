@@ -9,6 +9,7 @@ public class CombatManager : MonoBehaviour
     public Skill CurrentCastingSkill;
     public int CurrentCastingSkillIndex;
     public Skill[] Skills = new Skill[5];
+    private int _bufferedSkillIndex = -1;
 
     private KeyCode _prevKeyCode;
     private KeyCode _currKeyCode;
@@ -17,6 +18,7 @@ public class CombatManager : MonoBehaviour
     public GameObject TargetEnemy;
     public float TargetRadius;
     public int DamagedCount;
+    public bool IgnoreNextDamageAnimation { get; private set; }
 
     private List<GameObject> _inRadiusEnemy;
 
@@ -45,13 +47,13 @@ public class CombatManager : MonoBehaviour
 
     public void Init(Player player, InputManager inputManager)
     {
-        this._player = player;
-        this._inputManager = inputManager;
+        _player = player;
+        _inputManager = inputManager;
         _currKeyCode = KeyCode.None;
         TargetEnemy = null;
         _prevTargetEnemy = null;
         TargetRadius = 50.0f;
-        DamagedCount = 0;
+        ResetDamageCombo();
         _inRadiusEnemy = new List<GameObject>();
         player.EvArrive += OnTargetArrived;
         InitSkillCooldownMax();
@@ -91,12 +93,20 @@ public class CombatManager : MonoBehaviour
         var tempStateContexter = _player.GetPlayerStateContexter();
         var curr = tempStateContexter.GetCurrState();
 
-        // 공격 중이면 슈퍼아머
         if (curr is AttackState)
+        {
+            ResetDamageCombo(true);
+            AttackEnd();
             return;
+        }
 
-        DamagedCount++;
+        if (IgnoreNextDamageAnimation)
+        {
+            ConsumeIgnoredDamageHit();
+            return;
+        }
 
+        DamagedCount = Mathf.Clamp(DamagedCount + 1, 1, 3);
         tempStateContexter.TransitionState(States.Damaged);
     }
 
@@ -105,13 +115,32 @@ public class CombatManager : MonoBehaviour
         var tempStateContexter = _player.GetPlayerStateContexter();
         var curr = tempStateContexter.GetCurrState();
 
-        if (curr is DamagedState || curr is AttackState)
+        if (curr is AttackState)
+        {
+            return TryBufferSkillInput();
+        }
+
+        if (curr is DamagedState)
             return true;
 
         int keyPressed = _inputManager.GetAttackKeyDown();
         if (keyPressed == 0) return false;
 
         return ExecuteSkill(keyPressed - 1);
+    }
+
+    public bool TryBufferSkillInput()
+    {
+        int keyPressed = _inputManager.GetAttackKeyDown();
+        if (keyPressed == 0)
+            return false;
+
+        int skillIndex = keyPressed - 1;
+        if (skillIndex < 0 || skillIndex >= Skills.Length || Skills[skillIndex] == null)
+            return false;
+
+        _bufferedSkillIndex = skillIndex;
+        return true;
     }
 
     public bool ExecuteSkill(int skillIndex)
@@ -143,12 +172,12 @@ public class CombatManager : MonoBehaviour
 
         if (target == null)
         {
-            Debug.Log("스킬 시도: 타겟 없음. 스킬 등록 취소.");
+            Debug.Log("Skill cast cancelled because there is no target.");
             CurrentCastingSkill = null;
             return false;
         }
 
-        Debug.Log($"스킬 시전 시작: {CurrentCastingSkill.name} - 타겟({target.name})에게 이동.");
+        Debug.Log($"Start casting {CurrentCastingSkill.name} toward {target.name}.");
         tempStateContexter.TransitionState(States.CombatRun, target.transform);
 
         return true;
@@ -168,6 +197,15 @@ public class CombatManager : MonoBehaviour
         _prevKeyCode = KeyCode.None;
         _currKeyCode = KeyCode.None;
 
+        if (_bufferedSkillIndex >= 0)
+        {
+            int bufferedSkillIndex = _bufferedSkillIndex;
+            _bufferedSkillIndex = -1;
+
+            if (ExecuteBufferedSkill(bufferedSkillIndex))
+                return;
+        }
+
         _player.GetPlayerStateContexter().TransitionState(States.CombatIdle);
         CurrentCastingSkill = null;
     }
@@ -175,6 +213,51 @@ public class CombatManager : MonoBehaviour
     public void EndDamaged()
     {
         DamagedState.IsFinished = true;
+        ResetDamageCombo(true);
+    }
+
+    public void ResetDamageCombo(bool ignoreNextDamageAnimation = false)
+    {
+        DamagedCount = 0;
+        IgnoreNextDamageAnimation = ignoreNextDamageAnimation;
+    }
+
+    public void ClearBufferedSkill()
+    {
+        _bufferedSkillIndex = -1;
+    }
+
+    private bool ExecuteBufferedSkill(int skillIndex)
+    {
+        if (skillIndex < 0 || skillIndex >= Skills.Length || Skills[skillIndex] == null)
+            return false;
+
+        if (!IsSkillReady(skillIndex))
+            return false;
+
+        CurrentCastingSkillIndex = skillIndex;
+        CurrentCastingSkill = Skills[skillIndex];
+        _currKeyCode = (KeyCode)((int)KeyCode.Alpha1 + skillIndex);
+
+        if (TargetEnemy == null)
+        {
+            TargetEnemy = TargetingEnemy();
+        }
+
+        GameObject target = TargetEnemy;
+        if (target == null)
+        {
+            CurrentCastingSkill = null;
+            return false;
+        }
+
+        _player.GetPlayerStateContexter().TransitionState(States.CombatRun, target.transform);
+        return true;
+    }
+
+    public void ConsumeIgnoredDamageHit()
+    {
+        IgnoreNextDamageAnimation = false;
         DamagedCount = 0;
     }
 
@@ -208,7 +291,7 @@ public class CombatManager : MonoBehaviour
             }
         }
 
-        SingletonManager.Instance.GetSingleton<EnemyHpUIManager>().UpdateEnemyList(_inRadiusEnemy);
+        UIEvents.RaiseEnemyListUpdated(_inRadiusEnemy);
 
         if (_inRadiusEnemy.Count > 0)
         {
@@ -222,7 +305,9 @@ public class CombatManager : MonoBehaviour
             closetObj = _inRadiusEnemy[0];
         }
         else
+        {
             return null;
+        }
 
         _prevTargetEnemy = closetObj;
         TargetEnemy = closetObj;
@@ -262,12 +347,12 @@ public class CombatManager : MonoBehaviour
         if (CurrentCastingSkill != null)
         {
             tempStateContexter.TransitionState(States.Attack);
-            Debug.Log($"타겟 도착: AttackState로 전이. 스킬 시전 시작: {CurrentCastingSkill.SkillAnimationName}");
+            Debug.Log($"Arrived at target. Start attack animation {CurrentCastingSkill.SkillAnimationName}.");
         }
         else
         {
             tempStateContexter.TransitionState(States.CombatIdle);
-            Debug.Log("타겟 도착: 등록된 스킬 없음. CombatIdle로 복귀.");
+            Debug.Log("Arrived at target without a registered skill. Return to CombatIdle.");
         }
     }
 

@@ -9,10 +9,11 @@ public class WorldLoader : SingletonBase<WorldLoader>
     [SerializeField] private GameObject _playerPrefab;
     [SerializeField] private GameObject _otherPlayerPrefab;
     public GameObject InstancedPlayer { get; private set; }
+    public override bool IsPersistent => true;
 
     protected override void Awake()
     {
-        Priority = -2;
+        Priority = -60;
         base.Awake();
     }
 
@@ -31,7 +32,7 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
     private void SpawnMap(int mapId)
     {
-        // DataCenter의 MapTable 참조 수정
+        // Use DataCenter MapTable to resolve the map prefab.
         if (DataCenter.Instance.MapTable.TryGetValue(mapId, out GameObject mapPrefab))
         {
             if (mapPrefab == null)
@@ -103,7 +104,7 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
     private void SpawnEnemies(Queue<DataCenter.EnemyInfo> enemies)
     {
-        // DataCenter의 MonsterTable 참조 수정
+        // Use DataCenter MonsterTable to resolve enemy prefabs.
         var monsterTable = SingletonManager.Instance.GetSingleton<DataCenter>().MonsterTable;
         var enemySpawner = SingletonManager.Instance.GetSingleton<EnemySpawner>();
 
