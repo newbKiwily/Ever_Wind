@@ -175,6 +175,7 @@ public class CombatManager : MonoBehaviour
     public void EndDamaged()
     {
         DamagedState.IsFinished = true;
+        DamagedCount = 0;
     }
 
     public GameObject TargetingEnemy()

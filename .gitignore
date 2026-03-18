@@ -73,3 +73,43 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Visual Studio 폴더 및 사용자 설정 파일
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.userprefs
+
+# 빌드 결과물 폴더 (대소문자 구분 없이 무시)
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa]rm/
+[Aa]rm64/
+
+# 컴파일된 오브젝트 파일 및 임시 파일
+*.obj
+*.iobj
+*.pch
+*.idb
+*.tlog/
+*.log
+
+# 컴파일된 실행 파일 및 라이브러리
+*.exe
+*.dll
+*.lib
+*.ilk
+*.pdb
+*.ipdb
+*.out
+*.app
+
+# 기타 C++ 관련 캐시 및 데이터베이스 파일
+*.dbmdl
+*.opendb
+*.VC.db

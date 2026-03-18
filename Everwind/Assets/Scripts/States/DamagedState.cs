@@ -9,7 +9,6 @@ public class DamagedState : IState
 
         var tempCombatManager = controller.player.GetCombatManager();
 
-        // PlayDamaged (PascalCase) Àû¿ë
         var animCode = controller.GetAnimationContexter().PlayDamaged(tempCombatManager.DamagedCount);
 
         NetworkClient networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
