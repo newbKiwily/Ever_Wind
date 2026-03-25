@@ -220,6 +220,22 @@ public static unsafe class PacketMethod
         return buffer;
     }
 
+    public static byte[] BuildMapChangeReq(int userDbId, int targetMapId)
+    {
+        byte[] buffer = new byte[sizeof(PacketHeader) + sizeof(PKT_MAP_CHANGE_REQ)];
+        fixed (byte* ptr = buffer)
+        {
+            PacketHeader* h = (PacketHeader*)ptr;
+            h->Length = (ushort)buffer.Length;
+            h->Id = (ushort)PacketType.C2S_MAP_CHANGE_REQ;
+
+            PKT_MAP_CHANGE_REQ* body = (PKT_MAP_CHANGE_REQ*)(ptr + sizeof(PacketHeader));
+            body->UserDBID = userDbId;
+            body->TargetMapId = targetMapId;
+        }
+        return buffer;
+    }
+
     public static void HandleLoginAck(byte[] payload)
     {
         fixed (byte* ptr = payload)
@@ -246,7 +262,7 @@ public static unsafe class PacketMethod
                         break;
                     case 1: ui.SetResult("Wrong ID"); break;
                     case 2: ui.SetResult("Wrong Password"); break;
-                    case 3: ui.SetResult("´©±º°¡ ·Î±×ÀÎÁßÀÔ´Ï´Ù."); break;
+                    case 3: ui.SetResult("ëˆ„êµ°ê°€ ë¡œê·¸ì¸ì¤‘ìž…ë‹ˆë‹¤."); break;
                     default: ui.SetResult("Unknown Error"); break;
                 }
                 ui.FlushTest();
@@ -268,9 +284,9 @@ public static unsafe class PacketMethod
 
                 switch (result)
                 {
-                    case 0: ui.SetResult("È¸¿ø°¡ÀÔÀ» ¿Ï·áÇÏ¿´½À´Ï´Ù."); break;
-                    case 1: ui.SetResult("ÀÌ¹Ì ÀÖ´Â ¾ÆÀÌµð¿Í ºñ¹Ð¹øÈ£ ÀÔ´Ï´Ù"); break;
-                    case 2: ui.SetResult("µ¥ÀÌÅÍº£ÀÌ½º ¿À·ùÀÔ´Ï´Ù."); break;
+                    case 0: ui.SetResult("íšŒì›ê°€ìž…ì„ ì™„ë£Œí•˜ì˜€ìŠµë‹ˆë‹¤."); break;
+                    case 1: ui.SetResult("ì´ë¯¸ ìžˆëŠ” ì•„ì´ë””ì™€ ë¹„ë°€ë²ˆí˜¸ ìž…ë‹ˆë‹¤"); break;
+                    case 2: ui.SetResult("ë°ì´í„°ë² ì´ìŠ¤ ì˜¤ë¥˜ìž…ë‹ˆë‹¤."); break;
                     default: ui.SetResult("Unknown Error"); break;
                 }
                 ui.FlushTest();
@@ -568,6 +584,32 @@ public static unsafe class PacketMethod
                         targetPlayer.OffWeapon();
                     }
                 }
+            });
+        }
+    }
+
+    public static void HandleMapChangeAck(byte[] payload)
+    {
+        fixed (byte* ptr = payload)
+        {
+            PKT_MAP_CHANGE_ACK* pkt = (PKT_MAP_CHANGE_ACK*)ptr;
+            UnityMainThreadDispatcher.Instance().Enqueue(() =>
+            {
+                var dataCenter = SingletonManager.Instance.GetSingleton<DataCenter>();
+               
+                dataCenter.loginData = new DataCenter.LoginData
+                {
+                    MapId = pkt->MapId,
+                    Position = new Vector3(pkt->PosX, pkt->PosY, pkt->PosZ)
+                };
+
+                var worldLoader = SingletonManager.Instance.GetSingleton<WorldLoader>();
+                worldLoader.InitializeWorld(
+                    dataCenter.loginData.MapId,
+                    dataCenter.loginData.Position,
+                    dataCenter.OtherPlayers,
+                    dataCenter.LoadEnemies
+                );
             });
         }
     }

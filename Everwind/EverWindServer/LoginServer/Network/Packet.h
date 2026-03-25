@@ -44,7 +44,10 @@ namespace NetPackets
         _INTERACT_SYNC = 0x127,
 
         _DEAD_SYNC = 0x130,
-        _COMBAT_STATE_SYNC = 0X131
+        _COMBAT_STATE_SYNC = 0X131,
+
+        C2S_MAP_CHANGE_REQ = 0X132,
+        S2C_MAP_CHANGE_ACK = 0X133
 
     };
 
@@ -176,6 +179,20 @@ namespace NetPackets
     {
         int32_t UserDBID;
         uint8_t isCombat;
+    };
+
+    struct PKT_MAP_CHANGE_REQ
+    {
+        int32_t UserDBID;
+        int32_t TargetMapId;
+    };
+
+    struct PKT_MAP_CHANGE_ACK
+    {
+        int32_t MapId;
+        float PosX;
+        float PosY;
+        float PosZ;
     };
 #pragma pack(pop)
 

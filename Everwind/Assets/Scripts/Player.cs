@@ -102,7 +102,8 @@ public class Player : MonoBehaviour, IDamageable
 
         bool isMoving = _moveDir.sqrMagnitude > 0.001f || _isMoveto;
 
-        float speedParam = isMoving ? 1f : 0f;
+        float speedParam = isMoving?
+            1f : 0f;
 
         byte[] packet = PacketMethod.BuildMoveSyncRequest(
             _networkClient.UserDbId,

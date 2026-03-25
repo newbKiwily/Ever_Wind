@@ -1,7 +1,6 @@
 using System;
 using System.Net.Sockets;
 using System.Threading;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class NetworkClient : SingletonBase<NetworkClient>
@@ -157,6 +156,9 @@ public class NetworkClient : SingletonBase<NetworkClient>
             case PacketType._COMBAT_STATE_SYNC:
                 PacketMethod.HandleCombatStateSync(payload);
                 break;
+            case PacketType.S2C_MAP_CHANGE_ACK:
+                PacketMethod.HandleMapChangeAck(payload);
+                break;
             default:
                 Debug.LogWarning("Unknown packet: " + type);
                 break;
@@ -177,4 +179,11 @@ public class NetworkClient : SingletonBase<NetworkClient>
             Debug.LogError($"[NetworkClient] Send failed: {ex.Message}");
         }
     }
+
+    //public void SendMapChangeRequest(int targetMapId)
+    //{
+        
+    //    SingletonManager.Instance.GetSingleton<DataCenter>().FlushQueue();
+    //    Send(PacketMethod.BuildMapChangeReq(UserDbId, targetMapId));
+    //}
 }

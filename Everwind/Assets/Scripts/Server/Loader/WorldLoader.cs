@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 
 public class WorldLoader : SingletonBase<WorldLoader>
 {
@@ -98,13 +97,24 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
     public void ClearWorld()
     {
-        if (_currentMapInstance != null) Destroy(_currentMapInstance);
-        if (InstancedPlayer != null) Destroy(InstancedPlayer);
+        if (_currentMapInstance != null)
+            Destroy(_currentMapInstance);
+        if (InstancedPlayer != null)
+        {
+            
+            Destroy(InstancedPlayer);
+            InstancedPlayer = null;
+        }
+        var otherPlayerList = SingletonManager.Instance.GetSingleton<OtherPlayerManager>();
+        otherPlayerList.FlushOtherPlayer();
+        var enemyList = SingletonManager.Instance.GetSingleton<EnemySpawner>();
+        enemyList.FlushEnemy();
+        
     }
 
     private void SpawnEnemies(Queue<DataCenter.EnemyInfo> enemies)
     {
-        // Use DataCenter MonsterTable to resolve enemy prefabs.
+        
         var monsterTable = SingletonManager.Instance.GetSingleton<DataCenter>().MonsterTable;
         var enemySpawner = SingletonManager.Instance.GetSingleton<EnemySpawner>();
 

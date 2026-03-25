@@ -18,7 +18,8 @@ public class IngredientSlot : Slot
 
         int owned = SingletonManager.Instance.GetSingleton<PopUpUIManager>().Inventory.GetItemCount(_item);
 
-        _amountText.color = (owned >= amount) ? Color.green : Color.red;
+        _amountText.color = (owned >= amount) ?
+            Color.green : Color.red;
         _amountText.text = $"{owned} / {amount}";
     }
 

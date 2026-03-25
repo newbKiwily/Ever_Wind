@@ -27,7 +27,7 @@ int main()
     const unsigned int dbPort = 3306;
     const std::string dbUser = "SM";
     const std::string dbPassword = "bitnami";
-    const std::string dbSchema = "GameServer";            //DB¿Ã∏ß≥÷±‚
+    const std::string dbSchema = "GameServer";            //DBÏù¥Î¶ÑÎÑ£Í∏∞
 
     DBManager dbManager;
     if (!dbManager.Connect(dbHost, dbPort, dbUser, dbPassword, dbSchema))
@@ -52,6 +52,9 @@ int main()
                 config.enemySpawnX,
                 config.enemySpawnY,
                 config.enemySpawnZ,
+                config.playerSpawnX,
+                config.playerSpawnY,
+                config.playerSpawnZ,
                 config.maxEnemyCount,
                 config.enemyIdList 
             );

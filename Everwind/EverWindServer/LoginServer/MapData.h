@@ -8,13 +8,14 @@ class Enemy;
 class MapData {
 public:
     
-    MapData(float radius,float x,float y,float z,int maxEnemyCount,std::vector<int> enemyIdList);
+    
+    MapData(float radius,float x,float y,float z,float playerSpawnX,float playerSpawnY,float playerSpawnZ,int maxEnemyCount,std::vector<int> enemyIdList);
     void AddSession(std::shared_ptr<Session> session);
 
     void RemoveSession(std::shared_ptr<Session> session);
 
-    void BroadcastAll(const char* data, size_t size); // ¸Ê ³» Àü¿ø
-    void BroadcastEx(std::shared_ptr<Session> sender, const char* data, size_t size); // ¸Ê ³» ¹ß½ÅÀÚ Á¦¿Ü
+    void BroadcastAll(const char* data, size_t size); // ë§µ ë‚´ ì „ì›
+    void BroadcastEx(std::shared_ptr<Session> sender, const char* data, size_t size); // ë§µ ë‚´ ë°œì‹ ì ì œì™¸
 
     const std::vector<std::weak_ptr<Session>>& getSessionInMap() { return sessionsInMap_; }
     const std::unordered_map<int, std::shared_ptr<Enemy>>& getInstancedEnemies() const
@@ -33,6 +34,7 @@ private:
     int enemyIdListIndex = 0;
     float spawnRadius;
     float spawnPosX, spawnPosY, spawnPosZ;
+    float playerSpawnPosX, playerSpawnPosY, playerSpawnPosZ;
     int maxEnemyCount;
     
 };

@@ -35,4 +35,11 @@ public class EnemySpawner : SingletonBase<EnemySpawner>
     {
         _instancedEnemies.Remove(instanceId);
     }
+
+    public void FlushEnemy()
+    {
+        foreach(var enemy  in _instancedEnemies.Values)
+            Destroy(enemy);
+        _instancedEnemies.Clear();
+    }
 }

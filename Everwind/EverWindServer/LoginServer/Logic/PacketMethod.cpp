@@ -83,7 +83,7 @@ std::vector<char> PacketMethod::BuildSignUpAck(int resultCode)
     std::memcpy(buffer.data(), &header, sizeof(header));
     std::memcpy(buffer.data() + sizeof(header), &ack, sizeof(ack));
 
-    std::cout << "[회원가입 응답 패킷 생성] Result: " << resultCode << "\n";
+    std::cout << "[Sign-up ack packet created] Result: " << resultCode << "\n";
     return buffer;
 }
 
@@ -273,6 +273,12 @@ std::vector<char> PacketMethod::BuildCombatStateSync(int userDbId, uint8_t isCom
     std::memcpy(buffer.data() + sizeof(header), &ack, sizeof(ack));
     return buffer;
 }
+
+//change: Add a placeholder map-change ack builder so the new packet API is available without changing logic yet.
+std::vector<char> PacketMethod::BuildMapChangeAck(int mapId, float x, float y, float z)
+{
+    return {};
+}
 bool PacketMethod::HandleEnemyAttackAnimRequest(Session* session, const NetPackets::PKT_ENEMY_ATTACK_ANIM& packet)
 {
     if (!session) return false;
@@ -300,7 +306,7 @@ bool PacketMethod::HandleLoginRequest(Session* session, const NetPackets::PKT_LO
     std::string userId(packet.UserID, SafeStringLength(packet.UserID, sizeof(packet.UserID)));
     std::string password(packet.Password, SafeStringLength(packet.Password, sizeof(packet.Password)));
 
-    std::cout << "[로그인 요청 수신] UserID: " << userId << "\n";
+    std::cout << "[Login request received] UserID: " << userId << "\n";
 
     if (userId.empty() || password.empty())
     {
@@ -553,7 +559,7 @@ bool PacketMethod::HandlePacket(Session* session, const NetPackets::PacketHeader
         return HandleCombatStateSync(session, pkt);
     }
     default:
-        // 처리할 수 없는 패킷 ID
+        // 泥섎━?????녿뒗 ?⑦궥 ID
         return false;
     }
 }
@@ -564,7 +570,7 @@ bool PacketMethod::HandleSignUpRequest(Session* session, const NetPackets::PKT_S
     std::string userId(packet.UserID, SafeStringLength(packet.UserID, sizeof(packet.UserID)));
     std::string password(packet.Password, SafeStringLength(packet.Password, sizeof(packet.Password)));
 
-    std::cout << "[회원가입 요청 수신] UserID: " << userId << "\n";
+    std::cout << "[Sign-up request received] UserID: " << userId << "\n";
 
     if (userId.empty() || password.empty())
     {
@@ -646,7 +652,7 @@ bool PacketMethod::HandleOneshotAnimReq(Session* session, const NetPackets::PKT_
 {
     if (!session) return false;
 
-    // 클라이언트가 보낸 내용을 그대로 나를 제외한(BroadcastEx) 맵 유저들에게 브로드캐스팅
+    // ?대씪?댁뼵?멸? 蹂대궦 ?댁슜??洹몃?濡??섎? ?쒖쇅??BroadcastEx) 留??좎??ㅼ뿉寃?釉뚮줈?쒖틦?ㅽ똿
     std::vector<char> buffer = BuildOneshotAnimSync(packet.UserDBID, packet.AnimCode);
     server_->GetSessionManager()->GetMapDataManager()->broadcastEx(
         session->GetMapId(),
@@ -701,4 +707,10 @@ bool PacketMethod::HandleCombatStateSync(Session* session, const NetPackets::PKT
     );
 
     return true;
+}
+
+//change: Add a placeholder map-change request handler so the new packet type has a server entry point.
+bool PacketMethod::HandleMapChangeReq(Session* session, const NetPackets::PKT_MAP_CHANGE_REQ& packet)
+{
+    return false;
 }

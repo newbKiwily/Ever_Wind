@@ -1,6 +1,5 @@
 #include "Queries.h"
 #include "DBManager.h"
-
 #include <vector>
 #include <cstring>
 #include <mutex>
@@ -188,15 +187,16 @@ bool Queries::FetchInventory(const std::string& userId, std::vector<GameStruct::
     mysql_stmt_close(stmt);
     return true;
 }
+
 bool Queries::FetchAllMapData(std::vector<MapInitialInfo>& outMaps)
 {
     outMaps.clear();
     MYSQL* connection = db_.GetConnection();
     if (!connection) return false;
 
-    // MapInfo¿Í Monster Å×ÀÌºí Á¶ÀÎ
+   
     const char* sql = "SELECT M.MapId, M.SpawnEnemyX, M.SpawnEnemyY, M.SpawnEnemyZ, "
-        "M.SpawnEnemyRadius, M.MaxEnemyCount, Mo.MonsterId "
+        "M.SpawnEnemyRadius, M.MaxEnemyCount, M.SpawnX, M.SpawnY, M.SpawnZ, Mo.MonsterId "
         "FROM MapInfo M "
         "LEFT JOIN Monster Mo ON M.MapId = Mo.MapId "
         "ORDER BY M.MapId";
@@ -217,48 +217,59 @@ bool Queries::FetchAllMapData(std::vector<MapInitialInfo>& outMaps)
 
     int mapId, maxEnemyCount;
     float sx, sy, sz, radius;
+    float playerSpawnX, playerSpawnY, playerSpawnZ;
     int monsterId;
     my_bool isNullMonsterId;
 
-    MYSQL_BIND resultBind[7]{};
+    MYSQL_BIND resultBind[10]{};
     resultBind[0].buffer_type = MYSQL_TYPE_LONG;  resultBind[0].buffer = &mapId;
     resultBind[1].buffer_type = MYSQL_TYPE_FLOAT; resultBind[1].buffer = &sx;
     resultBind[2].buffer_type = MYSQL_TYPE_FLOAT; resultBind[2].buffer = &sy;
     resultBind[3].buffer_type = MYSQL_TYPE_FLOAT; resultBind[3].buffer = &sz;
     resultBind[4].buffer_type = MYSQL_TYPE_FLOAT; resultBind[4].buffer = &radius;
     resultBind[5].buffer_type = MYSQL_TYPE_LONG;  resultBind[5].buffer = &maxEnemyCount;
-    resultBind[6].buffer_type = MYSQL_TYPE_LONG;  resultBind[6].buffer = &monsterId;
-    resultBind[6].is_null = &isNullMonsterId;
+    resultBind[6].buffer_type = MYSQL_TYPE_FLOAT; resultBind[6].buffer = &playerSpawnX;
+    resultBind[7].buffer_type = MYSQL_TYPE_FLOAT; resultBind[7].buffer = &playerSpawnY;
+    resultBind[8].buffer_type = MYSQL_TYPE_FLOAT; resultBind[8].buffer = &playerSpawnZ;
+    resultBind[9].buffer_type = MYSQL_TYPE_LONG;  resultBind[9].buffer = &monsterId;
+    resultBind[9].is_null = &isNullMonsterId;
 
     mysql_stmt_bind_result(stmt, resultBind);
 
     int currentMapId = -1;
     MapInitialInfo currentInfo;
 
-    while (mysql_stmt_fetch(stmt) == 0) {
-        if (mapId != currentMapId) {
-            // ÀÌÀü ¸Ê Á¤º¸ ÀúÀå
-            if (currentMapId != -1) {
+    while (mysql_stmt_fetch(stmt) == 0) 
+    {
+        if (mapId != currentMapId) 
+        {
+            // ì´ì „ ë§µ ì •ë³´ ì €ì¥
+            if (currentMapId != -1) 
+            {
                 outMaps.push_back(currentInfo);
             }
-            // »õ ¸Ê Á¤º¸ ÃÊ±âÈ­
+            // ìƒˆ ë§µ ì •ë³´ ì´ˆê¸°í™”
             currentMapId = mapId;
             currentInfo.mapId = mapId;
             currentInfo.enemySpawnX = sx;
             currentInfo.enemySpawnY = sy;
             currentInfo.enemySpawnZ = sz;
             currentInfo.radius = radius;
+            currentInfo.playerSpawnX = playerSpawnX;
+            currentInfo.playerSpawnY = playerSpawnY;
+            currentInfo.playerSpawnZ = playerSpawnZ;
             currentInfo.maxEnemyCount = maxEnemyCount;
-            currentInfo.enemyIdList.clear(); // MapInitialInfo ±¸Á¶Ã¼¿¡ ÀÌ ÇÊµå°¡ Ãß°¡µÇ¾î¾ß ÇÔ
+            currentInfo.enemyIdList.clear();
+            
         }
 
-        // ¸ó½ºÅÍ ID°¡ NULLÀÌ ¾Æ´Ï¸é Ãß°¡
+        // ëª¬ìŠ¤í„° IDê°€ NULLì´ ì•„ë‹ˆë©´ ì¶”ê°€
         if (!isNullMonsterId) {
             currentInfo.enemyIdList.push_back(monsterId);
         }
     }
 
-    // ¸¶Áö¸· ¸Ê Á¤º¸ ÀúÀå
+    // ë§ˆì§€ë§‰ ë§µ ì •ë³´ ì €ì¥
     if (currentMapId != -1) {
         outMaps.push_back(currentInfo);
     }
@@ -295,7 +306,7 @@ bool Queries::FetchUserStat(const std::string& userId, int& attack, int& defence
     bool ok = (mysql_stmt_fetch(stmt) == 0);
     mysql_stmt_close(stmt);
     return ok;
-}
+}             
 
 bool Queries::UpdateInventory(const std::string& userId, const NetPackets::PKT_INVENTORY_ITEM& item)
 {
@@ -307,9 +318,11 @@ bool Queries::UpdateInventory(const std::string& userId, const NetPackets::PKT_I
 
     std::lock_guard<std::mutex> guard(db_.GetMutex());
     MYSQL_STMT* stmt = mysql_stmt_init(conn);
-    if (!stmt) return false;
+    if (!stmt) 
+        return false;
 
-    if (mysql_stmt_prepare(stmt, sql, (unsigned long)strlen(sql)) != 0) {
+    if (mysql_stmt_prepare(stmt, sql, (unsigned long)strlen(sql)) != 0) 
+    {
         mysql_stmt_close(stmt);
         return false;
     }
@@ -343,15 +356,13 @@ bool Queries::UpdateInventory(const std::string& userId, const NetPackets::PKT_I
 }
 
 
-bool Queries::FetchMapdata(const std::string& userId, int& outMapId,
-    float& outSpawnEnemyX, float& outSpawnEnemyY, float& outSpawnEnemyZ,
-    float& outSpawnRadius, int& outMaxEnemyCount, std::vector<int>& outMonsterIds)
+bool Queries::FetchMapdata(const std::string& userId, int& outMapId,float& outSpawnEnemyX, float& outSpawnEnemyY, float& outSpawnEnemyZ,float& outSpawnRadius, int& outMaxEnemyCount, std::vector<int>& outMonsterIds)
 {
     outMonsterIds.clear();
     MYSQL* connection = db_.GetConnection();
     if (!connection) return false;
 
-    // UserInfo, MapInfo, Monster Å×ÀÌºíÀ» JOINÇÏ¿© ¸Ê Á¤º¸¿Í ¸ó½ºÅÍ ID¸¦ ÇÑ ¹ø¿¡ Á¶È¸ÇÕ´Ï´Ù.
+    // UserInfo, MapInfo, Monster í…Œì´ë¸”ì„ JOINí•˜ì—¬ ë§µ ì •ë³´ì™€ ëª¬ìŠ¤í„° IDë¥¼ í•œ ë²ˆì— ì¡°íšŒí•©ë‹ˆë‹¤.
     const char* sql =
         "SELECT M.MapId, M.SpawnEnemyX, M.SpawnEnemyY, M.SpawnEnemyZ, M.SpawnEnemyRadius, M.MaxEnemyCount, Mo.MonsterId "
         "FROM UserInfo U "
@@ -380,11 +391,11 @@ bool Queries::FetchMapdata(const std::string& userId, int& outMapId,
         return false;
     }
 
-    // °á°ú °ªÀ» ¹ŞÀ» º¯¼öµé
+    // ê²°ê³¼ ê°’ì„ ë°›ì„ ë³€ìˆ˜ë“¤
     int mapId = 0, maxEnemyCount = 0;
     float sx = 0.0f, sy = 0.0f, sz = 0.0f, radius = 0.0f;
     int monsterId = 0;
-    my_bool isNullMonsterId = 0; // LEFT JOINÀ¸·Î ÀÎÇØ ¸ó½ºÅÍ°¡ ¾ø´Â ¸ÊÀÏ °æ¿ì¸¦ ´ëºñÇÑ ³Î Ã¼Å©
+    my_bool isNullMonsterId = 0; // LEFT JOINìœ¼ë¡œ ì¸í•´ ëª¬ìŠ¤í„°ê°€ ì—†ëŠ” ë§µì¼ ê²½ìš°ë¥¼ ëŒ€ë¹„í•œ ë„ ì²´í¬
 
     MYSQL_BIND resultBind[7]{};
     resultBind[0].buffer_type = MYSQL_TYPE_LONG;  resultBind[0].buffer = &mapId;
@@ -403,7 +414,7 @@ bool Queries::FetchMapdata(const std::string& userId, int& outMapId,
 
     bool foundMap = false;
     while (mysql_stmt_fetch(stmt) == 0) {
-        // Ã¹ ¹øÂ° Çà¿¡¼­ ¸ÊÀÇ ±âº» Á¤º¸µéÀ» ¼³Á¤ÇÕ´Ï´Ù.
+        // ì²« ë²ˆì§¸ í–‰ì—ì„œ ë§µì˜ ê¸°ë³¸ ì •ë³´ë“¤ì„ ì„¤ì •í•©ë‹ˆë‹¤.
         if (!foundMap) {
             outMapId = mapId;
             outSpawnEnemyX = sx;
@@ -413,7 +424,7 @@ bool Queries::FetchMapdata(const std::string& userId, int& outMapId,
             outMaxEnemyCount = maxEnemyCount;
             foundMap = true;
         }
-        // ¸Ê¿¡ ¸ó½ºÅÍ µ¥ÀÌÅÍ°¡ Á¸ÀçÇÑ´Ù¸é º¤ÅÍ¿¡ Ãß°¡ÇÕ´Ï´Ù.
+        // ë§µì— ëª¬ìŠ¤í„° ë°ì´í„°ê°€ ì¡´ì¬í•œë‹¤ë©´ ë²¡í„°ì— ì¶”ê°€í•©ë‹ˆë‹¤.
         if (!isNullMonsterId) {
             outMonsterIds.push_back(monsterId);
         }
@@ -422,7 +433,7 @@ bool Queries::FetchMapdata(const std::string& userId, int& outMapId,
     mysql_stmt_free_result(stmt);
     mysql_stmt_close(stmt);
 
-    return foundMap; // À¯Àú ¸Ê Á¤º¸¸¦ ¼º°øÀûÀ¸·Î Ã£¾ÒÀ¸¸é true ¹İÈ¯
+    return foundMap; // ìœ ì € ë§µ ì •ë³´ë¥¼ ì„±ê³µì ìœ¼ë¡œ ì°¾ì•˜ìœ¼ë©´ true ë°˜í™˜
 }
 
 bool Queries::UpdateUserStat(const std::string& userId, const NetPackets::PKT_USERSTAT& stat)

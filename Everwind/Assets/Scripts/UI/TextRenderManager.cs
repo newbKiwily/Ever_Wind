@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using DG.Tweening; // ?꾩닔
+using DG.Tweening;
 
 public class TextRenderManager : SingletonBase<TextRenderManager>
 {
@@ -122,7 +122,7 @@ public class TextRenderManager : SingletonBase<TextRenderManager>
         TextMeshProUGUI.text = textToDisplay;
 
         yield return CanvasGroup.DOFade(1f, FadeDuration)
-            .OnComplete(() => Debug.Log($"{textToDisplay} ?쒖떆 ?꾨즺!"))
+            .OnComplete(() => Debug.Log($"{textToDisplay}"))
             .WaitForCompletion();
 
         _activeTextCoroutine = null;

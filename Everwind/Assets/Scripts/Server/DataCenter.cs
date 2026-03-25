@@ -42,4 +42,12 @@ public class DataCenter : SingletonBase<DataCenter>
     public Queue<string> LoadEquipItems = new Queue<string>();
     public Queue<int> OtherPlayers = new Queue<int>();
     public Queue<EnemyInfo> LoadEnemies = new Queue<EnemyInfo>();
+
+    public void FlushQueue()
+    {
+        
+        LoadEquipItems.Clear();
+        OtherPlayers.Clear();
+        LoadEnemies.Clear();
+    }
 }

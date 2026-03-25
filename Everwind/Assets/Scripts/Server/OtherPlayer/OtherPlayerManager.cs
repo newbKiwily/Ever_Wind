@@ -22,6 +22,20 @@ public class OtherPlayerManager : SingletonBase<OtherPlayerManager>
         target.Init(userDbId);
     }
 
+    public void FlushOtherPlayer()
+    {   
+        foreach(var player in _instancedPlayers.Values)
+        {
+            
+            if (player != null && player.gameObject != null)
+            {
+                Destroy(player.gameObject);
+            }
+        }
+
+        _instancedPlayers.Clear();
+    }
+
     public void RemovePlayer(int userDbId)
     {
         if (_instancedPlayers.TryGetValue(userDbId, out OtherPlayer target))

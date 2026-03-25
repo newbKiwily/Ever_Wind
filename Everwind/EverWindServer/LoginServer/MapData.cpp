@@ -5,8 +5,10 @@
 #include <random>
 #include <cmath>
 #include <iostream>
-MapData::MapData(float radius, float x, float y, float z, int maxEnemyCount, std::vector<int> enemyIdList):spawnRadius(radius),spawnPosX(x),spawnPosY(y),spawnPosZ(z),
-maxEnemyCount(maxEnemyCount),enemyIdList(enemyIdList)
+MapData::MapData(float radius, float x, float y, float z, float playerSpawnX, float playerSpawnY, float playerSpawnZ, int maxEnemyCount, std::vector<int> enemyIdList)
+    :spawnRadius(radius),spawnPosX(x),spawnPosY(y),spawnPosZ(z),
+    playerSpawnPosX(playerSpawnX),playerSpawnPosY(playerSpawnY),playerSpawnPosZ(playerSpawnZ),
+    maxEnemyCount(maxEnemyCount),enemyIdList(enemyIdList)
 {
    
 }
@@ -45,12 +47,12 @@ void MapData::BroadcastAll(const char* data, size_t size) {
     }
 }
 
-// 맵 내 발신자를 제외하고 전송
+// 留???諛쒖떊?먮? ?쒖쇅?섍퀬 ?꾩넚
 void MapData::BroadcastEx(std::shared_ptr<Session> sender, const char* data, size_t size) {
     std::lock_guard<std::mutex> lock(mapMutex_);
     for (auto it = sessionsInMap_.begin(); it != sessionsInMap_.end(); ) {
         if (auto target = it->lock()) {
-            if (target != sender) { // 자신 제외 조건
+            if (target != sender) { // ?먯떊 ?쒖쇅 議곌굔
                 target->PostSend(data, size);
             }
             ++it;
@@ -100,7 +102,8 @@ void MapData::InstanceEnemy()
 
     auto newEnemy = std::make_shared<Enemy>(instancedNum, enemyId, spawnPos);
     instancedEnemys[instancedNum] = std::move(newEnemy);    
-    std::cout << "몬스터아이디: " << enemyId << "\n" << "위치값 x y z: " << spawnPos.x << "," << spawnPos.y << "," << spawnPos.z << "\n";
+    std::cout << "Enemy ID: " << enemyId << "\n"
+              << "Spawn position x y z: " << spawnPos.x << "," << spawnPos.y << "," << spawnPos.z << "\n";
 }
 
 void MapData::RemoveEnemy(int insId)

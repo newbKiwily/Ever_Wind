@@ -29,6 +29,8 @@ public:
     bool HandleInteractSyncReq(Session* session, const NetPackets::PKT_INTERACT_SYNC& packet);
     bool HandleDeadSyncReq(Session* session, const NetPackets::PKT_DEAD_SYNC& packet);
     bool HandleCombatStateSync(Session* session, const NetPackets::PKT_COMBAT_STATE_SYNC& packet);
+    //change: Add a dedicated handler declaration for map-change requests.
+    bool HandleMapChangeReq(Session* session, const NetPackets::PKT_MAP_CHANGE_REQ& packet);
     
     void SendPlayerLogOut(Session* session, int userid);
 
@@ -52,6 +54,8 @@ private:
     std::vector<char> BuildInteractSync(int userDbId, uint8_t isStart);
     std::vector<char> BuildDeadSync(int userDbId, uint8_t isStart);
     std::vector<char> BuildCombatStateSync(int userDbId, uint8_t isCombat);
+    //change: Add a map-change ack builder declaration to complete the server packet interface.
+    std::vector<char> BuildMapChangeAck(int mapId, float x, float y, float z);
 private:
     DBManager& dbManager_;
     Queries* query_;
