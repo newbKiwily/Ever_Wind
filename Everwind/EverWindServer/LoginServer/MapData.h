@@ -3,6 +3,7 @@
 #include <mutex>
 #include <memory>
 #include <unordered_map>
+#include "Structs.h"
 class Session;
 class Enemy;
 class MapData {
@@ -22,6 +23,8 @@ public:
     {
         return instancedEnemys;
     }
+    //change: Expose the configured player spawn point so map-change flow can reuse it.
+    GameStruct::Vector3 GetPlayerSpawnPosition() const;
     std::weak_ptr<Enemy> findEnemy(int id);
     void InstanceEnemy();
     void RemoveEnemy(int insId);

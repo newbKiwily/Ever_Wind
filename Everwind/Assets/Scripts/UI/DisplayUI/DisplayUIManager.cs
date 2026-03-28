@@ -24,6 +24,7 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
     public Image HpBar;
     public Image ProfileImage;
     private float _tempHpRatio;
+    private SpriteRenderer _minimapSpriteRenderer;
 
     [SerializeField]
     private SerializedDictionary<ProfileState, Sprite> _profileTable;
@@ -40,11 +41,13 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
     private void OnEnable()
     {
         UIEvents.OnProfileChangeRequested += HandleProfileChangeRequested;
+        UIEvents.OnMinimapImageChanged += HandleMinimapImageChanged;
     }
 
     private void OnDisable()
     {
         UIEvents.OnProfileChangeRequested -= HandleProfileChangeRequested;
+        UIEvents.OnMinimapImageChanged -= HandleMinimapImageChanged;
     }
 
     public override void Init()
@@ -52,6 +55,8 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
         ProfileImage.sprite = _profileTable[ProfileState.Normal];
         _tempHpRatio = 1.0f;
         BindToPlayer();
+        BindMinimapRenderer();
+        SyncMinimapImage();
         _skillButtonManager = GetComponentInChildren<SkillButtonManager>();
         _skillButtonManager.Init(_combatManager);
         _combatManager.BroadcastSkillCooldownStates();
@@ -78,6 +83,30 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
         _minimapCamera.transform.position = new Vector3(playerPos.x, cameraPos.y, playerPos.z);
     }
 
+    private void BindMinimapRenderer()
+    {
+        if (_minimapSpriteRenderer != null)
+            return;
+
+        var minimapObject = GameObject.Find("minimaprect");
+        if (minimapObject == null)
+            return;
+
+        _minimapSpriteRenderer = minimapObject.GetComponent<SpriteRenderer>();
+    }
+
+    private void SyncMinimapImage()
+    {
+        var dataCenter = SingletonManager.Instance.GetSingleton<DataCenter>();
+        if (dataCenter == null)
+            return;
+
+        if (!dataCenter.MapTable.TryGetValue(dataCenter.loginData.MapId, out MapData mapData) || mapData == null)
+            return;
+
+        HandleMinimapImageChanged(mapData.MinimapImage, mapData.Position, mapData.Rotation);
+    }
+
     private void UpdateHpBar(float hp)
     {
         float ratio = hp / _player.GetPlayerStatManager().GetMaxHp();
@@ -93,6 +122,17 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
     private void HandleProfileChangeRequested(ProfileState state, float duration)
     {
         ChangeProfile(state, duration);
+    }
+
+    private void HandleMinimapImageChanged(Sprite minimapSprite, Vector3 minimapPosition, Vector3 minimapRotation)
+    {
+        BindMinimapRenderer();
+        if (_minimapSpriteRenderer == null)
+            return;
+
+        _minimapSpriteRenderer.sprite = minimapSprite;
+        _minimapSpriteRenderer.transform.localPosition = minimapPosition;
+        _minimapSpriteRenderer.transform.localEulerAngles = minimapRotation;
     }
 
     private IEnumerator ChangeProfileCoroutine(ProfileState state, float time)

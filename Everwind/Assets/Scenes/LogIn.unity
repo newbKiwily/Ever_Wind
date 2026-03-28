@@ -632,9 +632,17 @@ MonoBehaviour:
   MapTable:
     _serializedList:
     - Key: 0
-      Value: {fileID: 3084688143288889496, guid: 6e68906e2f5038c4d80a3f7af08899e1, type: 3}
+      Value:
+        MapPrefab: {fileID: 6589841440693068858, guid: 83cbd76136cf9794a962668ff1e85b70, type: 3}
+        MinimapImage: {fileID: 21300000, guid: 26dd30800edb19b4fa249aaa9857bfdb, type: 3}
+        Position: {x: -477, y: -280, z: -24}
+        Rotation: {x: 90, y: 0, z: 52.226}
     - Key: 1
-      Value: {fileID: 8156927968876243225, guid: 464773e2c73e3bd41aa379ffa6d579ec, type: 3}
+      Value:
+        MapPrefab: {fileID: 6589841440693068858, guid: 07da352d7d6c1c546a603499209ce840, type: 3}
+        MinimapImage: {fileID: 21300000, guid: 910808a1bfd8e4c45added4f3aa16020, type: 3}
+        Position: {x: -476, y: -280, z: -28}
+        Rotation: {x: 90, y: 0, z: 0.702}
   MonsterTable:
     _serializedList:
     - Key: 0

@@ -180,9 +180,17 @@ public class NetworkClient : SingletonBase<NetworkClient>
         }
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            var pkt = PacketMethod.BuildMapChangeReq(UserDbId, 1);
+            Send(pkt);
+        }
+    }
     //public void SendMapChangeRequest(int targetMapId)
     //{
-        
+
     //    SingletonManager.Instance.GetSingleton<DataCenter>().FlushQueue();
     //    Send(PacketMethod.BuildMapChangeReq(UserDbId, targetMapId));
     //}

@@ -16,31 +16,28 @@ MapData* MapDataManager::findMapData(int id)
 	return mapTable[id];
 }
 
-void MapDataManager::changeMap(std::shared_ptr<Session> session, int targetMapId)
+bool MapDataManager::changeMap(std::shared_ptr<Session> session, int targetMapId, GameStruct::Vector3& outSpawnPosition)
 {
-    if (!session) return;
+    if (!session) return false;
 
     int oldMapId = session->GetMapId();
     MapData* oldMap = findMapData(oldMapId);
     MapData* targetMap = findMapData(targetMapId);
 
-    if (!targetMap) return; // 이동할 맵이 없으면 중단
+    if (!targetMap) return false;
 
-    // 1. 기존 맵에서 제거 및 퇴장 알림
+    //change: Remove the session from the previous map before switching context.
     if (oldMap) {
         oldMap->RemoveSession(session);
-
-        // 주변 사람들에게 내가 사라짐을 알림 (BroadcastEx 사용)
-        // NetPackets::PKT_LOGOUT_ACK 또는 별도의 LEAVE_MAP 패킷 활용
-        // 예: session->GetServer()->getPacketMethod()->SendPlayerLeave(oldMapId, session);
     }
 
-    // 2. 세션 정보 갱신 및 새 맵 추가
+    //change: Move the session to the target map's configured player spawn point.
+    outSpawnPosition = targetMap->GetPlayerSpawnPosition();
     session->SetMapId(targetMapId);
+    session->SetPosition(outSpawnPosition.x, outSpawnPosition.y, outSpawnPosition.z);
     targetMap->AddSession(session);
 
-    // 3. 새 맵 유저들에게 나의 입장 알림 및 나에게 주변 유저 목록 전송
-    // 이 부분은 PacketMethod의 로직을 활용하거나 별도 함수로 분리
+    return true;
 }
 
 

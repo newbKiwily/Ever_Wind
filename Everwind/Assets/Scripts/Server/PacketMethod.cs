@@ -604,7 +604,7 @@ public static unsafe class PacketMethod
                 };
 
                 var worldLoader = SingletonManager.Instance.GetSingleton<WorldLoader>();
-                worldLoader.InitializeWorld(
+                worldLoader.ChangeWorld(
                     dataCenter.loginData.MapId,
                     dataCenter.loginData.Position,
                     dataCenter.OtherPlayers,

@@ -10,6 +10,7 @@ public static class UIEvents
     public static event Action<int, float, bool> OnSkillCooldownChanged;
     public static event Action<List<GameObject>> OnEnemyListUpdated;
     public static event Action<Vector3, int> OnDamageTextRequested;
+    public static event Action<Sprite, Vector3, Vector3> OnMinimapImageChanged;
     public static event Action OnDeadUiOpenRequested;
     public static event Action OnDeadUiCloseRequested;
     public static event Action OnReviveRequested;
@@ -32,6 +33,11 @@ public static class UIEvents
     public static void RaiseDamageTextRequested(Vector3 worldPos, int damage)
     {
         OnDamageTextRequested?.Invoke(worldPos, damage);
+    }
+
+    public static void RaiseMinimapImageChanged(Sprite minimapSprite, Vector3 minimapPosition, Vector3 minimapRotation)
+    {
+        OnMinimapImageChanged?.Invoke(minimapSprite, minimapPosition, minimapRotation);
     }
 
     public static void RaiseDeadUiOpenRequested()

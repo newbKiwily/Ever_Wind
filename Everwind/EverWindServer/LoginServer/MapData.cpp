@@ -47,12 +47,11 @@ void MapData::BroadcastAll(const char* data, size_t size) {
     }
 }
 
-// Îß???Î∞úÏã†?êÎ? ?úÏô∏?òÍ≥† ?ÑÏÜ°
 void MapData::BroadcastEx(std::shared_ptr<Session> sender, const char* data, size_t size) {
     std::lock_guard<std::mutex> lock(mapMutex_);
     for (auto it = sessionsInMap_.begin(); it != sessionsInMap_.end(); ) {
         if (auto target = it->lock()) {
-            if (target != sender) { // ?êÏã† ?úÏô∏ Ï°∞Í±¥
+            if (target != sender) {
                 target->PostSend(data, size);
             }
             ++it;
@@ -61,6 +60,12 @@ void MapData::BroadcastEx(std::shared_ptr<Session> sender, const char* data, siz
             it = sessionsInMap_.erase(it);
         }
     }
+}
+
+GameStruct::Vector3 MapData::GetPlayerSpawnPosition() const
+{
+    //change: Return the per-map player spawn position for map transitions.
+    return GameStruct::Vector3{ playerSpawnPosX, playerSpawnPosY, playerSpawnPosZ };
 }
 
 std::weak_ptr<Enemy> MapData::findEnemy(int id)

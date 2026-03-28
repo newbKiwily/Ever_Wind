@@ -39,8 +39,8 @@ public class TutorialGuide : MonoBehaviour
         _inputManager = SingletonManager.Instance.GetSingleton<InputManager>();
         _textRenderManager = SingletonManager.Instance.GetSingleton<TextRenderManager>();
 
-        dummy_enemy.SetActive(false);
-        dummy_enemy2.SetActive(false);
+        dummy_enemy.SetActive(true);
+        dummy_enemy2.SetActive(true);
 
         _stateTable.Add(TutorialStep.Camera, new CameraStep());
         _stateTable.Add(TutorialStep.Move, new MoveStep());

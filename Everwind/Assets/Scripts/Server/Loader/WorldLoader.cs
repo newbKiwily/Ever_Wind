@@ -29,19 +29,45 @@ public class WorldLoader : SingletonBase<WorldLoader>
         SpawnEnemies(enemies);
     }
 
+    public void ChangeWorld(int mapId, Vector3 spawnPos, Queue<int> otherPlayers, Queue<DataCenter.EnemyInfo> enemies)
+    {
+        if (_currentMapInstance != null)
+            Destroy(_currentMapInstance);
+     
+        var otherPlayerList = SingletonManager.Instance.GetSingleton<OtherPlayerManager>();
+        otherPlayerList.FlushOtherPlayer();
+        var enemyList = SingletonManager.Instance.GetSingleton<EnemySpawner>();
+        enemyList.FlushEnemy();
+
+        SpawnMap(mapId);
+
+        SpawnOtherPlayers(otherPlayers);
+
+        SpawnEnemies(enemies);
+
+        InstancedPlayer.GetComponent<Transform>().position = spawnPos;
+
+    }
+
     private void SpawnMap(int mapId)
     {
-        // Use DataCenter MapTable to resolve the map prefab.
-        if (DataCenter.Instance.MapTable.TryGetValue(mapId, out GameObject mapPrefab))
+        if (DataCenter.Instance.MapTable.TryGetValue(mapId, out MapData mapData))
         {
-            if (mapPrefab == null)
+            if (mapData == null)
+            {
+                Debug.LogError($"[WorldLoader] MapId {mapId} data is null in DataCenter.");
+                return;
+            }
+
+            if (mapData.MapPrefab == null)
             {
                 Debug.LogError($"[WorldLoader] MapId {mapId} prefab is null in DataCenter.");
                 return;
             }
 
-            _currentMapInstance = Instantiate(mapPrefab, Vector3.zero, Quaternion.identity);
+            _currentMapInstance = Instantiate(mapData.MapPrefab, Vector3.zero, Quaternion.identity);
             _currentMapInstance.name = $"Map_{mapId}";
+            UIEvents.RaiseMinimapImageChanged(mapData.MinimapImage, mapData.Position, mapData.Rotation);
         }
         else
         {

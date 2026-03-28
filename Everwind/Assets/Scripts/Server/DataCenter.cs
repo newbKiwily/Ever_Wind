@@ -33,9 +33,10 @@ public class DataCenter : SingletonBase<DataCenter>
         public Vector3 Position;
     }
 
+
     public LoginData loginData = new LoginData();
 
-    public SerializedDictionary<int, GameObject> MapTable = new SerializedDictionary<int, GameObject>();
+    public SerializedDictionary<int, MapData> MapTable = new SerializedDictionary<int, MapData>();
     public SerializedDictionary<int, GameObject> MonsterTable = new SerializedDictionary<int, GameObject>();
     public List<InventoryData> LoadItems = new List<InventoryData>();
     public PlayerStatManager.Stat LoadStat = new PlayerStatManager.Stat();

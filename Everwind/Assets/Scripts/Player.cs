@@ -118,7 +118,7 @@ public class Player : MonoBehaviour, IDamageable
     {
         if (_stateContexter.GetCurrState() is AttackState || _stateContexter.GetCurrState() is DamagedState)
             return;
-
+        
         /*=========플레이어 정상 이동코드=========*/
 
         _h = _inputManager.GetHorizontal();

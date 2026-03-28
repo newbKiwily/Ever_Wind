@@ -276,8 +276,17 @@ std::vector<char> PacketMethod::BuildCombatStateSync(int userDbId, uint8_t isCom
 
 //change: Add a placeholder map-change ack builder so the new packet API is available without changing logic yet.
 std::vector<char> PacketMethod::BuildMapChangeAck(int mapId, float x, float y, float z)
-{
-    return {};
+{   
+    NetPackets::PKT_MAP_CHANGE_ACK ack{ mapId,x,y,z };
+    NetPackets::PacketHeader header{};
+    header.Id = static_cast<uint16_t>(NetPackets::PacketId::S2C_MAP_CHANGE_ACK);
+    header.Length = sizeof(header) + sizeof(ack);
+
+    std::vector<char> buffer(header.Length);
+    std::memcpy(buffer.data(), &header, sizeof(header));
+    std::memcpy(buffer.data() + sizeof(header), &ack, sizeof(ack));
+
+    return buffer;
 }
 bool PacketMethod::HandleEnemyAttackAnimRequest(Session* session, const NetPackets::PKT_ENEMY_ATTACK_ANIM& packet)
 {
@@ -558,8 +567,15 @@ bool PacketMethod::HandlePacket(Session* session, const NetPackets::PacketHeader
         std::memcpy(&pkt, payload, sizeof(pkt));
         return HandleCombatStateSync(session, pkt);
     }
+    case NetPackets::PacketId::C2S_MAP_CHANGE_REQ:
+    {
+        if (payloadSize != sizeof(NetPackets::PKT_MAP_CHANGE_REQ)) return false;
+        NetPackets::PKT_MAP_CHANGE_REQ pkt{};
+        std::memcpy(&pkt, payload, sizeof(pkt));
+        return HandleMapChangeReq(session, pkt);
+    }
     default:
-        // Ï≤òÎ¶¨?????ÜÎäî ?®ÌÇ∑ ID
+        
         return false;
     }
 }
@@ -652,7 +668,7 @@ bool PacketMethod::HandleOneshotAnimReq(Session* session, const NetPackets::PKT_
 {
     if (!session) return false;
 
-    // ?¥Îùº?¥Ïñ∏?∏Í? Î≥¥ÎÇ∏ ?¥Ïö©??Í∑∏Î?Î°??òÎ? ?úÏô∏??BroadcastEx) Îß??†Ï??§ÏóêÍ≤?Î∏åÎ°ú?úÏ∫ê?§ÌåÖ
+   
     std::vector<char> buffer = BuildOneshotAnimSync(packet.UserDBID, packet.AnimCode);
     server_->GetSessionManager()->GetMapDataManager()->broadcastEx(
         session->GetMapId(),
@@ -709,8 +725,69 @@ bool PacketMethod::HandleCombatStateSync(Session* session, const NetPackets::PKT
     return true;
 }
 
-//change: Add a placeholder map-change request handler so the new packet type has a server entry point.
 bool PacketMethod::HandleMapChangeReq(Session* session, const NetPackets::PKT_MAP_CHANGE_REQ& packet)
 {
-    return false;
+    if (!session)
+        return false;
+
+    auto sharedSession = session->shared_from_this();
+    auto mapManager = server_->GetSessionManager()->GetMapDataManager();
+    auto targetMap = mapManager->findMapData(packet.TargetMapId);
+    if (!targetMap)
+        return false;
+
+    int previousMapId = session->GetMapId();
+    if (packet.TargetMapId == previousMapId)
+    {
+
+        auto currentPosition = session->GetPostion();
+        
+        std::vector<char> ackBuf = BuildMapChangeAck(previousMapId, currentPosition.x, currentPosition.y, currentPosition.z);
+        session->PostSend(ackBuf.data(), ackBuf.size());
+        return true;
+    }
+
+    std::vector<char> leaveBuf = BuildLogoutAck(session->GetServerUserId());
+    mapManager->broadcastEx(previousMapId, sharedSession, leaveBuf.data(), leaveBuf.size());
+
+    GameStruct::Vector3 spawnPosition{};
+    if (!mapManager->changeMap(sharedSession, packet.TargetMapId, spawnPosition))
+        return false;
+
+    std::vector<char> myInfoBuf = BuildPlayerListRuntime(session->GetServerUserId());
+    mapManager->broadcastEx(packet.TargetMapId, sharedSession, myInfoBuf.data(), myInfoBuf.size());
+
+    for (auto& weak : targetMap->getSessionInMap())
+    {
+        if (auto other = weak.lock())
+        {
+            if (other == sharedSession) continue;
+            std::vector<char> otherInfoBuf = BuildPlayerListAck(other->GetServerUserId());
+            session->PostSend(otherInfoBuf.data(), otherInfoBuf.size());
+        }
+    }
+    const auto& enemies = targetMap->getInstancedEnemies();
+    for (auto& pair : enemies)
+    {
+        auto& enemy = pair.second;
+        auto position = enemy->getCurrentPosition();
+        auto instanceId = enemy->getInstancNum();
+        auto enemyId = enemy->getEnemyId();
+
+        std::vector<char> enemySpawnBuf = BuildEnemySpawn(
+            instanceId,
+            enemyId,
+            position.x,
+            position.y,
+            position.z
+        );
+        session->PostSend(enemySpawnBuf.data(), enemySpawnBuf.size());
+    }
+
+    getQuery()->UpdateUserPosition(session->GetUserId(), packet.TargetMapId, spawnPosition.x, spawnPosition.y, spawnPosition.z);
+
+    std::vector<char> ackBuf = BuildMapChangeAck(packet.TargetMapId, spawnPosition.x, spawnPosition.y, spawnPosition.z);
+    session->PostSend(ackBuf.data(), ackBuf.size());
+
+    return true;
 }
