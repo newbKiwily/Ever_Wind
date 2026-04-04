@@ -32,7 +32,6 @@ public class DeadState : IState
         UIEvents.RaiseDeadUiCloseRequested();
         SingletonManager.Instance.GetSingleton<InputManager>().UnlockMoveAndAttack();
 
-        // ExitDead (PascalCase) 적용
         controller.GetAnimationContexter().ExitDead();
 
         NetworkClient networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();

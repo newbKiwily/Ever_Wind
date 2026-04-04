@@ -47,7 +47,10 @@ namespace NetPackets
         _COMBAT_STATE_SYNC = 0X131,
 
         C2S_MAP_CHANGE_REQ = 0X132,
-        S2C_MAP_CHANGE_ACK = 0X133
+        S2C_MAP_CHANGE_ACK = 0X133,
+
+        C2S_ENEMY_DEAD_REQ = 0X134,
+        S2C_ENEMY_DEAD_ACK = 0X135
 
     };
 
@@ -193,6 +196,16 @@ namespace NetPackets
         float PosX;
         float PosY;
         float PosZ;
+    };
+
+    struct PKT_C2S_ENEMY_DEAD_REQ
+    {
+        int32_t instanceId;
+    };
+
+    struct PKT_S2C_ENEMY_DEAD_ACK
+    {
+        int32_t instanceId;
     };
 #pragma pack(pop)
 

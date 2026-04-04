@@ -134,6 +134,36 @@ public class EnemyHpUIManager : SingletonBase<EnemyHpUIManager>
         });
     }
 
+    public void ClearForMapChange()
+    {
+       
+        _activeEnemies.Clear();
+
+        foreach (var bar in _hpBars)
+        {
+            if (bar == null) continue;
+
+            var ui = bar.GetComponent<EnemyHpUI>();
+            if (ui != null)
+            {
+                ui.targetEnemy = null;
+            }
+
+            bar.SetActive(false);
+        }
+
+        for (int i = _activeTexts.Count - 1; i >= 0; i--)
+        {
+            var item = _activeTexts[i];
+            if (item.Obj == null) continue;
+
+            item.Obj.SetActive(false);
+            _textPool.Enqueue(item.Obj);
+        }
+
+        _activeTexts.Clear();
+    }
+
     private GameObject AssignHpBar()
     {
         foreach (var hpBar in _hpBars)

@@ -3,7 +3,7 @@ using UnityEngine;
 public abstract class Enemy : MonoBehaviour, IDamageable
 {
     public int InstanceNum;
-    [SerializeField] protected float Hp = 100f; 
+    [SerializeField] protected float Hp = 100f;
 
     protected Animator Animator;
     protected AnimatorOverrideController OverrideController;
@@ -13,6 +13,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     public AnimationClip Damaged3;
 
     protected bool IsDead = false;
+    protected bool DeadRequestSent = false;
     public event System.Action<Enemy> OnEnemyDied;
 
     public void Init(int instanceNum)
@@ -55,7 +56,6 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
         byte[] attackPkt = PacketMethod.BuildAttackReq(this.InstanceNum, damage);
         SingletonManager.Instance.GetSingleton<NetworkClient>().Send(attackPkt);
-
     }
 
     public virtual void SyncDamage(float serverHp, float damageAmount)
@@ -66,7 +66,15 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
         SingletonManager.Instance.GetSingleton<EffectManager>().PlayEffect("Damaged", this.transform.position);
         UIEvents.RaiseDamageTextRequested(transform.position, Mathf.RoundToInt(damageAmount));
+    }
 
+    public bool ShouldRequestDeath()
+    {
+        if (IsDead || DeadRequestSent || Hp > 0f)
+            return false;
+
+        DeadRequestSent = true;
+        return true;
     }
 
     public virtual void Die()
@@ -82,8 +90,8 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             cc.enabled = false;
 
         OnEnemyDied?.Invoke(this);
+        TutorialEvents.RaiseCombatEnemyKilled();
         SingletonManager.Instance.GetSingleton<EnemySpawner>().RemoveEnemy(this.InstanceNum);
-        
 
         Destroy(gameObject);
     }
@@ -92,6 +100,4 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     {
         return Hp;
     }
-
-
 }

@@ -141,6 +141,9 @@ public class NetworkClient : SingletonBase<NetworkClient>
             case PacketType.S2C_ENEMY_MOVE_SYNC:
                 PacketMethod.HandleEnemyMoveSync(payload);
                 break;
+            case PacketType.S2C_ENEMY_DEAD_ACK:
+                PacketMethod.HandleEnemyDeadAck(payload);
+                break;
             case PacketType.S2C_ENEMY_ATTACK_ANIM:
                 PacketMethod.HandleEnemyAttackAnim(payload);
                 break;
@@ -184,14 +187,15 @@ public class NetworkClient : SingletonBase<NetworkClient>
     {
         if (Input.GetKeyDown(KeyCode.M))
         {
+            SingletonManager.Instance.GetSingleton<DataCenter>().FlushQueue();
             var pkt = PacketMethod.BuildMapChangeReq(UserDbId, 1);
             Send(pkt);
         }
+        if(Input.GetKeyDown(KeyCode.B))
+        {
+            SingletonManager.Instance.GetSingleton<DataCenter>().FlushQueue();
+            var pkt = PacketMethod.BuildMapChangeReq(UserDbId, 0);
+            Send(pkt);
+        }
     }
-    //public void SendMapChangeRequest(int targetMapId)
-    //{
-
-    //    SingletonManager.Instance.GetSingleton<DataCenter>().FlushQueue();
-    //    Send(PacketMethod.BuildMapChangeReq(UserDbId, targetMapId));
-    //}
 }

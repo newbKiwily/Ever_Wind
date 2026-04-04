@@ -8,11 +8,12 @@
 #include "MapDataManager.h"
 
 class Session;
+class PacketMethod;
 class SessionManager {
 public:
-    SessionManager() : assignedId(1)
+    SessionManager(PacketMethod* packetMethod) : assignedId(1)
     {
-        mapDataManager_ = std::make_unique<MapDataManager>(this);
+        mapDataManager_ = std::make_unique<MapDataManager>(this,packetMethod);
     }
 
     int AddSession(std::shared_ptr<Session> session);

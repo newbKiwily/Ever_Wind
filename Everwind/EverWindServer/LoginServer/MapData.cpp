@@ -76,11 +76,10 @@ std::weak_ptr<Enemy> MapData::findEnemy(int id)
     return {};
 }
 
-void MapData::InstanceEnemy()
+std::shared_ptr<Enemy> MapData::InstanceEnemyUnlocked()
 {
-    std::lock_guard<std::mutex> lock(mapMutex_);
-    
-    if (enemyIdList.empty()||instancedEnemys.size() >= maxEnemyCount) return;
+    //change: Return nullptr when no enemy can be spawned so callers can skip broadcasting.
+    if (enemyIdList.empty() || instancedEnemys.size() >= maxEnemyCount) return nullptr;
 
     static std::random_device rd;
     static std::mt19937 gen(rd());
@@ -106,9 +105,39 @@ void MapData::InstanceEnemy()
     int enemyId = enemyIdList[enemyIdListIndex++];
 
     auto newEnemy = std::make_shared<Enemy>(instancedNum, enemyId, spawnPos);
-    instancedEnemys[instancedNum] = std::move(newEnemy);    
+    instancedEnemys[instancedNum] = newEnemy;
     std::cout << "Enemy ID: " << enemyId << "\n"
               << "Spawn position x y z: " << spawnPos.x << "," << spawnPos.y << "," << spawnPos.z << "\n";
+    return newEnemy;
+}
+
+std::shared_ptr<Enemy> MapData::InstanceEnemy()
+{
+    std::lock_guard<std::mutex> lock(mapMutex_);
+    //change: Reuse the unlocked spawn path so one-shot spawns and refill spawns stay consistent.
+    return InstanceEnemyUnlocked();
+}
+
+std::vector<std::shared_ptr<Enemy>> MapData::RefillEnemy()
+{
+    std::lock_guard<std::mutex> lock(mapMutex_);
+
+    //change: Collect only newly spawned enemies so the caller can broadcast just the refill result.
+    std::vector<std::shared_ptr<Enemy>> spawnedEnemies;
+    int currentEnemyCount = static_cast<int>(instancedEnemys.size());
+    int needCount = maxEnemyCount - currentEnemyCount;
+    spawnedEnemies.reserve(needCount > 0 ? needCount : 0);
+
+    for (int i = 0; i < needCount; ++i)
+    {
+        auto spawnedEnemy = InstanceEnemyUnlocked();
+        if (spawnedEnemy)
+        {
+            spawnedEnemies.push_back(spawnedEnemy);
+        }
+    }
+
+    return spawnedEnemies;
 }
 
 void MapData::RemoveEnemy(int insId)

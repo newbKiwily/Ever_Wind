@@ -8,9 +8,10 @@ public class MoveStep : ITutorialStep
     public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
     {
         step.moveT_taretBox.SetActive(true);
+
         _deleteAction += () => ClearEvent(step, textRenderManager);
-        Player.OnMoveTClear += _deleteAction;
-        Debug.Log("MoveT시작");
+        TutorialEvents.OnMoveCompleted += _deleteAction;
+
         textRenderManager.StartShow("MoveT");
         textRenderManager.AutoShow(0, 1);
     }
@@ -21,9 +22,7 @@ public class MoveStep : ITutorialStep
 
         if (!textRenderManager.IsDoneShowingText()) return;
 
-        bool keyboardInput = inputManager.AnyKeyDownExcludeMouse();
-
-        if (keyboardInput)
+        if (inputManager.AnyKeyDownExcludeMouse())
         {
             step.TransitionStep(TutorialStep.Combat);
         }
@@ -32,15 +31,18 @@ public class MoveStep : ITutorialStep
     public void ExitStep(TutorialGuide step)
     {
         if (_deleteAction != null)
-            Player.OnMoveTClear -= _deleteAction;
+            TutorialEvents.OnMoveCompleted -= _deleteAction;
+
         _deleteAction = null;
     }
 
     public void ClearEvent(TutorialGuide step, TextRenderManager textRenderManager)
     {
         textRenderManager.AutoShow(2, 3);
+
         if (_deleteAction != null)
-            Player.OnMoveTClear -= _deleteAction;
+            TutorialEvents.OnMoveCompleted -= _deleteAction;
+
         _deleteAction = null;
     }
 }

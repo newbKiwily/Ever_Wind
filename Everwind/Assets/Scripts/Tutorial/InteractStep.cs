@@ -1,4 +1,3 @@
-
 using System;
 
 public class InteractStep : ITutorialStep
@@ -11,8 +10,9 @@ public class InteractStep : ITutorialStep
         step.obtainObj2.SetActive(true);
         step.obtainObj3.SetActive(true);
         step.ObtainObj4.SetActive(true);
+
         _deleteAction += () => ClearEvent(step, textRenderManager);
-        InteractState.InteractTClear += _deleteAction;
+        TutorialEvents.OnInteractionCompleted += _deleteAction;
 
         textRenderManager.StartShow("InteractT");
         textRenderManager.AutoShow(0, 2);
@@ -24,9 +24,7 @@ public class InteractStep : ITutorialStep
 
         if (!textRenderManager.IsDoneShowingText()) return;
 
-        bool keyboardInput = inputManager.AnyKeyDownExcludeMouse();
-
-        if (keyboardInput)
+        if (inputManager.AnyKeyDownExcludeMouse())
         {
             step.TransitionStep(TutorialStep.Craft);
         }
@@ -35,15 +33,18 @@ public class InteractStep : ITutorialStep
     public void ExitStep(TutorialGuide step)
     {
         if (_deleteAction != null)
-            InteractState.InteractTClear -= _deleteAction;
+            TutorialEvents.OnInteractionCompleted -= _deleteAction;
+
         _deleteAction = null;
     }
 
     public void ClearEvent(TutorialGuide step, TextRenderManager textRenderManager)
     {
-        textRenderManager.AutoShow(3, 7);
+        textRenderManager.AutoShow(3, 6);
+
         if (_deleteAction != null)
-            InteractState.InteractTClear -= _deleteAction;
+            TutorialEvents.OnInteractionCompleted -= _deleteAction;
+
         _deleteAction = null;
     }
 }

@@ -220,6 +220,21 @@ public static unsafe class PacketMethod
         return buffer;
     }
 
+    public static byte[] BuildEnemyDeadReq(int instanceId)
+    {
+        byte[] buffer = new byte[sizeof(PacketHeader) + sizeof(PKT_C2S_ENEMY_DEAD_REQ)];
+        fixed (byte* ptr = buffer)
+        {
+            PacketHeader* h = (PacketHeader*)ptr;
+            h->Length = (ushort)buffer.Length;
+            h->Id = (ushort)PacketType.C2S_ENEMY_DEAD_REQ;
+
+            PKT_C2S_ENEMY_DEAD_REQ* body = (PKT_C2S_ENEMY_DEAD_REQ*)(ptr + sizeof(PacketHeader));
+            body->InstanceId = instanceId;
+        }
+        return buffer;
+    }
+
     public static byte[] BuildMapChangeReq(int userDbId, int targetMapId)
     {
         byte[] buffer = new byte[sizeof(PacketHeader) + sizeof(PKT_MAP_CHANGE_REQ)];
@@ -421,7 +436,15 @@ public static unsafe class PacketMethod
 
             UnityMainThreadDispatcher.Instance().Enqueue(() =>
             {
-                SingletonManager.Instance.GetSingleton<DataCenter>().LoadEnemies.Enqueue(info);
+                var worldLoader = SingletonManager.Instance.GetSingleton<WorldLoader>();
+                if (worldLoader != null && worldLoader.InstancedPlayer != null)
+                {
+                    worldLoader.SpawnEnemy(info);
+                }
+                else
+                {
+                    SingletonManager.Instance.GetSingleton<DataCenter>().LoadEnemies.Enqueue(info);
+                }
             });
         }
     }
@@ -610,6 +633,36 @@ public static unsafe class PacketMethod
                     dataCenter.OtherPlayers,
                     dataCenter.LoadEnemies
                 );
+            });
+        }
+    }
+
+    public static void HandleEnemyDeadAck(byte[] payload)
+    {
+        fixed (byte* ptr = payload)
+        {
+            PKT_S2C_ENEMY_DEAD_ACK* pkt = (PKT_S2C_ENEMY_DEAD_ACK*)ptr;
+            int instanceId = pkt->InstanceId;
+
+            UnityMainThreadDispatcher.Instance().Enqueue(() =>
+            {
+                var spawner = SingletonManager.Instance.GetSingleton<EnemySpawner>();
+                if (spawner != null)
+                {
+                    Enemy targetEnemy = spawner.FindEnemy(instanceId);
+                    if (targetEnemy != null)
+                    {
+                        var syncTarget = targetEnemy.GetComponent<EnemyNetworkSync>();
+                        if (syncTarget != null)
+                        {
+                            syncTarget.OnReceiveDeadAck();
+                        }
+                        else
+                        {
+                            targetEnemy.Die();
+                        }
+                    }
+                }
             });
         }
     }

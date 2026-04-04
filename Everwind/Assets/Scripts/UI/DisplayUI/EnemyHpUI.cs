@@ -33,7 +33,7 @@ public class EnemyHpUI : MonoBehaviour
                          mainCameraTransform.rotation * Vector3.up);
 
         float currHp = enemy.GetHp();
-        float maxHp = 100f; // 기본값. 만약 Enemy 클래스에 MaxHp가 있다면 그 값을 가져오세요.
+        float maxHp = 100f;
 
         float ratio = Mathf.Clamp01(currHp / maxHp);
         Vector3 scale = hpFilledArea.transform.localScale;

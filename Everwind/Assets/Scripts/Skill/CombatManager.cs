@@ -250,6 +250,31 @@ public class CombatManager : MonoBehaviour
         _bufferedSkillIndex = -1;
     }
 
+    public void ResetCombatStateForMapChange()
+    {
+        _prevKeyCode = KeyCode.None;
+        _currKeyCode = KeyCode.None;
+        _bufferedSkillIndex = -1;
+        CurrentCastingSkill = null;
+        CurrentCastingSkillIndex = -1;
+        _prevTargetEnemy = null;
+        TargetEnemy = null;
+        _inRadiusEnemy?.Clear();
+        ResetDamageCombo();
+        _player.StopMoveto();
+
+        if (TargetingUI != null && TargetingUI.activeSelf)
+        {
+            TargetingUI.SetActive(false);
+        }
+
+        var stateContexter = _player.GetPlayerStateContexter();
+        if (stateContexter != null)
+        {
+            stateContexter.TransitionState(States.Idle);
+        }
+    }
+
     private bool ExecuteBufferedSkill(int skillIndex)
     {
         if (skillIndex < 0 || skillIndex >= Skills.Length || Skills[skillIndex] == null)

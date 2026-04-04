@@ -37,7 +37,10 @@ public enum PacketType : ushort
     _COMBAT_STATE_SYNC = 0X131,
 
     C2S_MAP_CHANGE_REQ=0X132,
-    S2C_MAP_CHANGE_ACK=0X133
+    S2C_MAP_CHANGE_ACK=0X133,
+
+    C2S_ENEMY_DEAD_REQ = 0X134,
+    S2C_ENEMY_DEAD_ACK = 0X135
 }
 
 public enum OneshotAnimKey : int
@@ -210,4 +213,16 @@ public struct PKT_MAP_CHANGE_ACK
     public float PosX;
     public float PosY;
     public float PosZ;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct PKT_C2S_ENEMY_DEAD_REQ
+{
+    public int InstanceId;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct PKT_S2C_ENEMY_DEAD_ACK
+{
+    public int InstanceId;
 }

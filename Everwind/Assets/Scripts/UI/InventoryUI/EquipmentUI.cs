@@ -1,5 +1,4 @@
 using AYellowpaper.SerializedCollections;
-using System;
 using UnityEngine;
 
 public class EquipmentUI : MonoBehaviour
@@ -8,8 +7,6 @@ public class EquipmentUI : MonoBehaviour
     private SerializedDictionary<EquipmentItem.EquipmentType, EquipmentSlot> _equipmentSlots = new SerializedDictionary<EquipmentItem.EquipmentType, EquipmentSlot>();
     [SerializeField]
     private PlayerStatManager _statManager;
-
-    public static event Action EquipTClear;
 
     public void Init()
     {
@@ -48,13 +45,12 @@ public class EquipmentUI : MonoBehaviour
                     break;
             }
 
-            EquipTClear?.Invoke();
+            TutorialEvents.RaiseEquipCompleted();
         }
     }
 
     public void ClearUI(EquipmentSlot slot)
-    {   
-   
+    {
         slot.Clear();
     }
 

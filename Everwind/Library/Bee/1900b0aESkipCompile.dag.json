@@ -24,7 +24,7 @@
     {
       "Annotation": "BuildPlayerDataGenerator Library/BuildPlayerData/Editor/TypeDb-All.json",
       "DisplayName": "BuildPlayerDataGenerator TypeDb-All",
-      "Action": "\"C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data\\Tools\\netcorerun\\netcorerun.exe\" \"C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data/Tools/BuildPlayerDataGenerator/BuildPlayerDataGenerator.exe\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Assets\\Plugins\\Demigiant\\DOTween\\DOTween.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Assembly-CSharp.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Assembly-CSharp-firstpass.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\AYellowpaper.SerializedCollections.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\CFXRDemo.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\CFXRRuntime.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Cinemachine.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\KinoBloom.Runtime.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.ProBuilder.Csg.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.ProBuilder.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.ProBuilder.KdTree.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.ProBuilder.Poly2Tri.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.ProBuilder.Stl.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.TextMeshPro.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.Timeline.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.VisualScripting.Core.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.VisualScripting.Flow.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.VisualScripting.State.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\UnityEngine.TestRunner.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\UnityEngine.UI.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\PackageCache\\com.unity.ext.nunit@1.0.6\\net35\\unity-custom\\nunit.framework.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\PackageCache\\com.unity.testtools.codecoverage@1.2.5\\lib\\ReportGenerator\\ReportGeneratorMerged.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\PackageCache\\com.unity.visualscripting@1.9.1\\Runtime\\VisualScripting.Flow\\Dependencies\\NCalc\\Unity.VisualScripting.Antlr3.Runtime.dll\" -s=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Assets\\Plugins\\Demigiant\\DOTween\" -s=\"C:\\Program Files\\Unity\\Hub\\Editor\\2022.3.20f1\\Editor\\Data\\Managed\\UnityEngine\" -s=\"C:\\Program Files\\Unity\\Hub\\Editor\\2022.3.20f1\\Editor\\Data\\NetStandard\\compat\\2.1.0\\shims\\netfx\" -s=\"C:\\Program Files\\Unity\\Hub\\Editor\\2022.3.20f1\\Editor\\Data\\NetStandard\\compat\\2.1.0\\shims\\netstandard\" -s=\"C:\\Program Files\\Unity\\Hub\\Editor\\2022.3.20f1\\Editor\\Data\\NetStandard\\Extensions\\2.0.0\" -s=\"C:\\Program Files\\Unity\\Hub\\Editor\\2022.3.20f1\\Editor\\Data\\NetStandard\\ref\\2.1.0\" -s=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\" -s=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\PackageCache\\com.unity.ext.nunit@1.0.6\\net35\\unity-custom\" -s=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\PackageCache\\com.unity.testtools.codecoverage@1.2.5\\lib\\ReportGenerator\" -s=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\PackageCache\\com.unity.visualscripting@1.9.1\\Runtime\\VisualScripting.Flow\\Dependencies\\NCalc\" -o=\"Library/BuildPlayerData/Editor\" -rn=\"\" -tn=\"TypeDb-All.json\"",
+      "Action": "\"C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data\\Tools\\netcorerun\\netcorerun.exe\" \"C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data/Tools/BuildPlayerDataGenerator/BuildPlayerDataGenerator.exe\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Assets\\Plugins\\Demigiant\\DOTween\\DOTween.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Assembly-CSharp.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Assembly-CSharp-firstpass.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\AYellowpaper.SerializedCollections.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\CFXRDemo.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\CFXRRuntime.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\KinoBloom.Runtime.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\Unity.TextMeshPro.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\UnityEngine.TestRunner.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\\UnityEngine.UI.dll\" -a=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\PackageCache\\com.unity.ext.nunit@1.0.6\\net35\\unity-custom\\nunit.framework.dll\" -s=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Assets\\Plugins\\Demigiant\\DOTween\" -s=\"C:\\Program Files\\Unity\\Hub\\Editor\\2022.3.20f1\\Editor\\Data\\Managed\\UnityEngine\" -s=\"C:\\Program Files\\Unity\\Hub\\Editor\\2022.3.20f1\\Editor\\Data\\NetStandard\\compat\\2.1.0\\shims\\netfx\" -s=\"C:\\Program Files\\Unity\\Hub\\Editor\\2022.3.20f1\\Editor\\Data\\NetStandard\\compat\\2.1.0\\shims\\netstandard\" -s=\"C:\\Program Files\\Unity\\Hub\\Editor\\2022.3.20f1\\Editor\\Data\\NetStandard\\Extensions\\2.0.0\" -s=\"C:\\Program Files\\Unity\\Hub\\Editor\\2022.3.20f1\\Editor\\Data\\NetStandard\\ref\\2.1.0\" -s=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\ScriptAssemblies\" -s=\"C:\\Users\\tlsal\\OneDrive\\문서\\GitHub\\EverWind\\Everwind\\Library\\PackageCache\\com.unity.ext.nunit@1.0.6\\net35\\unity-custom\" -o=\"Library/BuildPlayerData/Editor\" -rn=\"\" -tn=\"TypeDb-All.json\"",
       "Inputs": [
         "C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data/Tools/netcorerun/netcorerun.exe",
         "C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Data/Tools/BuildPlayerDataGenerator/BuildPlayerDataGenerator.exe",
@@ -34,23 +34,11 @@
         "Library/ScriptAssemblies/AYellowpaper.SerializedCollections.dll",
         "Library/ScriptAssemblies/CFXRDemo.dll",
         "Library/ScriptAssemblies/CFXRRuntime.dll",
-        "Library/ScriptAssemblies/Cinemachine.dll",
         "Library/ScriptAssemblies/KinoBloom.Runtime.dll",
-        "Library/ScriptAssemblies/Unity.ProBuilder.Csg.dll",
-        "Library/ScriptAssemblies/Unity.ProBuilder.dll",
-        "Library/ScriptAssemblies/Unity.ProBuilder.KdTree.dll",
-        "Library/ScriptAssemblies/Unity.ProBuilder.Poly2Tri.dll",
-        "Library/ScriptAssemblies/Unity.ProBuilder.Stl.dll",
         "Library/ScriptAssemblies/Unity.TextMeshPro.dll",
-        "Library/ScriptAssemblies/Unity.Timeline.dll",
-        "Library/ScriptAssemblies/Unity.VisualScripting.Core.dll",
-        "Library/ScriptAssemblies/Unity.VisualScripting.Flow.dll",
-        "Library/ScriptAssemblies/Unity.VisualScripting.State.dll",
         "Library/ScriptAssemblies/UnityEngine.TestRunner.dll",
         "Library/ScriptAssemblies/UnityEngine.UI.dll",
-        "Library/PackageCache/com.unity.ext.nunit@1.0.6/net35/unity-custom/nunit.framework.dll",
-        "Library/PackageCache/com.unity.testtools.codecoverage@1.2.5/lib/ReportGenerator/ReportGeneratorMerged.dll",
-        "Library/PackageCache/com.unity.visualscripting@1.9.1/Runtime/VisualScripting.Flow/Dependencies/NCalc/Unity.VisualScripting.Antlr3.Runtime.dll"
+        "Library/PackageCache/com.unity.ext.nunit@1.0.6/net35/unity-custom/nunit.framework.dll"
       ],
       "Outputs": [
         "Library/BuildPlayerData/Editor/TypeDb-All.json"
@@ -196,12 +184,6 @@
       "File": "Library/PackageCache/com.unity.ext.nunit@1.0.6/net35/unity-custom/nunit.framework.dll"
     },
     {
-      "File": "Library/PackageCache/com.unity.testtools.codecoverage@1.2.5/lib/ReportGenerator/ReportGeneratorMerged.dll"
-    },
-    {
-      "File": "Library/PackageCache/com.unity.visualscripting@1.9.1/Runtime/VisualScripting.Flow/Dependencies/NCalc/Unity.VisualScripting.Antlr3.Runtime.dll"
-    },
-    {
       "File": "Library/ScriptAssemblies/Assembly-CSharp-firstpass.dll"
     },
     {
@@ -217,40 +199,10 @@
       "File": "Library/ScriptAssemblies/CFXRRuntime.dll"
     },
     {
-      "File": "Library/ScriptAssemblies/Cinemachine.dll"
-    },
-    {
       "File": "Library/ScriptAssemblies/KinoBloom.Runtime.dll"
     },
     {
-      "File": "Library/ScriptAssemblies/Unity.ProBuilder.Csg.dll"
-    },
-    {
-      "File": "Library/ScriptAssemblies/Unity.ProBuilder.dll"
-    },
-    {
-      "File": "Library/ScriptAssemblies/Unity.ProBuilder.KdTree.dll"
-    },
-    {
-      "File": "Library/ScriptAssemblies/Unity.ProBuilder.Poly2Tri.dll"
-    },
-    {
-      "File": "Library/ScriptAssemblies/Unity.ProBuilder.Stl.dll"
-    },
-    {
       "File": "Library/ScriptAssemblies/Unity.TextMeshPro.dll"
-    },
-    {
-      "File": "Library/ScriptAssemblies/Unity.Timeline.dll"
-    },
-    {
-      "File": "Library/ScriptAssemblies/Unity.VisualScripting.Core.dll"
-    },
-    {
-      "File": "Library/ScriptAssemblies/Unity.VisualScripting.Flow.dll"
-    },
-    {
-      "File": "Library/ScriptAssemblies/Unity.VisualScripting.State.dll"
     },
     {
       "File": "Library/ScriptAssemblies/UnityEngine.TestRunner.dll"

@@ -1,10 +1,8 @@
-
 using UnityEngine;
 using System;
 
 public class InteractState : IState
 {
-    public static Action InteractTClear;
     private Action _onObtainedAction;
     private FieldItem _item;
 
@@ -29,14 +27,14 @@ public class InteractState : IState
         }
         else
         {
-            Debug.Log("InteractState 진입했으나 상호작용 목표물이 없습니다. Idle로 복귀.");
+            Debug.Log("InteractState entered without a valid interaction target. Returning to Idle.");
             controller.TransitionState(States.Idle);
         }
     }
 
     private void OnObtained(PlayerStateContexter controller)
     {
-        InteractTClear?.Invoke();
+        TutorialEvents.RaiseInteractionCompleted();
 
         UIEvents.RaiseProfileChangeRequested(DisplayUIManager.ProfileState.Success, 1.0f);
         controller.GetAnimationContexter().PlayOneshot(OneshotAni.Success);

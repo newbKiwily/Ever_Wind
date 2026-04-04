@@ -9,7 +9,7 @@ public class Player : MonoBehaviour, IDamageable
 
     public Transform CameraTransform;
 
-    private Transform _destination;                                      
+    private Transform _destination;
     private bool _isMoveto;
 
     public event Action EvArrive;
@@ -17,7 +17,6 @@ public class Player : MonoBehaviour, IDamageable
     private float _h, _v;
     public FieldItem ClosetItem;
     public float Radius;
-    public static Action OnMoveTClear;
 
     public Action<float> OnTakeDamage;
 
@@ -60,7 +59,6 @@ public class Player : MonoBehaviour, IDamageable
             return;
         }
         _combatManager.KnockBack();
-        Debug.Log(_statManager.GetHp() + "는 현재 남은hp이다");
     }
 
     public Vector3 GetInputVector()
@@ -102,7 +100,7 @@ public class Player : MonoBehaviour, IDamageable
 
         bool isMoving = _moveDir.sqrMagnitude > 0.001f || _isMoveto;
 
-        float speedParam = isMoving?
+        float speedParam = isMoving ?
             1f : 0f;
 
         byte[] packet = PacketMethod.BuildMoveSyncRequest(
@@ -118,15 +116,13 @@ public class Player : MonoBehaviour, IDamageable
     {
         if (_stateContexter.GetCurrState() is AttackState || _stateContexter.GetCurrState() is DamagedState)
             return;
-        
-        /*=========플레이어 정상 이동코드=========*/
 
         _h = _inputManager.GetHorizontal();
         _v = _inputManager.GetVertical();
 
         if (_isMoveto)
         {
-            if (_h != 0 || _v != 0)                  //플레이어 입력이 있으면 자동이동 중단
+            if (_h != 0 || _v != 0)
             {
                 StopMoveto();
             }
@@ -153,7 +149,6 @@ public class Player : MonoBehaviour, IDamageable
         _direction.y = _verticalVelocity;
         _controller.Move(_direction * Time.deltaTime);
 
-        // 회전은 이동 여부와 상관없이 적용
         if (_moveDir.sqrMagnitude > 0)
         {
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(_moveDir), Time.deltaTime * 10f);
@@ -162,9 +157,9 @@ public class Player : MonoBehaviour, IDamageable
 
     bool MoveTo()
     {
-        Vector3 dirVec = _destination.position - this.transform.position;                     // 방향벡터를 구함
+        Vector3 dirVec = _destination.position - this.transform.position;
 
-        if (dirVec.magnitude < 2.0f)                                                         // 목표 지점에 근접하면 중지
+        if (dirVec.magnitude < 2.0f)
         {
             _isMoveto = false;
 
@@ -175,15 +170,14 @@ public class Player : MonoBehaviour, IDamageable
             return true;
         }
 
-        Vector3 uVec = dirVec.normalized;                                                   // 유닛벡터를 구한 해당 방향으로 천천히 이동
+        Vector3 uVec = dirVec.normalized;
 
         _controller.Move(uVec * _statManager.GetSpeed() * Time.deltaTime);
 
         Vector3 horizontalDirection = new Vector3(uVec.x, 0, uVec.z);
 
-        if (horizontalDirection != Vector3.zero)                                              //x축으로 플레이어가 뒤집어지는걸 방지
+        if (horizontalDirection != Vector3.zero)
         {
-            // 이동 방향으로 캐릭터 회전
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(horizontalDirection), Time.deltaTime * 10f);
         }
 
@@ -256,7 +250,7 @@ public class Player : MonoBehaviour, IDamageable
         if (other.CompareTag("TutorialBox"))
         {
             other.gameObject.SetActive(false);
-            OnMoveTClear?.Invoke();
+            TutorialEvents.RaiseMoveCompleted();
         }
     }
 

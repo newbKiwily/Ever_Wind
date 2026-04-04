@@ -39,7 +39,7 @@ public class EnemySpawner : SingletonBase<EnemySpawner>
     public void FlushEnemy()
     {
         foreach(var enemy  in _instancedEnemies.Values)
-            Destroy(enemy);
+            Destroy(enemy.gameObject);
         _instancedEnemies.Clear();
     }
 }

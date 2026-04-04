@@ -2708,8 +2708,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveT_taretBox: {fileID: 651527087}
-  dummy_enemy: {fileID: 5942362296589766583, guid: 679c23d5a06a63042a05fb1c530d2f5a, type: 3}
-  dummy_enemy2: {fileID: 5942362296589766583, guid: 679c23d5a06a63042a05fb1c530d2f5a, type: 3}
   obtainObj1: {fileID: 2066259838}
   obtainObj2: {fileID: 2037951646}
   obtainObj3: {fileID: 1814849146}

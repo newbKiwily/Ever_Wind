@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -15,8 +14,6 @@ public class CraftUI : MonoBehaviour
 
     public GameObject IngredientLayout;
     public GameObject IngredientPrefab;
-
-    public static event Action CraftTClear;
 
     [SerializeField]
     private Image _craftItemImage;
@@ -91,7 +88,7 @@ public class CraftUI : MonoBehaviour
         _craftItemImage.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
         _craftItemImage.sprite = slot.SlotImage.sprite;
         _craftItemName.text = slot.ItemName.text;
-        
+
         InstanceIngredientSlot(_selectedRecipe.Ingredients);
         _craftButton.interactable = CanCraft(_selectedRecipe);
     }
@@ -118,7 +115,7 @@ public class CraftUI : MonoBehaviour
 
         if (!CanCraft(_selectedRecipe))
         {
-            Debug.Log("재료 부족으로 제작 실패.");
+            Debug.Log("Not enough ingredients to craft the selected recipe.");
             return;
         }
 
@@ -135,6 +132,6 @@ public class CraftUI : MonoBehaviour
         }
 
         FlushCraftZone();
-        CraftTClear?.Invoke();
+        TutorialEvents.RaiseCraftCompleted();
     }
 }

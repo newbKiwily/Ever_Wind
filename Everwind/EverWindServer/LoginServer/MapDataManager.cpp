@@ -1,10 +1,12 @@
 #include "MapDataManager.h"
 #include "MapData.h"
 #include "SessionManager.h"
-MapDataManager::MapDataManager(SessionManager* sessionManager)
+#include "../LoginServer/Logic/PacketMethod.h"
+#include "Enemy.h"
+MapDataManager::MapDataManager(SessionManager* sessionManager,PacketMethod* packetMethod)
 {	
 	sessionManager_ = sessionManager;
-	
+    packetMethod_ = packetMethod;
 }
 
 MapDataManager::~MapDataManager()
@@ -61,4 +63,27 @@ void MapDataManager::RegisterMap(int id, MapData* mapData)
         delete mapTable[id]; // 이미 존재한다면 교체 (메모리 관리 주의)
     }
     mapTable[id] = mapData;
+}
+
+void MapDataManager::RefillEnemyAllMap()
+{
+    for (auto& pair : mapTable)
+    {
+        MapData* mapData = pair.second;
+        if (!mapData) continue;
+
+        auto spawnedEnemies = mapData->RefillEnemy();
+
+        for (auto& enemy : spawnedEnemies)
+        {
+            auto pos = enemy->getCurrentPosition();
+            auto buffer = packetMethod_->BuildEnemySpawn(
+                enemy->getInstancNum(),
+                enemy->getEnemyId(),
+                pos.x, pos.y, pos.z
+            );
+
+            mapData->BroadcastAll(buffer.data(), buffer.size());
+        }
+    }
 }

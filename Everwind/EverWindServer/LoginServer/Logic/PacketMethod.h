@@ -23,6 +23,7 @@ public:
     bool HandleInventoryRequest(Session* session, const NetPackets::PKT_INVENTORY_ITEM& packet);
     bool HandleStatRequest(Session* session, const NetPackets::PKT_USERSTAT& packet);
     bool HandleAttackRequest(Session* session, const NetPackets::PKT_C2S_ATTACK_REQ& packet);
+    bool HandleEnemyDeadReq(Session* session, const NetPackets::PKT_C2S_ENEMY_DEAD_REQ& packet);
     bool HandleEnemyMoveSyncRequest(Session* session, const NetPackets::PKT_ENEMY_MOVE_SYNC& packet);
     bool HandleEnemyAttackAnimRequest(Session* session, const NetPackets::PKT_ENEMY_ATTACK_ANIM& packet);
     bool HandleOneshotAnimReq(Session* session, const NetPackets::PKT_ONESHOT_ANIM_SYNC& packet);
@@ -32,6 +33,8 @@ public:
     bool HandleMapChangeReq(Session* session, const NetPackets::PKT_MAP_CHANGE_REQ& packet);
     
     void SendPlayerLogOut(Session* session, int userid);
+
+    std::vector<char> BuildEnemySpawn(int instanceId, int enemyId, float x, float y, float z);
 
     Queries* getQuery() { return query_; }
 
@@ -45,8 +48,9 @@ private:
     std::vector<char> BuildInventoryAck(const GameStruct::InventoryItem& item);
     std::vector<char> BuildLogoutAck(int playerDbId);
     std::vector<char> BuildPlayerListRuntime(int playerDbId);
-    std::vector<char> BuildEnemySpawn(int instanceId, int enemyId, float x, float y, float z);
+   
     std::vector<char> BuildEnemyDamaged(int instanceId, float currentHp, float damageAmount, int ownerDbId);
+    std::vector<char> BuildEnemyDeadAck(int instanceId);
     std::vector<char> BuildEnemyMoveSync(int instanceId, float x, float y, float z);
     std::vector<char> BuildEnemyAttackAnim(int instanceId);
     std::vector<char> BuildOneshotAnimSync(int userDbId, int animCode);

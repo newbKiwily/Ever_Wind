@@ -408,6 +408,7 @@
 "Assets/Scripts/Tutorial/InteractStep.cs"
 "Assets/Scripts/Tutorial/ITutorialStep.cs"
 "Assets/Scripts/Tutorial/MoveStep.cs"
+"Assets/Scripts/Tutorial/TutorialEvents.cs"
 "Assets/Scripts/Tutorial/TutorialGuide.cs"
 "Assets/Scripts/UI/CraftUI/CraftSlot.cs"
 "Assets/Scripts/UI/CraftUI/CraftUI.cs"

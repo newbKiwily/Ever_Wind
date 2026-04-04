@@ -1,10 +1,7 @@
-using System;
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class CameraMoving : MonoBehaviour
 {
-    public static Action OnCameraTClear;
-
     private float _yaxis;
     private float _xaxis;
 
@@ -20,6 +17,7 @@ public class CameraMoving : MonoBehaviour
     private Vector3 _targetRotation;
     private Vector3 _currentVel;
     private float _cameraMoveTime;
+    private bool _cameraTutorialCompleted;
 
     public GameObject PreviewCamera;
 
@@ -36,6 +34,7 @@ public class CameraMoving : MonoBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
         _cameraMoveTime = 5.0f;
+        _cameraTutorialCompleted = false;
     }
 
     void LateUpdate()
@@ -43,7 +42,6 @@ public class CameraMoving : MonoBehaviour
         if (InputManager == null || Target == null)
             return;
 
-        // ===== ¸ÞÀÎ Ä«¸Þ¶ó =====
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll != 0f)
         {
@@ -67,9 +65,15 @@ public class CameraMoving : MonoBehaviour
                 _smoothTime
             );
 
-            _cameraMoveTime -= Time.deltaTime;
-            if (_cameraMoveTime <= 0)
-                OnCameraTClear?.Invoke();
+            if (!_cameraTutorialCompleted)
+            {
+                _cameraMoveTime -= Time.deltaTime;
+                if (_cameraMoveTime <= 0)
+                {
+                    _cameraTutorialCompleted = true;
+                    TutorialEvents.RaiseCameraCompleted();
+                }
+            }
         }
         else
         {
@@ -80,11 +84,9 @@ public class CameraMoving : MonoBehaviour
         transform.eulerAngles = _targetRotation;
         transform.position = Target.position - transform.forward * _dis;
 
-
         if (PreviewCamera != null && PreviewCamera.activeSelf)
         {
             Transform pCam = PreviewCamera.transform;
-
 
             float frontDistance = 4f;
             float height = 2f;

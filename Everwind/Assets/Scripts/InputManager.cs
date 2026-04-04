@@ -54,7 +54,6 @@ public class InputManager : SingletonBase<InputManager>
         return GetUICloseKeyDown();
     }
 
-    // Move input
     public float GetHorizontal()
     {
         if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _isRestricted)
@@ -70,7 +69,6 @@ public class InputManager : SingletonBase<InputManager>
         return Input.GetAxis("Vertical");
     }
 
-    // Interact input
     public bool GetInteractDown()
     {
         if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move ||
@@ -79,17 +77,16 @@ public class InputManager : SingletonBase<InputManager>
         return Input.GetKeyDown(KeyCode.Space);
     }
 
-    // Attack input
     public bool GetEnterCombatDown()
     {
         if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move || _isRestricted)
             return false;
-        return Input.GetMouseButtonDown(0); // Left click
+        return Input.GetMouseButtonDown(0);
     }
 
     public bool GetControlCamera()
     {
-        return Input.GetMouseButton(1); // Right click
+        return Input.GetMouseButton(1); 
     }
 
     public bool GetChangeTargetDown()
@@ -99,7 +96,6 @@ public class InputManager : SingletonBase<InputManager>
         return Input.GetKeyDown(KeyCode.E);
     }
 
-    // Any key input except mouse buttons
     public bool AnyKeyDownExcludeMouse()
     {
         if (Input.anyKeyDown)
@@ -118,9 +114,9 @@ public class InputManager : SingletonBase<InputManager>
         {
             KeyCode key = (KeyCode)((int)KeyCode.Alpha0 + i);
             if (Input.GetKeyDown(key))
-                return i; // Returns 1 to 5
+                return i;
         }
-        return 0; // No input
+        return 0;
     }
 
     public void LockMoveAndAttack()

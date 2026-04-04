@@ -1,15 +1,13 @@
 using UnityEngine;
 public class CombatIdleState : IState
 {
-    // private 필드이므로 _camelCase 적용
     private float _combatIdleTime = 5.0f;
 
     public void EnterState(PlayerStateContexter controller)
     {
-        // PlayIdle 호출 (PascalCase)
         controller.GetAnimationContexter().PlayIdle(false);
 
-        controller.OnWeapon(); // 만약 onWeapon도 수정 대상이라면 OnWeapon으로 변경 필요
+        controller.OnWeapon(); 
         var networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
         var pkt = PacketMethod.BuildCombatStateSync(networkClient.UserDbId, true);
         networkClient.Send(pkt);

@@ -196,6 +196,19 @@ std::vector<char> PacketMethod::BuildEnemyDamaged(int instanceId, float currentH
     return buffer;
 }
 
+std::vector<char> PacketMethod::BuildEnemyDeadAck(int instanceId)
+{
+    NetPackets::PKT_S2C_ENEMY_DEAD_ACK ack{ instanceId };
+    NetPackets::PacketHeader header{};
+    header.Id = static_cast<uint16_t>(NetPackets::PacketId::S2C_ENEMY_DEAD_ACK);
+    header.Length = sizeof(header) + sizeof(ack);
+
+    std::vector<char> buffer(header.Length);
+    std::memcpy(buffer.data(), &header, sizeof(header));
+    std::memcpy(buffer.data() + sizeof(header), &ack, sizeof(ack));
+    return buffer;
+}
+
 std::vector<char> PacketMethod::BuildEnemyMoveSync(int instanceId, float x, float y, float z)
 {
     NetPackets::PKT_ENEMY_MOVE_SYNC ack{ instanceId, x, y, z };
@@ -525,6 +538,13 @@ bool PacketMethod::HandlePacket(Session* session, const NetPackets::PacketHeader
         std::memcpy(&pkt, payload, sizeof(pkt));
         return HandleAttackRequest(session, pkt);
     }
+    case NetPackets::PacketId::C2S_ENEMY_DEAD_REQ:
+    {
+        if (payloadSize != sizeof(NetPackets::PKT_C2S_ENEMY_DEAD_REQ)) return false;
+        NetPackets::PKT_C2S_ENEMY_DEAD_REQ pkt{};
+        std::memcpy(&pkt, payload, sizeof(pkt));
+        return HandleEnemyDeadReq(session, pkt);
+    }
     case NetPackets::PacketId::C2S_ENEMY_MOVE_SYNC:
     {
         if (payloadSize != sizeof(NetPackets::PKT_ENEMY_MOVE_SYNC)) return false;
@@ -640,6 +660,33 @@ bool PacketMethod::HandleAttackRequest(Session* session, const NetPackets::PKT_C
         mapData->BroadcastAll(buffer.data(), buffer.size());
     }
     return true;
+}
+
+bool PacketMethod::HandleEnemyDeadReq(Session* session, const NetPackets::PKT_C2S_ENEMY_DEAD_REQ& packet)
+{
+    if (!session) return false;
+
+    auto mapMgr = server_->GetSessionManager()->GetMapDataManager();
+    auto mapData = mapMgr->findMapData(session->GetMapId());
+    if (!mapData) return false;
+
+    auto enemyWeak = mapData->findEnemy(packet.instanceId);
+    if (auto enemy = enemyWeak.lock())
+    {
+        int ownerDbId = enemy->getOwnerDbId();
+        if (ownerDbId != -1 && ownerDbId != session->GetServerUserId())
+        {
+            return false;
+        }
+
+        mapData->RemoveEnemy(packet.instanceId);
+
+        std::vector<char> buffer = BuildEnemyDeadAck(packet.instanceId);
+        mapData->BroadcastAll(buffer.data(), buffer.size());
+        return true;
+    }
+
+    return false;
 }
 
 bool PacketMethod::HandleEnemyMoveSyncRequest(Session* session, const NetPackets::PKT_ENEMY_MOVE_SYNC& packet)

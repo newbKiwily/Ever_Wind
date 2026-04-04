@@ -8,6 +8,7 @@
 #include "DB/DBManager.h"
 #include "../LoginServer/DB/Queries.h"
 #include "MapData.h"
+#include "TimerManager.h"
 namespace
 {
     std::atomic<bool> g_shouldStop = false;
@@ -40,7 +41,7 @@ int main()
     PacketMethod* loginLogic=new PacketMethod(dbManager,server);
  
 
-    SessionManager* sessionManager = new SessionManager;
+    SessionManager* sessionManager = new SessionManager(loginLogic);
     std::vector<MapInitialInfo> allMapConfigs;
     if (loginLogic->getQuery()->FetchAllMapData(allMapConfigs))
     {
@@ -72,8 +73,12 @@ int main()
         return -1;
     }
 
-
-
+    TimerManager* timerManager = new TimerManager;
+    timerManager->Start();
+    timerManager->AddRepeat(std::chrono::seconds(20), [sessionManager]()
+    {
+        sessionManager->GetMapDataManager()->RefillEnemyAllMap();
+    });
     std::cout << "Login Server started on port " << listenPort << ". Type 'quit' to stop." << std::endl;
 
     std::string command;

@@ -31,6 +31,26 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
     public void ChangeWorld(int mapId, Vector3 spawnPos, Queue<int> otherPlayers, Queue<DataCenter.EnemyInfo> enemies)
     {
+        
+        if (InstancedPlayer != null)
+        {
+            var player = InstancedPlayer.GetComponent<Player>();
+            if (player != null)
+            {
+                var combatManager = player.GetCombatManager();
+                if (combatManager != null)
+                {
+                    combatManager.ResetCombatStateForMapChange();
+                }
+            }
+        }
+
+        var enemyHpUiManager = SingletonManager.Instance.GetSingleton<EnemyHpUIManager>();
+        if (enemyHpUiManager != null)
+        {
+            enemyHpUiManager.ClearForMapChange();
+        }
+
         if (_currentMapInstance != null)
             Destroy(_currentMapInstance);
      
@@ -55,13 +75,11 @@ public class WorldLoader : SingletonBase<WorldLoader>
         {
             if (mapData == null)
             {
-                Debug.LogError($"[WorldLoader] MapId {mapId} data is null in DataCenter.");
                 return;
             }
 
             if (mapData.MapPrefab == null)
             {
-                Debug.LogError($"[WorldLoader] MapId {mapId} prefab is null in DataCenter.");
                 return;
             }
 
@@ -71,7 +89,6 @@ public class WorldLoader : SingletonBase<WorldLoader>
         }
         else
         {
-            Debug.LogError($"[WorldLoader] MapId {mapId} not found in DataCenter MapTable.");
         }
     }
 
@@ -165,5 +182,37 @@ public class WorldLoader : SingletonBase<WorldLoader>
             go.InstanceNum = enemyInfo.InstanceId;
             enemySpawner.RegisterEnemy(go.InstanceNum, go);
         }
+    }
+
+    public void SpawnEnemy(DataCenter.EnemyInfo enemyInfo)
+    {
+        if (InstancedPlayer == null)
+        {
+            SingletonManager.Instance.GetSingleton<DataCenter>().LoadEnemies.Enqueue(enemyInfo);
+            return;
+        }
+
+        var monsterTable = SingletonManager.Instance.GetSingleton<DataCenter>().MonsterTable;
+        var enemySpawner = SingletonManager.Instance.GetSingleton<EnemySpawner>();
+
+        if (enemySpawner.FindEnemy(enemyInfo.InstanceId) != null)
+            return;
+
+        if (!monsterTable.ContainsKey(enemyInfo.EnemyId))
+            return;
+
+        var enemyPrefab = monsterTable[enemyInfo.EnemyId];
+        Vector3 spawnPos = enemyInfo.Position;
+        int groundLayerMask = LayerMask.GetMask("Ground");
+        Vector3 rayStart = spawnPos + Vector3.up;
+
+        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 1000.0f, groundLayerMask))
+        {
+            spawnPos.y = hit.point.y;
+        }
+
+        var go = Instantiate(enemyPrefab, spawnPos, Quaternion.identity).GetComponent<Enemy>();
+        go.InstanceNum = enemyInfo.InstanceId;
+        enemySpawner.RegisterEnemy(go.InstanceNum, go);
     }
 }

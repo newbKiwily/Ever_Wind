@@ -23,12 +23,15 @@ public:
     {
         return instancedEnemys;
     }
-    //change: Expose the configured player spawn point so map-change flow can reuse it.
     GameStruct::Vector3 GetPlayerSpawnPosition() const;
     std::weak_ptr<Enemy> findEnemy(int id);
-    void InstanceEnemy();
+    std::shared_ptr<Enemy> InstanceEnemy();
+    std::vector<std::shared_ptr<Enemy>> RefillEnemy();
     void RemoveEnemy(int insId);
 private:
+    //change: Create and register one enemy while the caller already holds the map lock.
+    std::shared_ptr<Enemy> InstanceEnemyUnlocked();
+
     std::mutex mapMutex_;
     std::vector<std::weak_ptr<Session>> sessionsInMap_;
     std::unordered_map< int, std::shared_ptr<Enemy>> instancedEnemys;
