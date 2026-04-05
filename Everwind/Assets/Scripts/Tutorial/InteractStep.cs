@@ -6,11 +6,6 @@ public class InteractStep : ITutorialStep
 
     public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
     {
-        step.obtainObj1.SetActive(true);
-        step.obtainObj2.SetActive(true);
-        step.obtainObj3.SetActive(true);
-        step.ObtainObj4.SetActive(true);
-
         _deleteAction += () => ClearEvent(step, textRenderManager);
         TutorialEvents.OnInteractionCompleted += _deleteAction;
 

@@ -7,7 +7,7 @@ public class MoveStep : ITutorialStep
 
     public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
     {
-        step.moveT_taretBox.SetActive(true);
+        GameObject.Instantiate(step.moveT_taretBox, step.TargetBoxPosition, Quaternion.identity);
 
         _deleteAction += () => ClearEvent(step, textRenderManager);
         TutorialEvents.OnMoveCompleted += _deleteAction;
@@ -40,6 +40,7 @@ public class MoveStep : ITutorialStep
     {
         textRenderManager.AutoShow(2, 3);
 
+        GameObject.Destroy(step.moveT_taretBox);
         if (_deleteAction != null)
             TutorialEvents.OnMoveCompleted -= _deleteAction;
 

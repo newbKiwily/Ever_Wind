@@ -20,7 +20,7 @@ public class TutorialGuide : MonoBehaviour
     private Dictionary<TutorialStep, ITutorialStep> _stateTable = new Dictionary<TutorialStep, ITutorialStep>();
 
     public GameObject moveT_taretBox;
-    public GameObject obtainObj1, obtainObj2, obtainObj3, ObtainObj4;
+    public Vector3 TargetBoxPosition = new Vector3(314.77f, 209.75f, -48.13f);
 
     public void TransitionStep(TutorialStep targetState)
     {
@@ -44,7 +44,7 @@ public class TutorialGuide : MonoBehaviour
         _stateTable.Add(TutorialStep.Craft, new CraftStep());
         _stateTable.Add(TutorialStep.Equip, new EquipStep());
 
-        TransitionStep(TutorialStep.Combat);
+        TransitionStep(TutorialStep.Move);
     }
 
     private void Update()

@@ -801,6 +801,11 @@ bool PacketMethod::HandleMapChangeReq(Session* session, const NetPackets::PKT_MA
     if (!mapManager->changeMap(sharedSession, packet.TargetMapId, spawnPosition))
         return false;
 
+    getQuery()->UpdateUserPosition(session->GetUserId(), packet.TargetMapId, spawnPosition.x, spawnPosition.y, spawnPosition.z);
+
+    std::vector<char> ackBuf = BuildMapChangeAck(packet.TargetMapId, spawnPosition.x, spawnPosition.y, spawnPosition.z);
+    session->PostSend(ackBuf.data(), ackBuf.size());
+
     std::vector<char> myInfoBuf = BuildPlayerListRuntime(session->GetServerUserId());
     mapManager->broadcastEx(packet.TargetMapId, sharedSession, myInfoBuf.data(), myInfoBuf.size());
 
@@ -830,11 +835,6 @@ bool PacketMethod::HandleMapChangeReq(Session* session, const NetPackets::PKT_MA
         );
         session->PostSend(enemySpawnBuf.data(), enemySpawnBuf.size());
     }
-
-    getQuery()->UpdateUserPosition(session->GetUserId(), packet.TargetMapId, spawnPosition.x, spawnPosition.y, spawnPosition.z);
-
-    std::vector<char> ackBuf = BuildMapChangeAck(packet.TargetMapId, spawnPosition.x, spawnPosition.y, spawnPosition.z);
-    session->PostSend(ackBuf.data(), ackBuf.size());
 
     return true;
 }
