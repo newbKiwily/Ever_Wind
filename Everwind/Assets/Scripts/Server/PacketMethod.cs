@@ -322,7 +322,14 @@ public static unsafe class PacketMethod
 
             UnityMainThreadDispatcher.Instance().Enqueue(() =>
             {
-                SingletonManager.Instance.GetSingleton<OtherPlayerManager>().FindPlayer(userDbId).GetComponent<OtherPlayer>().OnMoveSync(position, speed, timestamp);
+                var otherPlayerManager = SingletonManager.Instance.GetSingleton<OtherPlayerManager>();
+                var targetPlayer = otherPlayerManager.FindPlayer(userDbId);
+                if (targetPlayer == null)
+                {
+                    return;
+                }
+
+                targetPlayer.GetComponent<OtherPlayer>().OnMoveSync(position, speed, timestamp);
             });
         }
     }
@@ -336,6 +343,13 @@ public static unsafe class PacketMethod
 
             UnityMainThreadDispatcher.Instance().Enqueue(() =>
             {
+                var worldLoader = SingletonManager.Instance.GetSingleton<WorldLoader>();
+                if (worldLoader != null && worldLoader.InstancedPlayer != null)
+                {
+                    worldLoader.SpawnOtherPlayers(userDbId);
+                    return;
+                }
+
                 SingletonManager.Instance.GetSingleton<DataCenter>().OtherPlayers.Enqueue(userDbId);
             });
         }

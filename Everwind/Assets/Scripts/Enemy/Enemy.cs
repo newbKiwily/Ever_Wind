@@ -100,4 +100,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     {
         return Hp;
     }
+
+    public virtual Vector3 GetRotationOffsetEuler()
+    {
+        return Vector3.zero;
+    }
 }

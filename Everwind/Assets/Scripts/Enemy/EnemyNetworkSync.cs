@@ -103,16 +103,9 @@ public class EnemyNetworkSync : MonoBehaviour
                 Vector3 horizontalDir = new Vector3(moveDir.x, 0, moveDir.z);
                 if (horizontalDir != Vector3.zero)
                 {
-                    Vector3 lookTargetDir = horizontalDir;
-
-                    if (GetComponent<Spider>() != null)
-                    {
-                        lookTargetDir = -horizontalDir;
-                    }
-
                     transform.rotation = Quaternion.Slerp(
                         transform.rotation,
-                        Quaternion.LookRotation(lookTargetDir),
+                        GetTargetRotation(horizontalDir),
                         Time.deltaTime * RotationSpeed
                     );
                 }
@@ -140,7 +133,7 @@ public class EnemyNetworkSync : MonoBehaviour
                     Vector3 horizontalDir = new Vector3(moveDir.x, 0, moveDir.z);
                     if (horizontalDir != Vector3.zero)
                     {
-                        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(horizontalDir), Time.deltaTime * RotationSpeed);
+                        transform.rotation = Quaternion.Slerp(transform.rotation, GetTargetRotation(horizontalDir), Time.deltaTime * RotationSpeed);
                     }
                 }
             }
@@ -158,12 +151,23 @@ public class EnemyNetworkSync : MonoBehaviour
 
                         if (horizontalDir != Vector3.zero)
                         {
-                            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(horizontalDir), Time.deltaTime * RotationSpeed);
+                            transform.rotation = Quaternion.Slerp(transform.rotation, GetTargetRotation(horizontalDir), Time.deltaTime * RotationSpeed);
                         }
                     }
                 }
             }
         }
+    }
+
+    private Quaternion GetTargetRotation(Vector3 horizontalDir)
+    {
+        Quaternion lookRotation = Quaternion.LookRotation(GetLookDirection(horizontalDir));
+        return lookRotation * Quaternion.Euler(_enemy.GetRotationOffsetEuler());
+    }
+
+    private Vector3 GetLookDirection(Vector3 horizontalDir)
+    {
+        return horizontalDir;
     }
 
     private void ChangeStateLocal(EnemySyncState newState)
@@ -213,8 +217,8 @@ public class EnemyNetworkSync : MonoBehaviour
         }
         else
         {
-            ChangeStateLocal(EnemySyncState.Dead);
-            if (_enemy.ShouldRequestDeath())
+            int myDbId = SingletonManager.Instance.GetSingleton<NetworkClient>().UserDbId;
+            if (CurrentOwnerDbId == myDbId && _enemy.ShouldRequestDeath())
             {
                 byte[] deadPkt = PacketMethod.BuildEnemyDeadReq(_enemy.InstanceNum);
                 SingletonManager.Instance.GetSingleton<NetworkClient>().Send(deadPkt);

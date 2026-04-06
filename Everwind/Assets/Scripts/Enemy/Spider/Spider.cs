@@ -13,11 +13,10 @@ public class Spider : Enemy
         Damaged1 = SpiderDamaged1;
         Damaged2 = SpiderDamaged2;
         Damaged3 = SpiderDamaged3;
+    }
 
-        if (transform.childCount > 0)
-        {
-            Transform visualModel = transform.GetChild(0);
-            visualModel.localRotation = Quaternion.Euler(0, 180f, 0);
-        }
+    public override Vector3 GetRotationOffsetEuler()
+    {
+        return new Vector3(0f, 180f, 0f);
     }
 }

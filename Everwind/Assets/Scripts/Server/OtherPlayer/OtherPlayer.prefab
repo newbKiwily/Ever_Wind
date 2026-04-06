@@ -206,6 +206,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: MoonSword 1
       objectReference: {fileID: 0}
+    - target: {fileID: 643527233436879895, guid: bf4c5a6e850496241b39f5707d85a128, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2538007937647058352, guid: bf4c5a6e850496241b39f5707d85a128, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5006259978045868745, guid: bf4c5a6e850496241b39f5707d85a128, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6671647194956101353, guid: bf4c5a6e850496241b39f5707d85a128, type: 3}
       propertyPath: m_LocalPosition.x
       value: 1.1229104
@@ -245,6 +257,10 @@ PrefabInstance:
     - target: {fileID: 6671647194956101353, guid: bf4c5a6e850496241b39f5707d85a128, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 32
+      objectReference: {fileID: 0}
+    - target: {fileID: 8537149476224921366, guid: bf4c5a6e850496241b39f5707d85a128, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
