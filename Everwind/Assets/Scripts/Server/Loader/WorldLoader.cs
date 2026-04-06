@@ -31,7 +31,6 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
     public void ChangeWorld(int mapId, Vector3 spawnPos, Queue<int> otherPlayers, Queue<DataCenter.EnemyInfo> enemies)
     {
-        
         if (InstancedPlayer != null)
         {
             var player = InstancedPlayer.GetComponent<Player>();
@@ -42,6 +41,8 @@ public class WorldLoader : SingletonBase<WorldLoader>
                 {
                     combatManager.ResetCombatStateForMapChange();
                 }
+
+                player.StopMoveto();
             }
         }
 
@@ -65,7 +66,7 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
         SpawnEnemies(enemies);
 
-        InstancedPlayer.GetComponent<Transform>().position = spawnPos;
+        MoveLocalPlayerToSpawn(spawnPos);
 
     }
 
@@ -99,6 +100,40 @@ public class WorldLoader : SingletonBase<WorldLoader>
             InstancedPlayer = Instantiate(_playerPrefab, spawnPos, Quaternion.identity);
             InstancedPlayer.GetComponent<Player>().Init();
             SetupCamera(InstancedPlayer.transform);
+            MoveLocalPlayerToSpawn(spawnPos);
+        }
+    }
+
+    private void MoveLocalPlayerToSpawn(Vector3 spawnPos)
+    {
+        if (InstancedPlayer == null)
+        {
+            return;
+        }
+
+        var controller = InstancedPlayer.GetComponent<CharacterController>();
+        if (controller == null)
+        {
+            InstancedPlayer.transform.position = spawnPos;
+            return;
+        }
+
+        bool wasEnabled = controller.enabled;
+        try
+        {
+            if (wasEnabled)
+            {
+                controller.enabled = false;
+            }
+
+            InstancedPlayer.transform.position = spawnPos;
+        }
+        finally
+        {
+            if (wasEnabled)
+            {
+                controller.enabled = true;
+            }
         }
     }
 
