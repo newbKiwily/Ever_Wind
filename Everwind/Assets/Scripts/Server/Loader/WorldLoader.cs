@@ -86,7 +86,7 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
             _currentMapInstance = Instantiate(mapData.MapPrefab, Vector3.zero, Quaternion.identity);
             _currentMapInstance.name = $"Map_{mapId}";
-            UIEvents.RaiseMinimapImageChanged(mapData.MinimapImage, mapData.Position, mapData.Rotation);
+            UIEvents.EvMinimapImageChanged(mapData.MinimapImage, mapData.Position, mapData.Rotation);
         }
         else
         {
@@ -214,7 +214,7 @@ public class WorldLoader : SingletonBase<WorldLoader>
             }
 
             var go = Instantiate(enemyPrefab, spawnPos, Quaternion.identity).GetComponent<Enemy>();
-            go.InstanceNum = enemyInfo.InstanceId;
+            go.Init(enemyInfo.InstanceId, enemyInfo.EnemyId);
             enemySpawner.RegisterEnemy(go.InstanceNum, go);
         }
     }
@@ -247,7 +247,8 @@ public class WorldLoader : SingletonBase<WorldLoader>
         }
 
         var go = Instantiate(enemyPrefab, spawnPos, Quaternion.identity).GetComponent<Enemy>();
-        go.InstanceNum = enemyInfo.InstanceId;
+        go.Init(enemyInfo.InstanceId, enemyInfo.EnemyId);
         enemySpawner.RegisterEnemy(go.InstanceNum, go);
     }
 }
+

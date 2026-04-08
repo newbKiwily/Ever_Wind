@@ -128,3 +128,4 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
             CloseCurrentUI();
     }
 }
+

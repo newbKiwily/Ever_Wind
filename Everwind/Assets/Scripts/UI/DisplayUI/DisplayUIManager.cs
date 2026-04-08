@@ -155,3 +155,4 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
         networkClient.Logout();
     }
 }
+

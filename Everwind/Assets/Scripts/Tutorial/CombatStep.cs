@@ -4,12 +4,12 @@ public class CombatStep : ITutorialStep
 {
     private bool _cleared = false;
     private bool _readyForNext = false;
-    private Action _clearAction;
+    private Action<int, int> _clearAction;
 
     public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
     {
-        _clearAction += () => ClearEvent(step, textRenderManager);
-        TutorialEvents.OnCombatEnemyKilled += _clearAction;
+        _clearAction += (_, _) => ClearEvent(step, textRenderManager);
+        PlayEvents.OnCombatEnemyKilled += _clearAction;
 
         textRenderManager.StartShow("CombatT");
         textRenderManager.AutoShow(0, 5);
@@ -35,7 +35,7 @@ public class CombatStep : ITutorialStep
         _readyForNext = false;
 
         if (_clearAction != null)
-            TutorialEvents.OnCombatEnemyKilled -= _clearAction;
+            PlayEvents.OnCombatEnemyKilled -= _clearAction;
 
         _clearAction = null;
     }
@@ -49,8 +49,10 @@ public class CombatStep : ITutorialStep
         _readyForNext = true;
 
         if (_clearAction != null)
-            TutorialEvents.OnCombatEnemyKilled -= _clearAction;
+            PlayEvents.OnCombatEnemyKilled -= _clearAction;
 
         _clearAction = null;
     }
 }
+
+

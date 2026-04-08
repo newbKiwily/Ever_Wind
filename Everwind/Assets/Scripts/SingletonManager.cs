@@ -83,3 +83,4 @@ public class SingletonManager : SingletonBase<SingletonManager>
         }
     }
 }
+

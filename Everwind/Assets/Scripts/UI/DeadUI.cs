@@ -50,7 +50,7 @@ public class DeadUI : MonoBehaviour
             if (_timer > 0)
             {
                 _timer -= Time.deltaTime;
-                introductionDead.text = $"당신은 죽었습니다.\n{Mathf.CeilToInt(_timer)}초 후에 살아날 수 있습니다...";
+                introductionDead.text = $"?�신?� 죽었?�니??\n{Mathf.CeilToInt(_timer)}�??�에 ?�아?????�습?�다...";
             }
             else
             {
@@ -63,7 +63,7 @@ public class DeadUI : MonoBehaviour
     {
         _isCountingDown = false;
         _timer = 0;
-        introductionDead.text = "이제 부활할 수 있습니다!\n포기하지마세요.";
+        introductionDead.text = "?�제 부?�할 ???�습?�다!\n?�기?��?마세??";
 
         if (revive != null)
         {
@@ -79,7 +79,8 @@ public class DeadUI : MonoBehaviour
             popUpUIManager.CloseDeadUI();
         }
 
-        UIEvents.RaiseReviveRequested();
+        UIEvents.EvReviveRequested();
         OnRevived?.Invoke();
     }
 }
+

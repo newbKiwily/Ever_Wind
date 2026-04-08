@@ -43,3 +43,4 @@ public class EnemySpawner : SingletonBase<EnemySpawner>
         _instancedEnemies.Clear();
     }
 }
+

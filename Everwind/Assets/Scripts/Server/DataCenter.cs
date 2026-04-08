@@ -52,3 +52,4 @@ public class DataCenter : SingletonBase<DataCenter>
         LoadEnemies.Clear();
     }
 }
+

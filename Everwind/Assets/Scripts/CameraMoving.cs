@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class CameraMoving : MonoBehaviour
 {
@@ -71,7 +71,7 @@ public class CameraMoving : MonoBehaviour
                 if (_cameraMoveTime <= 0)
                 {
                     _cameraTutorialCompleted = true;
-                    TutorialEvents.RaiseCameraCompleted();
+                    PlayEvents.EvCameraCompleted();
                 }
             }
         }
@@ -112,3 +112,5 @@ public class CameraMoving : MonoBehaviour
             PreviewCamera.SetActive(false);
     }
 }
+
+

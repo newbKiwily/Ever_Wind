@@ -3,6 +3,7 @@ using UnityEngine;
 public abstract class Enemy : MonoBehaviour, IDamageable
 {
     public int InstanceNum;
+    public int EnemyId;
     [SerializeField] protected float Hp = 100f;
 
     protected Animator Animator;
@@ -16,9 +17,10 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     protected bool DeadRequestSent = false;
     public event System.Action<Enemy> OnEnemyDied;
 
-    public void Init(int instanceNum)
+    public void Init(int instanceNum, int enemyId)
     {
-        this.InstanceNum = instanceNum;
+        InstanceNum = instanceNum;
+        EnemyId = enemyId;
     }
 
     protected virtual void Start()
@@ -65,7 +67,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Hp = serverHp;
 
         SingletonManager.Instance.GetSingleton<EffectManager>().PlayEffect("Damaged", this.transform.position);
-        UIEvents.RaiseDamageTextRequested(transform.position, Mathf.RoundToInt(damageAmount));
+        UIEvents.EvDamageTextRequested(transform.position, Mathf.RoundToInt(damageAmount));
     }
 
     public bool ShouldRequestDeath()
@@ -90,7 +92,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             cc.enabled = false;
 
         OnEnemyDied?.Invoke(this);
-        TutorialEvents.RaiseCombatEnemyKilled();
+        PlayEvents.EvCombatEnemyKilled(EnemyId);
         SingletonManager.Instance.GetSingleton<EnemySpawner>().RemoveEnemy(this.InstanceNum);
 
         Destroy(gameObject);
@@ -106,3 +108,5 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         return Vector3.zero;
     }
 }
+
+

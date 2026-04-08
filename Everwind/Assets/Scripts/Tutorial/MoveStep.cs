@@ -3,14 +3,14 @@ using UnityEngine;
 
 public class MoveStep : ITutorialStep
 {
-    private Action _deleteAction;
+    private Action<int, int> _deleteAction;
     private GameObject _targetBox;
     public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
     {
         _targetBox=GameObject.Instantiate(step.moveT_taretBox, step.TargetBoxPosition, Quaternion.identity);
 
-        _deleteAction += () => ClearEvent(step, textRenderManager);
-        TutorialEvents.OnMoveCompleted += _deleteAction;
+        _deleteAction += (_, _) => ClearEvent(step, textRenderManager);
+        PlayEvents.OnMoveCompleted += _deleteAction;
 
         textRenderManager.StartShow("MoveT");
         textRenderManager.AutoShow(0, 1);
@@ -31,7 +31,7 @@ public class MoveStep : ITutorialStep
     public void ExitStep(TutorialGuide step)
     {
         if (_deleteAction != null)
-            TutorialEvents.OnMoveCompleted -= _deleteAction;
+            PlayEvents.OnMoveCompleted -= _deleteAction;
 
         _deleteAction = null;
     }
@@ -41,9 +41,11 @@ public class MoveStep : ITutorialStep
         textRenderManager.AutoShow(2, 3);
 
         if (_deleteAction != null)
-            TutorialEvents.OnMoveCompleted -= _deleteAction;
+            PlayEvents.OnMoveCompleted -= _deleteAction;
 
         GameObject.Destroy(_targetBox);
         _deleteAction = null;
     }
 }
+
+

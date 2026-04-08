@@ -11,7 +11,7 @@ public class DeadState : IState
         controller.GetAnimationContexter().PlayDead();
 
         UIEvents.OnReviveRequested += HandleRevive;
-        UIEvents.RaiseDeadUiOpenRequested();
+        UIEvents.EvDeadUiOpenRequested();
 
         NetworkClient networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
         var pkt = PacketMethod.BuildDeadSyncReq(networkClient.UserDbId, true);
@@ -29,7 +29,7 @@ public class DeadState : IState
     public void ExitState(PlayerStateContexter controller)
     {
         UIEvents.OnReviveRequested -= HandleRevive;
-        UIEvents.RaiseDeadUiCloseRequested();
+        UIEvents.EvDeadUiCloseRequested();
         SingletonManager.Instance.GetSingleton<InputManager>().UnlockMoveAndAttack();
 
         controller.GetAnimationContexter().ExitDead();
@@ -39,3 +39,4 @@ public class DeadState : IState
         networkClient.Send(pkt);
     }
 }
+

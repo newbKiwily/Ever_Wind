@@ -6,3 +6,4 @@ public abstract class SingletonBasest : MonoBehaviour
     public virtual bool IsPersistent => false;
     public abstract void Init();
 }
+

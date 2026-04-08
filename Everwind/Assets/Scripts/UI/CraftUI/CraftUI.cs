@@ -124,14 +124,17 @@ public class CraftUI : MonoBehaviour
             Inventory.ConsumeItem(ingredient.IngredientItem.ItemName, ingredient.Amount);
         }
 
-        var resultItem = ItemMediator.GetItemInfo(_selectedRecipe.ResultItemName);
+        string craftedItemName = _selectedRecipe.ResultItemName;
+        var resultItem = ItemMediator.GetItemInfo(craftedItemName);
         if (resultItem != null)
         {
             Inventory.PutItem(resultItem);
-            UIEvents.RaiseProfileChangeRequested(DisplayUIManager.ProfileState.Success, 1.0f);
+            UIEvents.EvProfileChangeRequested(DisplayUIManager.ProfileState.Success, 1.0f);
         }
 
         FlushCraftZone();
-        TutorialEvents.RaiseCraftCompleted();
+        PlayEvents.EvCraftCompleted(Animator.StringToHash(craftedItemName));
     }
 }
+
+

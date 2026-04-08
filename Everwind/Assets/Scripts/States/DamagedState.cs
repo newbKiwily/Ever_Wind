@@ -6,7 +6,7 @@ public class DamagedState : IState
 
     public void EnterState(PlayerStateContexter controller)
     {
-        UIEvents.RaiseProfileChangeRequested(DisplayUIManager.ProfileState.Hit, 1.0f);
+        UIEvents.EvProfileChangeRequested(DisplayUIManager.ProfileState.Hit, 1.0f);
         controller.player.StopMoveto();
 
         var tempCombatManager = controller.player.GetCombatManager();
@@ -49,3 +49,4 @@ public class DamagedState : IState
         controller.GetAnimationContexter().ExitInteract();
     }
 }
+

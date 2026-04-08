@@ -6,7 +6,7 @@ public class SceneLoader : SingletonBase<SceneLoader>
 {
     public override bool IsPersistent => true;
 
-    public LoginUI loginUI; // 타입명과 필드명이 같으므로 소문자 시작
+    public LoginUI loginUI;
 
     protected override void Awake()
     {
@@ -22,7 +22,7 @@ public class SceneLoader : SingletonBase<SceneLoader>
     private IEnumerator LoadSequence(string sceneName)
     {
         var data = SingletonManager.Instance.GetSingleton<DataCenter>();
-        loginUI.SetResult("인게임 환경을 불러오는 중...");
+        loginUI.SetResult("?�게???�경??불러?�는 �?..");
 
         AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
         while (!op.isDone) yield return null;
@@ -39,3 +39,4 @@ public class SceneLoader : SingletonBase<SceneLoader>
         yield return new WaitForSeconds(0.5f);
     }
 }
+

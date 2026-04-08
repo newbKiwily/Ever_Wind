@@ -277,7 +277,7 @@ public static unsafe class PacketMethod
                         break;
                     case 1: ui.SetResult("Wrong ID"); break;
                     case 2: ui.SetResult("Wrong Password"); break;
-                    case 3: ui.SetResult("ëˆ„êµ°ê°€ ë¡œê·¸ì¸ì¤‘ì…ë‹ˆë‹¤."); break;
+                    case 3: ui.SetResult("Account is Using"); break;
                     default: ui.SetResult("Unknown Error"); break;
                 }
                 ui.FlushTest();
@@ -299,9 +299,9 @@ public static unsafe class PacketMethod
 
                 switch (result)
                 {
-                    case 0: ui.SetResult("íšŒì›ê°€ì…ì„ ì™„ë£Œí•˜ì˜€ìŠµë‹ˆë‹¤."); break;
-                    case 1: ui.SetResult("ì´ë¯¸ ìˆëŠ” ì•„ì´ë””ì™€ ë¹„ë°€ë²ˆí˜¸ ì…ë‹ˆë‹¤"); break;
-                    case 2: ui.SetResult("ë°ì´í„°ë² ì´ìŠ¤ ì˜¤ë¥˜ì…ë‹ˆë‹¤."); break;
+                    case 0: ui.SetResult("È¸¿ø°¡ÀÔÀ» ¿Ï·áÇÏ¿´½À´Ï´Ù."); break;
+                    case 1: ui.SetResult("ÀÌ¹Ì ÀÖ´Â ¾ÆÀÌµğ¿Í ºñ¹Ğ¹øÈ£ ÀÔ´Ï´Ù."); break;
+                    case 2: ui.SetResult("µ¥ÀÌÅÍº£ÀÌ½º ¿À·ùÀÔ´Ï´Ù."); break;
                     default: ui.SetResult("Unknown Error"); break;
                 }
                 ui.FlushTest();
@@ -681,3 +681,4 @@ public static unsafe class PacketMethod
         }
     }
 }
+

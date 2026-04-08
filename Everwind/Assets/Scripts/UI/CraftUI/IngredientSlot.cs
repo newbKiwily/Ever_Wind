@@ -24,3 +24,4 @@ public class IngredientSlot : Slot
     }
 
 }
+

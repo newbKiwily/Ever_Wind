@@ -2,12 +2,12 @@ using System;
 
 public class InteractStep : ITutorialStep
 {
-    private Action _deleteAction;
+    private Action<int, int> _deleteAction;
 
     public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
     {
-        _deleteAction += () => ClearEvent(step, textRenderManager);
-        TutorialEvents.OnInteractionCompleted += _deleteAction;
+        _deleteAction += (_, _) => ClearEvent(step, textRenderManager);
+        PlayEvents.OnInteractionCompleted += _deleteAction;
 
         textRenderManager.StartShow("InteractT");
         textRenderManager.AutoShow(0, 2);
@@ -28,7 +28,7 @@ public class InteractStep : ITutorialStep
     public void ExitStep(TutorialGuide step)
     {
         if (_deleteAction != null)
-            TutorialEvents.OnInteractionCompleted -= _deleteAction;
+            PlayEvents.OnInteractionCompleted -= _deleteAction;
 
         _deleteAction = null;
     }
@@ -38,8 +38,10 @@ public class InteractStep : ITutorialStep
         textRenderManager.AutoShow(3, 6);
 
         if (_deleteAction != null)
-            TutorialEvents.OnInteractionCompleted -= _deleteAction;
+            PlayEvents.OnInteractionCompleted -= _deleteAction;
 
         _deleteAction = null;
     }
 }
+
+

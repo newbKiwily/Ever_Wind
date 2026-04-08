@@ -62,3 +62,4 @@ public class MoveState : IState
         controller.TransitionState(States.Interact);
     }
 }
+

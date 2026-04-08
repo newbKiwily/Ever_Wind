@@ -339,7 +339,7 @@ public class CombatManager : MonoBehaviour
             }
         }
 
-        UIEvents.RaiseEnemyListUpdated(_inRadiusEnemy);
+        UIEvents.EvEnemyListUpdated(_inRadiusEnemy);
 
         if (_inRadiusEnemy.Count > 0)
         {
@@ -422,6 +422,7 @@ public class CombatManager : MonoBehaviour
         if (index < 0 || index >= Skills.Length)
             return;
 
-        UIEvents.RaiseSkillCooldownChanged(index, GetSkillCooldownRatio(index), IsSkillReady(index));
+        UIEvents.EvSkillCooldownChanged(index, GetSkillCooldownRatio(index), IsSkillReady(index));
     }
 }
+

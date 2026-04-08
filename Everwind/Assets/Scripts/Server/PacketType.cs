@@ -226,3 +226,4 @@ public struct PKT_S2C_ENEMY_DEAD_ACK
 {
     public int InstanceId;
 }
+

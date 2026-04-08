@@ -23,7 +23,6 @@ public class OtherPlayerNetworkSync : MonoBehaviour
         if (dir.sqrMagnitude > 0.0001f)
             transform.rotation = Quaternion.LookRotation(dir.normalized);
 
-        // 사망이거나 상호작용 중일 때는 걷기/대기 애니메이션으로 덮어씌우지 않음
         if (IsDead || IsInteracting) return;
 
         if (speed > 0.03f)
@@ -38,7 +37,7 @@ public class OtherPlayerNetworkSync : MonoBehaviour
 
     public void OnReceiveOneshot(int animCode)
     {
-        if (IsDead) return; // 죽어있을 때는 원샷 모션 무시
+        if (IsDead) return; 
 
         OneshotAnimKey key = (OneshotAnimKey)animCode;
         switch (key)
@@ -148,3 +147,4 @@ public class OtherPlayerNetworkSync : MonoBehaviour
         SingletonManager.Instance.GetSingleton<EffectManager>().PlayEffect("Damaged", transform.position);
     }
 }
+

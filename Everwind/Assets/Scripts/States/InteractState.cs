@@ -34,9 +34,9 @@ public class InteractState : IState
 
     private void OnObtained(PlayerStateContexter controller)
     {
-        TutorialEvents.RaiseInteractionCompleted();
+        PlayEvents.EvInteractionCompleted();
 
-        UIEvents.RaiseProfileChangeRequested(DisplayUIManager.ProfileState.Success, 1.0f);
+        UIEvents.EvProfileChangeRequested(DisplayUIManager.ProfileState.Success, 1.0f);
         controller.GetAnimationContexter().PlayOneshot(OneshotAni.Success);
         NetworkClient networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
         var pkt = PacketMethod.BuildOneshotAnimReq(networkClient.UserDbId, OneshotAnimKey.Success);
@@ -82,3 +82,5 @@ public class InteractState : IState
         networkClient.Send(pkt);
     }
 }
+
+

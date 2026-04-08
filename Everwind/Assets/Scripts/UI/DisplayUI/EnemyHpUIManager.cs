@@ -193,3 +193,4 @@ public class EnemyHpUIManager : SingletonBase<EnemyHpUIManager>
         }
     }
 }
+

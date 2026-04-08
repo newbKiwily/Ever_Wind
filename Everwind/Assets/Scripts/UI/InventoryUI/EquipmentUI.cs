@@ -45,7 +45,7 @@ public class EquipmentUI : MonoBehaviour
                     break;
             }
 
-            TutorialEvents.RaiseEquipCompleted();
+            PlayEvents.EvEquipCompleted();
         }
     }
 
@@ -90,3 +90,5 @@ public class EquipmentUI : MonoBehaviour
         }
     }
 }
+
+

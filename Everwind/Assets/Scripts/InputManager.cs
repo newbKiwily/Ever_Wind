@@ -134,3 +134,4 @@ public class InputManager : SingletonBase<InputManager>
         return _isRestricted;
     }
 }
+

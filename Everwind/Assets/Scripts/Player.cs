@@ -46,7 +46,7 @@ public class Player : MonoBehaviour, IDamageable
     {
         float finalDamage = _statManager.CalculateDamaged(damage);
         SingletonManager.Instance.GetSingleton<EffectManager>().PlayEffect("Damaged", this.transform.position);
-        UIEvents.RaiseDamageTextRequested(transform.position, Mathf.RoundToInt(finalDamage));
+        UIEvents.EvDamageTextRequested(transform.position, Mathf.RoundToInt(finalDamage));
         if (_combatManager.TargetEnemy == null)
         {
             _combatManager.TargetEnemy = attacker.gameObject;
@@ -250,7 +250,7 @@ public class Player : MonoBehaviour, IDamageable
         if (other.CompareTag("TutorialBox"))
         {
             other.gameObject.SetActive(false);
-            TutorialEvents.RaiseMoveCompleted();
+            PlayEvents.EvMoveCompleted();
         }
     }
 
@@ -260,3 +260,5 @@ public class Player : MonoBehaviour, IDamageable
         return new Vector3(transform.position.x, bottom, transform.position.z);
     }
 }
+
+

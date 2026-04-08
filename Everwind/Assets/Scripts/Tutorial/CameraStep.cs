@@ -2,12 +2,12 @@ using System;
 
 public class CameraStep : ITutorialStep
 {
-    private Action _deleteAction;
+    private Action<int, int> _deleteAction;
 
     public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
     {
-        _deleteAction += () => ClearEvent(step, textRenderManager);
-        TutorialEvents.OnCameraCompleted += _deleteAction;
+        _deleteAction += (_, _) => ClearEvent(step, textRenderManager);
+        PlayEvents.OnCameraCompleted += _deleteAction;
 
         textRenderManager.StartShow("CameraT");
         textRenderManager.AutoShow(0, 1);
@@ -28,7 +28,7 @@ public class CameraStep : ITutorialStep
     public void ExitStep(TutorialGuide step)
     {
         if (_deleteAction != null)
-            TutorialEvents.OnCameraCompleted -= _deleteAction;
+            PlayEvents.OnCameraCompleted -= _deleteAction;
 
         _deleteAction = null;
     }
@@ -38,8 +38,10 @@ public class CameraStep : ITutorialStep
         textRenderManager.AutoShow(2, 3);
 
         if (_deleteAction != null)
-            TutorialEvents.OnCameraCompleted -= _deleteAction;
+            PlayEvents.OnCameraCompleted -= _deleteAction;
 
         _deleteAction = null;
     }
 }
+
+

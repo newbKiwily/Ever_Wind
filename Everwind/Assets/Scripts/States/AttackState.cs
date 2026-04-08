@@ -19,7 +19,6 @@ public class AttackState : IState
             controller.player.LookAtTarget(tempCombatManager.TargetEnemy.transform);
         }
 
-        // 이전 단계에서 수정한 PlayAttack 호출
         controller.GetAnimationContexter().PlayAttack(currSkillIdx + 1);
 
         NetworkClient networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
@@ -34,8 +33,8 @@ public class AttackState : IState
 
     public void ExitState(PlayerStateContexter controller)
     {
-        // 이전 단계에서 수정한 ExitInteract 호출
         controller.GetAnimationContexter().ExitInteract();
         _currSkill = null;
     }
 }
+

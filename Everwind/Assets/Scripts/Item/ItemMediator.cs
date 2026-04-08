@@ -1,6 +1,5 @@
 using AYellowpaper.SerializedCollections;
 using System.Collections;
-
 using UnityEngine;
 
 public class ItemMediator : SingletonBase<ItemMediator>
@@ -19,25 +18,22 @@ public class ItemMediator : SingletonBase<ItemMediator>
     public void Mediation(string key)
     {
         var target = ItemTable[key];
-        Debug.Log("인벤토리 아이템 생성됌");
+    
         SingletonManager.Instance.GetSingleton<PopUpUIManager>().Inventory.PutItem(target);
-        //인벤토리로 전송
+       
     }
 
-    // 아이템을 비활성화하고 일정 시간 뒤에 다시 활성화하는 메서드
     public void ItemRespawn(GameObject itemObject, float delay)
     {
         itemObject.SetActive(false);
         StartCoroutine(RespawnAfterDelay(itemObject, delay));
     }
 
-    // 오브젝트를 일정 시간 후에 다시 활성화하는 코루틴
     private IEnumerator RespawnAfterDelay(GameObject obj, float delay)
     {
         yield return new WaitForSeconds(delay);
         obj.SetActive(true);
 
-        // FieldItem 컴포넌트를 가져와서 초기화
         FieldItem fieldItem = obj.GetComponent<FieldItem>();
         if (fieldItem != null)
         {
@@ -52,4 +48,36 @@ public class ItemMediator : SingletonBase<ItemMediator>
             return null;
         return item;
     }
+
+    public int GetFieldItemId(GameObject fieldItemObject)
+    {
+        if (fieldItemObject == null)
+            return 0;
+
+        foreach (var pair in FieldItemTable)
+        {
+            GameObject registeredObject = pair.Value;
+            if (registeredObject == null)
+                continue;
+
+            if (registeredObject == fieldItemObject)
+                return pair.Key;
+
+            if (registeredObject.name == fieldItemObject.name.Replace("(Clone)", "").Trim())
+                return pair.Key;
+
+            FieldItem registeredFieldItem = registeredObject.GetComponent<FieldItem>();
+            FieldItem targetFieldItem = fieldItemObject.GetComponent<FieldItem>();
+
+            if (registeredFieldItem != null &&
+                targetFieldItem != null &&
+                registeredFieldItem.GetType() == targetFieldItem.GetType())
+            {
+                return pair.Key;
+            }
+        }
+
+        return 0;
+    }
 }
+

@@ -50,3 +50,4 @@ public class SingletonBase<T> : SingletonBasest where T : MonoBehaviour
 
     public override void Init() { }
 }
+

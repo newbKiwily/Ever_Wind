@@ -15,42 +15,42 @@ public static class UIEvents
     public static event Action OnDeadUiCloseRequested;
     public static event Action OnReviveRequested;
 
-    public static void RaiseProfileChangeRequested(DisplayUIManager.ProfileState state, float duration)
+    public static void EvProfileChangeRequested(DisplayUIManager.ProfileState state, float duration)
     {
         OnProfileChangeRequested?.Invoke(state, duration);
     }
 
-    public static void RaiseSkillCooldownChanged(int skillIndex, float ratio, bool isReady)
+    public static void EvSkillCooldownChanged(int skillIndex, float ratio, bool isReady)
     {
         OnSkillCooldownChanged?.Invoke(skillIndex, ratio, isReady);
     }
 
-    public static void RaiseEnemyListUpdated(List<GameObject> enemies)
+    public static void EvEnemyListUpdated(List<GameObject> enemies)
     {
         OnEnemyListUpdated?.Invoke(enemies);
     }
 
-    public static void RaiseDamageTextRequested(Vector3 worldPos, int damage)
+    public static void EvDamageTextRequested(Vector3 worldPos, int damage)
     {
         OnDamageTextRequested?.Invoke(worldPos, damage);
     }
 
-    public static void RaiseMinimapImageChanged(Sprite minimapSprite, Vector3 minimapPosition, Vector3 minimapRotation)
+    public static void EvMinimapImageChanged(Sprite minimapSprite, Vector3 minimapPosition, Vector3 minimapRotation)
     {
         OnMinimapImageChanged?.Invoke(minimapSprite, minimapPosition, minimapRotation);
     }
 
-    public static void RaiseDeadUiOpenRequested()
+    public static void EvDeadUiOpenRequested()
     {
         OnDeadUiOpenRequested?.Invoke();
     }
 
-    public static void RaiseDeadUiCloseRequested()
+    public static void EvDeadUiCloseRequested()
     {
         OnDeadUiCloseRequested?.Invoke();
     }
 
-    public static void RaiseReviveRequested()
+    public static void EvReviveRequested()
     {
         OnReviveRequested?.Invoke();
     }
@@ -60,3 +60,4 @@ public static class UIEvents
         IsPopupOpen = isOpen;
     }
 }
+
