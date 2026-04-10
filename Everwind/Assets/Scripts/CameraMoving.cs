@@ -43,7 +43,7 @@ public class CameraMoving : MonoBehaviour
             return;
 
         float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (scroll != 0f)
+        if (scroll != 0f && !UIEvents.IsPointerOverQuestScroll)
         {
             _dis -= scroll * ZoomSensitive;
             _dis = Mathf.Clamp(_dis, _minDis, _maxDis);

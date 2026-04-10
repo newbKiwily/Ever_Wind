@@ -10,6 +10,7 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
     public DeadUI DeadUI { get; private set; }
 
     public EquipmentUI EquipmentUI { get; private set; }
+    public QuestUI QuestUI { get; private set; }
 
     private GameObject _currentUI;
 
@@ -57,17 +58,21 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
         EquipmentUI = GetComponentInChildren<EquipmentUI>();
         EquipmentUI.Init();
 
+        QuestUI = GetComponentInChildren<QuestUI>();
+        QuestUI.Init();
+
         Inventory.gameObject.SetActive(false);
         CraftUI.gameObject.SetActive(false);
         DeadUI.gameObject.SetActive(false);
         EquipmentUI.gameObject.SetActive(false);
+        QuestUI.gameObject.SetActive(true);
     }
 
     public void PopUpDeadUI()
     {
         DeadUI.ShowDeadUI();
         IsPopUpOn = true;
-        UIEvents.SetPopupOpenState(IsPopUpOn);
+        UIEvents.SetPopupOpenState(IsPopUpOn);   
         _currentUI = DeadUI.gameObject;
         return;
     }
@@ -106,6 +111,17 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
         ItemTooltip.gameObject.SetActive(true);
     }
 
+    public void OnOffQuestUI()
+    {
+        if (QuestUI.gameObject.activeSelf)
+        {
+            QuestUI.gameObject.SetActive(false);
+            return;
+        }
+        QuestUI.gameObject.SetActive(true);
+        QuestUI.RefreshQuestContents();
+    }
+
     public void CloseCurrentUI()
     {
         if (_currentUI == null) return;
@@ -126,6 +142,8 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
             OpenCraftUI();
         if (InputManager.Instance.GetUICloseKeyDown())
             CloseCurrentUI();
+        if (InputManager.Instance.GetQuestUIKeyDown())
+            OnOffQuestUI();
     }
 }
 

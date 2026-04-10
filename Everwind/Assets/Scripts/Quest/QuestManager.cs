@@ -20,6 +20,8 @@ public class QuestManager : SingletonBase<QuestManager>
     private List<QuestProgressData> _activeQuests = new();
 
     public override bool IsPersistent => false;
+    public IReadOnlyList<QuestProgressData> ActiveQuests => _activeQuests;
+    private bool _isInitializing;
 
     protected override void Awake()
     {
@@ -32,10 +34,14 @@ public class QuestManager : SingletonBase<QuestManager>
         SubscribeEvents();
         SyncQuestTable();
 
+        _isInitializing = true;
         foreach (Quest quest in _questTable.Values)
         {
             AcceptQuest(quest);
         }
+        _isInitializing = false;
+
+        UIEvents.EvQuestProgressChanged();
     }
 
     protected override void OnDestroy()
@@ -83,6 +89,9 @@ public class QuestManager : SingletonBase<QuestManager>
         }
 
         _activeQuests.Add(progressData);
+
+        if (!_isInitializing)
+            UIEvents.EvQuestProgressChanged();
     }
 
     public int GetConditionProgress(int questId, int conditionIndex)
@@ -119,7 +128,7 @@ public class QuestManager : SingletonBase<QuestManager>
 
     private void HandleCombatEnemyKilled(int targetId, int amount)
     {
-        if (targetId <= 0)
+        if (targetId < 0)
         {
             Debug.LogWarning("Quest progress skipped: combat target ID could not be resolved.");
             return;
@@ -130,7 +139,7 @@ public class QuestManager : SingletonBase<QuestManager>
 
     private void HandleGatherCompleted(int targetId, int amount)
     {
-        if (targetId <= 0)
+        if (targetId < 0)
         {
             Debug.LogWarning("Quest progress skipped: gather target ID could not be resolved.");
             return;
@@ -141,7 +150,7 @@ public class QuestManager : SingletonBase<QuestManager>
 
     private void HandleCraftCompleted(int targetId, int amount)
     {
-        if (targetId <= 0)
+        if (targetId < 0)
         {
             Debug.LogWarning("Quest progress skipped: craft target ID could not be resolved.");
             return;
@@ -155,10 +164,11 @@ public class QuestManager : SingletonBase<QuestManager>
         for (int i = 0; i < _activeQuests.Count; i++)
         {
             QuestProgressData questProgress = _activeQuests[i];
-            if (questProgress.Quest == null || questProgress.IsCompleted)
+            if (questProgress.Quest == null)
                 continue;
 
             bool wasCompleted = questProgress.IsCompleted;
+            bool hasMatchedCondition = false;
             bool questCompleted = true;
 
             for (int j = 0; j < questProgress.Quest.Conditions.Count; j++)
@@ -168,6 +178,7 @@ public class QuestManager : SingletonBase<QuestManager>
                 if (condition.ConditionType == conditionType &&
                     (condition.TargetId == 0 || condition.TargetId == targetId))
                 {
+                    hasMatchedCondition = true;
                     int newCount = questProgress.CurrentCounts[j] + amount;
                     questProgress.CurrentCounts[j] = Mathf.Min(newCount, condition.RequiredCount);
                 }
@@ -180,6 +191,9 @@ public class QuestManager : SingletonBase<QuestManager>
 
             questProgress.IsCompleted = questCompleted;
 
+            if (!hasMatchedCondition)
+                continue;
+
             if (questProgress.IsCompleted && !wasCompleted)
             {
                 Debug.Log($"Quest completed: {questProgress.Quest.QuestName} (ID: {questProgress.Quest.QuestId})");
@@ -189,6 +203,8 @@ public class QuestManager : SingletonBase<QuestManager>
                 Debug.Log($"Quest in progress: {questProgress.Quest.QuestName} (ID: {questProgress.Quest.QuestId})");
             }
         }
+
+        UIEvents.EvQuestProgressChanged();
     }
 
     private QuestProgressData FindQuestProgress(int questId)

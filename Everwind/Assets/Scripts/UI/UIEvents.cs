@@ -5,6 +5,7 @@ using UnityEngine;
 public static class UIEvents
 {
     public static bool IsPopupOpen { get; private set; }
+    public static bool IsPointerOverQuestScroll { get; private set; }
 
     public static event Action<DisplayUIManager.ProfileState, float> OnProfileChangeRequested;
     public static event Action<int, float, bool> OnSkillCooldownChanged;
@@ -14,6 +15,7 @@ public static class UIEvents
     public static event Action OnDeadUiOpenRequested;
     public static event Action OnDeadUiCloseRequested;
     public static event Action OnReviveRequested;
+    public static event Action OnQuestProgressChanged;
 
     public static void EvProfileChangeRequested(DisplayUIManager.ProfileState state, float duration)
     {
@@ -55,9 +57,19 @@ public static class UIEvents
         OnReviveRequested?.Invoke();
     }
 
+    public static void EvQuestProgressChanged()
+    {
+        OnQuestProgressChanged?.Invoke();
+    }
+
     public static void SetPopupOpenState(bool isOpen)
     {
         IsPopupOpen = isOpen;
+    }
+
+    public static void SetPointerOverQuestScroll(bool isPointerOver)
+    {
+        IsPointerOverQuestScroll = isPointerOver;
     }
 }
 

@@ -38,6 +38,10 @@ public class InputManager : SingletonBase<InputManager>
         return Input.GetKeyDown(KeyCode.C);
     }
 
+    public bool GetQuestUIKeyDown()
+    {
+        return Input.GetKeyDown(KeyCode.Q);
+    }
     public bool GetUICloseKeyDown()
     {
         if (_isRestricted)

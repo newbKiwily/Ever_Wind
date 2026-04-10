@@ -431,6 +431,8 @@
 "Assets/Scripts/UI/LoginUI.cs"
 "Assets/Scripts/UI/MapData.cs"
 "Assets/Scripts/UI/PopUpUIManager.cs"
+"Assets/Scripts/UI/QuestUI/QuestContentUI.cs"
+"Assets/Scripts/UI/QuestUI/QuestUI.cs"
 "Assets/Scripts/UI/TextRenderManager.cs"
 "Assets/Scripts/UI/UIEvents.cs"
 -langversion:9.0
