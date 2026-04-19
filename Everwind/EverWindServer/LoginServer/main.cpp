@@ -75,10 +75,11 @@ int main()
 
     TimerManager* timerManager = new TimerManager;
     timerManager->Start();
-    timerManager->AddRepeat(std::chrono::seconds(20), [sessionManager]()
+    timerManager->AddRepeat(std::chrono::seconds(10), [sessionManager]()
     {
         sessionManager->GetMapDataManager()->RefillEnemyAllMap();
     });
+
     std::cout << "Login Server started on port " << listenPort << ". Type 'quit' to stop." << std::endl;
 
     std::string command;

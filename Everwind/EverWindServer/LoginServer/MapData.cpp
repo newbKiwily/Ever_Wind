@@ -78,7 +78,6 @@ std::weak_ptr<Enemy> MapData::findEnemy(int id)
 
 std::shared_ptr<Enemy> MapData::InstanceEnemyUnlocked()
 {
-    //change: Return nullptr when no enemy can be spawned so callers can skip broadcasting.
     if (enemyIdList.empty() || instancedEnemys.size() >= maxEnemyCount) return nullptr;
 
     static std::random_device rd;

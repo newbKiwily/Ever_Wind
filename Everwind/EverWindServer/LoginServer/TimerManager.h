@@ -32,7 +32,7 @@ public:
 private:
 	struct TimerCompare
 	{
-		bool operator()(const std::shared_ptr<Timer>& lhs, const std::shared_ptr<Timer>& rhs) const;
+		bool operator()(const std::shared_ptr<Timer>& a, const std::shared_ptr<Timer>& b) const;
 	};
 
 	void Run();

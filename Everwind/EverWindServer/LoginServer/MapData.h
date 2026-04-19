@@ -29,7 +29,6 @@ public:
     std::vector<std::shared_ptr<Enemy>> RefillEnemy();
     void RemoveEnemy(int insId);
 private:
-    //change: Create and register one enemy while the caller already holds the map lock.
     std::shared_ptr<Enemy> InstanceEnemyUnlocked();
 
     std::mutex mapMutex_;

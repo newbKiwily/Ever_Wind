@@ -46,7 +46,7 @@ public class WorldLoader : SingletonBase<WorldLoader>
             }
         }
 
-        var enemyHpUiManager = SingletonManager.Instance.GetSingleton<EnemyHpUIManager>();
+        var enemyHpUiManager = FindFirstObjectByType<EnemyHpUIManager>();
         if (enemyHpUiManager != null)
         {
             enemyHpUiManager.ClearForMapChange();

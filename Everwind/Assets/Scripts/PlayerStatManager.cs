@@ -11,7 +11,6 @@ public class PlayerStatManager : MonoBehaviour
         public float Hp;
         public float MaxHp;
     }
-
     private Stat _stat = new Stat();
 
     public void Init()

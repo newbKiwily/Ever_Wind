@@ -3,10 +3,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class DisplayUIManager : SingletonBase<DisplayUIManager>
+public class DisplayUIManager : MonoBehaviour
 {
-    public override bool IsPersistent => false;
-
     public enum ProfileState
     {
         Normal,
@@ -32,10 +30,16 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
     [SerializeField]
     private Camera _minimapCamera;
 
-    protected override void Awake()
+    private void Start()
     {
-        Priority = 50;
-        base.Awake();
+        ProfileImage.sprite = _profileTable[ProfileState.Normal];
+        _tempHpRatio = 1.0f;
+        BindToPlayer();
+        BindMinimapRenderer();
+        SyncMinimapImage();
+        _skillButtonManager = GetComponentInChildren<SkillButtonManager>();
+        _skillButtonManager.Init(_combatManager);
+        _combatManager.BroadcastSkillCooldownStates();
     }
 
     private void OnEnable()
@@ -48,18 +52,6 @@ public class DisplayUIManager : SingletonBase<DisplayUIManager>
     {
         UIEvents.OnProfileChangeRequested -= HandleProfileChangeRequested;
         UIEvents.OnMinimapImageChanged -= HandleMinimapImageChanged;
-    }
-
-    public override void Init()
-    {
-        ProfileImage.sprite = _profileTable[ProfileState.Normal];
-        _tempHpRatio = 1.0f;
-        BindToPlayer();
-        BindMinimapRenderer();
-        SyncMinimapImage();
-        _skillButtonManager = GetComponentInChildren<SkillButtonManager>();
-        _skillButtonManager.Init(_combatManager);
-        _combatManager.BroadcastSkillCooldownStates();
     }
 
     private void BindToPlayer()

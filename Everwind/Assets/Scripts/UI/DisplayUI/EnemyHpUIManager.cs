@@ -2,10 +2,8 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-public class EnemyHpUIManager : SingletonBase<EnemyHpUIManager>
+public class EnemyHpUIManager : MonoBehaviour
 {
-    public override bool IsPersistent => false;
-
     [SerializeField]
     private GameObject _hpBarPrefab;
 
@@ -28,12 +26,6 @@ public class EnemyHpUIManager : SingletonBase<EnemyHpUIManager>
         public TextMeshProUGUI TextMesh;
         public float StartTime;
         public Vector3 StartPos;
-    }
-
-    protected override void Awake()
-    {
-        Priority = 60;
-        base.Awake();
     }
 
     private void OnEnable()

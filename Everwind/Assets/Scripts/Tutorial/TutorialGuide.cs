@@ -44,7 +44,7 @@ public class TutorialGuide : MonoBehaviour
         _stateTable.Add(TutorialStep.Craft, new CraftStep());
         _stateTable.Add(TutorialStep.Equip, new EquipStep());
 
-        TransitionStep(TutorialStep.Move);
+        TransitionStep(TutorialStep.Craft);
     }
 
     private void Update()

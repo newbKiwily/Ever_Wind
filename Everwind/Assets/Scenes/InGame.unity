@@ -4275,7 +4275,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 554018b19af2c1247a9b38183e17f18a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Priority: 0
   _hpBarPrefab: {fileID: 15017086901536859, guid: c38587f4ee8176346a9a55c481a7a398, type: 3}
   _damagedTextPrefab: {fileID: 2163378110740950520, guid: 5716af21132abb94ea0f9a1c328a10b3, type: 3}
   _poolSize: 15
@@ -4864,7 +4863,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 976f18905ab932444b04422664a6b99f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Priority: 0
   _combatManager: {fileID: 0}
   _player: {fileID: 0}
   HpBar: {fileID: 7373650189869337786}
