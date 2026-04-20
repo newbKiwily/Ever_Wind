@@ -92,6 +92,20 @@ public class NetworkClient : SingletonBase<NetworkClient>
     {
         var itemList = SingletonManager.Instance.GetSingleton<PopUpUIManager>().Inventory.GetCurrentInventoryData();
         var stat = SingletonManager.Instance.GetSingleton<WorldLoader>().InstancedPlayer.GetComponent<PlayerStatManager>().GetStat();
+        var questManager = SingletonManager.Instance.GetSingleton<QuestManager>();
+        var questResetPkt = PacketMethod.BuildQuestResetPkt(UserDbId);
+        Send(questResetPkt);
+
+        if (questManager != null)
+        {
+            var questList = questManager.GetSaveData();
+            for (int i = 0; i < questList.Count; i++)
+            {
+                var questPkt = PacketMethod.BuildQuestSavePkt(UserDbId, questList[i]);
+                Send(questPkt);
+            }
+        }
+
         foreach (var item in itemList)
         {
             var itemPkt = PacketMethod.BuildInventoryPkt(UserDbId, item);
@@ -161,6 +175,9 @@ public class NetworkClient : SingletonBase<NetworkClient>
                 break;
             case PacketType.S2C_MAP_CHANGE_ACK:
                 PacketMethod.HandleMapChangeAck(payload);
+                break;
+            case PacketType.S2C_QUEST_INFO:
+                PacketMethod.HandleQuestInfo(payload);
                 break;
             default:
                 Debug.LogWarning("Unknown packet: " + type);

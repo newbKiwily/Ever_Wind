@@ -26,3 +26,11 @@ struct MapInitialInfo {
     std::vector<int> enemyIdList;
     
 };
+
+struct QuestSaveData
+{
+    int questId = 0;
+    bool isCompleted = false;
+    bool rewardClaimed = false;
+    std::vector<int> currentCounts;
+};

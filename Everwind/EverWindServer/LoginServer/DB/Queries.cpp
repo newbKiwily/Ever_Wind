@@ -188,6 +188,100 @@ bool Queries::FetchInventory(const std::string& userId, std::vector<GameStruct::
     return true;
 }
 
+bool Queries::FetchUserQuests(const std::string& userId, std::vector<QuestSaveData>& outQuests)
+{
+    outQuests.clear();
+    MYSQL* connection = db_.GetConnection();
+    if (!connection) return false;
+
+    const char* sql =
+        "SELECT Q.QuestId, Q.IsCompleted, Q.RewardClaimed, P.ConditionIndex, P.CurrentCount "
+        "FROM UserQuest Q "
+        "LEFT JOIN UserQuestProgress P ON Q.UserID = P.UserID AND Q.QuestId = P.QuestId "
+        "WHERE Q.UserID = ? "
+        "ORDER BY Q.QuestId, P.ConditionIndex";
+
+    std::lock_guard<std::mutex> guard(db_.GetMutex());
+    MYSQL_STMT* stmt = mysql_stmt_init(connection);
+    if (!stmt) return false;
+
+    if (mysql_stmt_prepare(stmt, sql, (unsigned long)strlen(sql)) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    MYSQL_BIND bind[1]{};
+    unsigned long userIdLength = (unsigned long)userId.size();
+    bind[0].buffer_type = MYSQL_TYPE_STRING;
+    bind[0].buffer = (char*)userId.c_str();
+    bind[0].buffer_length = userIdLength;
+    bind[0].length = &userIdLength;
+
+    if (mysql_stmt_bind_param(stmt, bind) != 0 || mysql_stmt_execute(stmt) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    int questId = 0;
+    signed char isCompleted = 0;
+    signed char rewardClaimed = 0;
+    int conditionIndex = 0;
+    int currentCount = 0;
+    my_bool isNullConditionIndex = 0;
+    my_bool isNullCurrentCount = 0;
+
+    MYSQL_BIND resultBind[5]{};
+    resultBind[0].buffer_type = MYSQL_TYPE_LONG;
+    resultBind[0].buffer = &questId;
+    resultBind[1].buffer_type = MYSQL_TYPE_TINY;
+    resultBind[1].buffer = &isCompleted;
+    resultBind[2].buffer_type = MYSQL_TYPE_TINY;
+    resultBind[2].buffer = &rewardClaimed;
+    resultBind[3].buffer_type = MYSQL_TYPE_LONG;
+    resultBind[3].buffer = &conditionIndex;
+    resultBind[3].is_null = &isNullConditionIndex;
+    resultBind[4].buffer_type = MYSQL_TYPE_LONG;
+    resultBind[4].buffer = &currentCount;
+    resultBind[4].is_null = &isNullCurrentCount;
+
+    if (mysql_stmt_bind_result(stmt, resultBind) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    int currentQuestId = -1;
+    QuestSaveData currentQuest;
+
+    while (mysql_stmt_fetch(stmt) == 0) {
+        if (questId != currentQuestId) {
+            if (currentQuestId != -1) {
+                outQuests.push_back(currentQuest);
+            }
+
+            currentQuestId = questId;
+            currentQuest = QuestSaveData{};
+            currentQuest.questId = questId;
+            currentQuest.isCompleted = isCompleted != 0;
+            currentQuest.rewardClaimed = rewardClaimed != 0;
+        }
+
+        if (!isNullConditionIndex && !isNullCurrentCount) {
+            if ((int)currentQuest.currentCounts.size() <= conditionIndex) {
+                currentQuest.currentCounts.resize(conditionIndex + 1, 0);
+            }
+            currentQuest.currentCounts[conditionIndex] = currentCount;
+        }
+    }
+
+    if (currentQuestId != -1) {
+        outQuests.push_back(currentQuest);
+    }
+
+    mysql_stmt_free_result(stmt);
+    mysql_stmt_close(stmt);
+    return true;
+}
+
 bool Queries::FetchAllMapData(std::vector<MapInitialInfo>& outMaps)
 {
     outMaps.clear();
@@ -464,5 +558,151 @@ bool Queries::UpdateUserStat(const std::string& userId, const NetPackets::PKT_US
     bool ok = (mysql_stmt_execute(stmt) == 0);
     mysql_stmt_close(stmt);
     return ok;
+}
+
+bool Queries::ResetUserQuests(const std::string& userId)
+{
+    MYSQL* conn = db_.GetConnection();
+    if (!conn) return false;
+
+    std::lock_guard<std::mutex> guard(db_.GetMutex());
+
+    const char* deleteProgressSql = "DELETE FROM UserQuestProgress WHERE UserID=?";
+    MYSQL_STMT* stmt = mysql_stmt_init(conn);
+    if (!stmt) return false;
+
+    if (mysql_stmt_prepare(stmt, deleteProgressSql, (unsigned long)strlen(deleteProgressSql)) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    MYSQL_BIND bind[1]{};
+    unsigned long idLen = (unsigned long)userId.size();
+    bind[0].buffer_type = MYSQL_TYPE_STRING;
+    bind[0].buffer = (char*)userId.c_str();
+    bind[0].length = &idLen;
+
+    if (mysql_stmt_bind_param(stmt, bind) != 0 || mysql_stmt_execute(stmt) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+    mysql_stmt_close(stmt);
+
+    const char* deleteQuestSql = "DELETE FROM UserQuest WHERE UserID=?";
+    stmt = mysql_stmt_init(conn);
+    if (!stmt) return false;
+
+    if (mysql_stmt_prepare(stmt, deleteQuestSql, (unsigned long)strlen(deleteQuestSql)) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    if (mysql_stmt_bind_param(stmt, bind) != 0 || mysql_stmt_execute(stmt) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    mysql_stmt_close(stmt);
+    return true;
+}
+
+bool Queries::UpdateUserQuest(const std::string& userId, const NetPackets::PKT_QUEST_DATA& quest)
+{
+    MYSQL* conn = db_.GetConnection();
+    if (!conn) return false;
+
+    std::lock_guard<std::mutex> guard(db_.GetMutex());
+
+    const char* questSql =
+        "REPLACE INTO UserQuest (UserID, QuestId, IsCompleted, RewardClaimed) "
+        "VALUES (?, ?, ?, ?)";
+
+    MYSQL_STMT* stmt = mysql_stmt_init(conn);
+    if (!stmt) return false;
+
+    if (mysql_stmt_prepare(stmt, questSql, (unsigned long)strlen(questSql)) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    unsigned long idLen = (unsigned long)userId.size();
+    signed char isCompleted = (signed char)quest.isCompleted;
+    signed char rewardClaimed = (signed char)quest.rewardClaimed;
+
+    MYSQL_BIND questBind[4]{};
+    questBind[0].buffer_type = MYSQL_TYPE_STRING;
+    questBind[0].buffer = (char*)userId.c_str();
+    questBind[0].length = &idLen;
+    questBind[1].buffer_type = MYSQL_TYPE_LONG;
+    questBind[1].buffer = (void*)&quest.questId;
+    questBind[2].buffer_type = MYSQL_TYPE_TINY;
+    questBind[2].buffer = &isCompleted;
+    questBind[3].buffer_type = MYSQL_TYPE_TINY;
+    questBind[3].buffer = &rewardClaimed;
+
+    if (mysql_stmt_bind_param(stmt, questBind) != 0 || mysql_stmt_execute(stmt) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+    mysql_stmt_close(stmt);
+
+    const char* deleteProgressSql = "DELETE FROM UserQuestProgress WHERE UserID=? AND QuestId=?";
+    stmt = mysql_stmt_init(conn);
+    if (!stmt) return false;
+
+    if (mysql_stmt_prepare(stmt, deleteProgressSql, (unsigned long)strlen(deleteProgressSql)) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    MYSQL_BIND deleteBind[2]{};
+    deleteBind[0].buffer_type = MYSQL_TYPE_STRING;
+    deleteBind[0].buffer = (char*)userId.c_str();
+    deleteBind[0].length = &idLen;
+    deleteBind[1].buffer_type = MYSQL_TYPE_LONG;
+    deleteBind[1].buffer = (void*)&quest.questId;
+
+    if (mysql_stmt_bind_param(stmt, deleteBind) != 0 || mysql_stmt_execute(stmt) != 0) {
+        mysql_stmt_close(stmt);
+        return false;
+    }
+    mysql_stmt_close(stmt);
+
+    const char* progressSql =
+        "INSERT INTO UserQuestProgress (UserID, QuestId, ConditionIndex, CurrentCount) "
+        "VALUES (?, ?, ?, ?)";
+
+    for (int i = 0; i < quest.conditionCount && i < NetPackets::MAX_QUEST_PROGRESS_COUNT; ++i) {
+        stmt = mysql_stmt_init(conn);
+        if (!stmt) return false;
+
+        if (mysql_stmt_prepare(stmt, progressSql, (unsigned long)strlen(progressSql)) != 0) {
+            mysql_stmt_close(stmt);
+            return false;
+        }
+
+        int conditionIndex = i;
+        int currentCount = quest.currentCounts[i];
+
+        MYSQL_BIND progressBind[4]{};
+        progressBind[0].buffer_type = MYSQL_TYPE_STRING;
+        progressBind[0].buffer = (char*)userId.c_str();
+        progressBind[0].length = &idLen;
+        progressBind[1].buffer_type = MYSQL_TYPE_LONG;
+        progressBind[1].buffer = (void*)&quest.questId;
+        progressBind[2].buffer_type = MYSQL_TYPE_LONG;
+        progressBind[2].buffer = &conditionIndex;
+        progressBind[3].buffer_type = MYSQL_TYPE_LONG;
+        progressBind[3].buffer = &currentCount;
+
+        if (mysql_stmt_bind_param(stmt, progressBind) != 0 || mysql_stmt_execute(stmt) != 0) {
+            mysql_stmt_close(stmt);
+            return false;
+        }
+
+        mysql_stmt_close(stmt);
+    }
+
+    return true;
 }
 

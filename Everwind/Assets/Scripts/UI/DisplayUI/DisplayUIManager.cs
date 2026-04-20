@@ -34,34 +34,52 @@ public class DisplayUIManager : MonoBehaviour
     {
         ProfileImage.sprite = _profileTable[ProfileState.Normal];
         _tempHpRatio = 1.0f;
-        BindToPlayer();
         BindMinimapRenderer();
         SyncMinimapImage();
-        _skillButtonManager = GetComponentInChildren<SkillButtonManager>();
-        _skillButtonManager.Init(_combatManager);
-        _combatManager.BroadcastSkillCooldownStates();
     }
 
     private void OnEnable()
     {
         UIEvents.OnProfileChangeRequested += HandleProfileChangeRequested;
         UIEvents.OnMinimapImageChanged += HandleMinimapImageChanged;
+        UIEvents.OnLocalPlayerSpawned += HandleLocalPlayerSpawned;
     }
 
     private void OnDisable()
     {
         UIEvents.OnProfileChangeRequested -= HandleProfileChangeRequested;
         UIEvents.OnMinimapImageChanged -= HandleMinimapImageChanged;
+        UIEvents.OnLocalPlayerSpawned -= HandleLocalPlayerSpawned;
+
+        if (_player != null)
+        {
+            _player.OnTakeDamage -= UpdateHpBar;
+        }
     }
 
-    private void BindToPlayer()
+    private void BindToPlayer(Player player)
     {
-        _player = SingletonManager.Instance.GetSingleton<WorldLoader>().InstancedPlayer.GetComponent<Player>();
+        if (_player != null)
+        {
+            _player.OnTakeDamage -= UpdateHpBar;
+        }
+
+        _player = player;
         if (_player == null)
             return;
 
         _combatManager = _player.GetCombatManager();
         _player.OnTakeDamage += UpdateHpBar;
+        _skillButtonManager = GetComponentInChildren<SkillButtonManager>();
+        if (_skillButtonManager != null)
+        {
+            _skillButtonManager.Init(_combatManager);
+        }
+
+        if (_combatManager != null)
+        {
+            _combatManager.BroadcastSkillCooldownStates();
+        }
     }
 
     private void LateUpdate()
@@ -125,6 +143,11 @@ public class DisplayUIManager : MonoBehaviour
         _minimapSpriteRenderer.sprite = minimapSprite;
         _minimapSpriteRenderer.transform.localPosition = minimapPosition;
         _minimapSpriteRenderer.transform.localEulerAngles = minimapRotation;
+    }
+
+    private void HandleLocalPlayerSpawned(Player player)
+    {
+        BindToPlayer(player);
     }
 
     private IEnumerator ChangeProfileCoroutine(ProfileState state, float time)

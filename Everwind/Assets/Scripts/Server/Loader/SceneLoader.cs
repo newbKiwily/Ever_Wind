@@ -22,7 +22,7 @@ public class SceneLoader : SingletonBase<SceneLoader>
     private IEnumerator LoadSequence(string sceneName)
     {
         var data = SingletonManager.Instance.GetSingleton<DataCenter>();
-        loginUI.SetResult("¾À ·ÎµùÁß...");
+        loginUI.SetResult("Loadign Scene...");
 
         AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
         while (!op.isDone) yield return null;

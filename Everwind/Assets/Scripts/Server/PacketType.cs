@@ -40,7 +40,10 @@ public enum PacketType : ushort
     S2C_MAP_CHANGE_ACK=0X133,
 
     C2S_ENEMY_DEAD_REQ = 0X134,
-    S2C_ENEMY_DEAD_ACK = 0X135
+    S2C_ENEMY_DEAD_ACK = 0X135,
+    S2C_QUEST_INFO = 0X136,
+    C2S_QUEST_RESET = 0X137,
+    C2S_QUEST_SAVE = 0X138
 }
 
 public enum OneshotAnimKey : int
@@ -225,5 +228,21 @@ public struct PKT_C2S_ENEMY_DEAD_REQ
 public struct PKT_S2C_ENEMY_DEAD_ACK
 {
     public int InstanceId;
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public unsafe struct PKT_QUEST_DATA
+{
+    public int QuestId;
+    public int IsCompleted;
+    public int RewardClaimed;
+    public int ConditionCount;
+    public fixed int CurrentCounts[8];
+}
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct PKT_QUEST_RESET
+{
+    public int UserDBID;
 }
 

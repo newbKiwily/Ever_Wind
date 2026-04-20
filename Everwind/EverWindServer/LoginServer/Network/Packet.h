@@ -9,6 +9,7 @@ namespace NetPackets
 {
     constexpr uint16_t MAX_PACKET_SIZE = 1024;
     constexpr uint16_t MIN_PACKET_SIZE = sizeof(uint16_t) * 2;
+    constexpr int MAX_QUEST_PROGRESS_COUNT = 8;
 
     enum class PacketId : uint16_t
     {
@@ -50,7 +51,10 @@ namespace NetPackets
         S2C_MAP_CHANGE_ACK = 0X133,
 
         C2S_ENEMY_DEAD_REQ = 0X134,
-        S2C_ENEMY_DEAD_ACK = 0X135
+        S2C_ENEMY_DEAD_ACK = 0X135,
+        S2C_QUEST_INFO = 0X136,
+        C2S_QUEST_RESET = 0X137,
+        C2S_QUEST_SAVE = 0X138
 
     };
 
@@ -206,6 +210,20 @@ namespace NetPackets
     struct PKT_S2C_ENEMY_DEAD_ACK
     {
         int32_t instanceId;
+    };
+
+    struct PKT_QUEST_DATA
+    {
+        int32_t questId;
+        int32_t isCompleted;
+        int32_t rewardClaimed;
+        int32_t conditionCount;
+        int32_t currentCounts[MAX_QUEST_PROGRESS_COUNT];
+    };
+
+    struct PKT_QUEST_RESET
+    {
+        int32_t userDbId;
     };
 #pragma pack(pop)
 

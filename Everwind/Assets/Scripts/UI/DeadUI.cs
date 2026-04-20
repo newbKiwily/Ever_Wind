@@ -50,7 +50,7 @@ public class DeadUI : MonoBehaviour
             if (_timer > 0)
             {
                 _timer -= Time.deltaTime;
-                introductionDead.text = $"?¹ì‹ ?€ ì£½ì—ˆ?µë‹ˆ??\n{Mathf.CeilToInt(_timer)}ì´??„ì— ?´ì•„?????ˆìŠµ?ˆë‹¤...";
+                introductionDead.text = $"´ç½ÅÀ» Á×¾ú½À´Ï´Ù.\n{Mathf.CeilToInt(_timer)}ÃÊ ÈÄ¿¡ ºÎÈ°ÇÒ ¼ö ÀÖ½À´Ï´Ù";
             }
             else
             {
@@ -63,7 +63,7 @@ public class DeadUI : MonoBehaviour
     {
         _isCountingDown = false;
         _timer = 0;
-        introductionDead.text = "?´ì œ ë¶€?œí•  ???ˆìŠµ?ˆë‹¤!\n?¬ê¸°?˜ì?ë§ˆì„¸??";
+        introductionDead.text = "ÀÌÁ¦ ºÎÈ°ÇÒ ¼ö ÀÖ½À´Ï´Ù";
 
         if (revive != null)
         {

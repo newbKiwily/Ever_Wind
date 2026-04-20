@@ -251,16 +251,55 @@ public static unsafe class PacketMethod
         return buffer;
     }
 
+    public static byte[] BuildQuestResetPkt(int userDbId)
+    {
+        byte[] buffer = new byte[sizeof(PacketHeader) + sizeof(PKT_QUEST_RESET)];
+        fixed (byte* ptr = buffer)
+        {
+            PacketHeader* h = (PacketHeader*)ptr;
+            h->Length = (ushort)buffer.Length;
+            h->Id = (ushort)PacketType.C2S_QUEST_RESET;
+
+            PKT_QUEST_RESET* body = (PKT_QUEST_RESET*)(ptr + sizeof(PacketHeader));
+            body->UserDBID = userDbId;
+        }
+        return buffer;
+    }
+
+    public static byte[] BuildQuestSavePkt(int userDbId, DataCenter.QuestLoadData questData)
+    {
+        byte[] buffer = new byte[sizeof(PacketHeader) + sizeof(PKT_QUEST_DATA)];
+        fixed (byte* ptr = buffer)
+        {
+            PacketHeader* h = (PacketHeader*)ptr;
+            h->Length = (ushort)buffer.Length;
+            h->Id = (ushort)PacketType.C2S_QUEST_SAVE;
+
+            PKT_QUEST_DATA* body = (PKT_QUEST_DATA*)(ptr + sizeof(PacketHeader));
+            body->QuestId = questData.QuestId;
+            body->IsCompleted = questData.IsCompleted ? 1 : 0;
+            body->RewardClaimed = questData.RewardClaimed ? 1 : 0;
+            body->ConditionCount = Mathf.Min(questData.CurrentCounts.Count, 8);
+
+            for (int i = 0; i < body->ConditionCount; i++)
+            {
+                body->CurrentCounts[i] = questData.CurrentCounts[i];
+            }
+        }
+        return buffer;
+    }
+
     public static void HandleLoginAck(byte[] payload)
     {
         fixed (byte* ptr = payload)
         {
             PKT_LOGIN_ACK* pkt = (PKT_LOGIN_ACK*)ptr;
+            var dataCenter = SingletonManager.Instance.GetSingleton<DataCenter>();
 
             DataCenter.LoginData tempData = new DataCenter.LoginData();
             tempData.Position = new Vector3(pkt->PosX, pkt->PosY, pkt->PosZ);
             tempData.MapId = pkt->UserMapId;
-            SingletonManager.Instance.GetSingleton<DataCenter>().loginData = tempData;
+            dataCenter.loginData = tempData;
 
             int result = pkt->ResultCode;
             int userDbId = pkt->UserDBID;
@@ -299,9 +338,9 @@ public static unsafe class PacketMethod
 
                 switch (result)
                 {
-                    case 0: ui.SetResult("È¸¿ø°¡ÀÔÀ» ¿Ï·áÇÏ¿´½À´Ï´Ù."); break;
-                    case 1: ui.SetResult("ÀÌ¹Ì ÀÖ´Â ¾ÆÀÌµð¿Í ºñ¹Ð¹øÈ£ ÀÔ´Ï´Ù."); break;
-                    case 2: ui.SetResult("µ¥ÀÌÅÍº£ÀÌ½º ¿À·ùÀÔ´Ï´Ù."); break;
+                    case 0: ui.SetResult("íšŒì›ê°€ìž… ì„±ê³µ!"); break;
+                    case 1: ui.SetResult("ì´ë¯¸ ìžˆëŠ” ê³„ì •ìž…ë‹ˆë‹¤."); break;
+                    case 2: ui.SetResult("ìž…ë ¥ì´ ìž˜ëª»ë˜ì—ˆìŠµë‹ˆë‹¤."); break;
                     default: ui.SetResult("Unknown Error"); break;
                 }
                 ui.FlushTest();
@@ -677,6 +716,33 @@ public static unsafe class PacketMethod
                         }
                     }
                 }
+            });
+        }
+    }
+
+    public static void HandleQuestInfo(byte[] payload)
+    {
+        fixed (byte* ptr = payload)
+        {
+            PKT_QUEST_DATA* pkt = (PKT_QUEST_DATA*)ptr;
+
+            DataCenter.QuestLoadData questData = new DataCenter.QuestLoadData
+            {
+                QuestId = pkt->QuestId,
+                IsCompleted = pkt->IsCompleted == 1,
+                RewardClaimed = pkt->RewardClaimed == 1,
+                CurrentCounts = new System.Collections.Generic.List<int>()
+            };
+
+            int conditionCount = Mathf.Clamp(pkt->ConditionCount, 0, 8);
+            for (int i = 0; i < conditionCount; i++)
+            {
+                questData.CurrentCounts.Add(pkt->CurrentCounts[i]);
+            }
+
+            UnityMainThreadDispatcher.Instance().Enqueue(() =>
+            {
+                SingletonManager.Instance.GetSingleton<DataCenter>().LoadQuests.Add(questData);
             });
         }
     }

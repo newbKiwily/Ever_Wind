@@ -31,6 +31,8 @@ public:
     bool HandleDeadSyncReq(Session* session, const NetPackets::PKT_DEAD_SYNC& packet);
     bool HandleCombatStateSync(Session* session, const NetPackets::PKT_COMBAT_STATE_SYNC& packet);
     bool HandleMapChangeReq(Session* session, const NetPackets::PKT_MAP_CHANGE_REQ& packet);
+    bool HandleQuestResetRequest(Session* session, const NetPackets::PKT_QUEST_RESET& packet);
+    bool HandleQuestSaveRequest(Session* session, const NetPackets::PKT_QUEST_DATA& packet);
     
     void SendPlayerLogOut(Session* session, int userid);
 
@@ -58,6 +60,7 @@ private:
     std::vector<char> BuildDeadSync(int userDbId, uint8_t isStart);
     std::vector<char> BuildCombatStateSync(int userDbId, uint8_t isCombat);
     std::vector<char> BuildMapChangeAck(int mapId, float x, float y, float z);
+    std::vector<char> BuildQuestInfoAck(const QuestSaveData& questData);
 private:
     DBManager& dbManager_;
     Queries* query_;

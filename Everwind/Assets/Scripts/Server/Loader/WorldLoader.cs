@@ -98,9 +98,11 @@ public class WorldLoader : SingletonBase<WorldLoader>
         if (_playerPrefab != null)
         {
             InstancedPlayer = Instantiate(_playerPrefab, spawnPos, Quaternion.identity);
-            InstancedPlayer.GetComponent<Player>().Init();
+            Player player = InstancedPlayer.GetComponent<Player>();
+            player.Init();
             SetupCamera(InstancedPlayer.transform);
             MoveLocalPlayerToSpawn(spawnPos);
+            UIEvents.EvLocalPlayerSpawned(player);
         }
     }
 

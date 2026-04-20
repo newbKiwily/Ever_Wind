@@ -287,12 +287,40 @@ std::vector<char> PacketMethod::BuildCombatStateSync(int userDbId, uint8_t isCom
     return buffer;
 }
 
-//change: Add a placeholder map-change ack builder so the new packet API is available without changing logic yet.
 std::vector<char> PacketMethod::BuildMapChangeAck(int mapId, float x, float y, float z)
 {   
     NetPackets::PKT_MAP_CHANGE_ACK ack{ mapId,x,y,z };
     NetPackets::PacketHeader header{};
     header.Id = static_cast<uint16_t>(NetPackets::PacketId::S2C_MAP_CHANGE_ACK);
+    header.Length = sizeof(header) + sizeof(ack);
+
+    std::vector<char> buffer(header.Length);
+    std::memcpy(buffer.data(), &header, sizeof(header));
+    std::memcpy(buffer.data() + sizeof(header), &ack, sizeof(ack));
+
+    return buffer;
+}
+
+std::vector<char> PacketMethod::BuildQuestInfoAck(const QuestSaveData& questData)
+{
+    NetPackets::PKT_QUEST_DATA ack{};
+    ack.questId = questData.questId;
+    ack.isCompleted = questData.isCompleted ? 1 : 0;
+    ack.rewardClaimed = questData.rewardClaimed ? 1 : 0;
+    ack.conditionCount = (int)questData.currentCounts.size();
+
+    int copyCount = ack.conditionCount;
+    if (copyCount > NetPackets::MAX_QUEST_PROGRESS_COUNT) {
+        copyCount = NetPackets::MAX_QUEST_PROGRESS_COUNT;
+        ack.conditionCount = copyCount;
+    }
+
+    for (int i = 0; i < copyCount; ++i) {
+        ack.currentCounts[i] = questData.currentCounts[i];
+    }
+
+    NetPackets::PacketHeader header{};
+    header.Id = static_cast<uint16_t>(NetPackets::PacketId::S2C_QUEST_INFO);
     header.Length = sizeof(header) + sizeof(ack);
 
     std::vector<char> buffer(header.Length);
@@ -420,6 +448,16 @@ bool PacketMethod::HandleLoginRequest(Session* session, const NetPackets::PKT_LO
         session->PostSend(statBuf.data(), statBuf.size());
     }
 
+    std::vector<QuestSaveData> quests;
+    if (query_->FetchUserQuests(userId, quests))
+    {
+        for (const auto& quest : quests)
+        {
+            std::vector<char> questBuf = BuildQuestInfoAck(quest);
+            session->PostSend(questBuf.data(), questBuf.size());
+        }
+    }
+
     std::vector<char> loginAckBuf = BuildLoginAck(0, session->GetServerUserId(), mapId, x, y, z);
     session->PostSend(loginAckBuf.data(), loginAckBuf.size());
 
@@ -473,6 +511,32 @@ bool PacketMethod::HandleStatRequest(Session* session, const NetPackets::PKT_USE
     if (!query_->UpdateUserStat(session->GetUserId(), packet))
     {
         std::cerr << "[Stat Update Fail] User: " << session->GetUserId() << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool PacketMethod::HandleQuestResetRequest(Session* session, const NetPackets::PKT_QUEST_RESET& packet)
+{
+    if (!session || session->GetUserId().empty()) return false;
+
+    if (!query_->ResetUserQuests(session->GetUserId()))
+    {
+        std::cerr << "[Quest Reset Fail] User: " << session->GetUserId() << " RequestUserDbId: " << packet.userDbId << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool PacketMethod::HandleQuestSaveRequest(Session* session, const NetPackets::PKT_QUEST_DATA& packet)
+{
+    if (!session || session->GetUserId().empty()) return false;
+
+    if (!query_->UpdateUserQuest(session->GetUserId(), packet))
+    {
+        std::cerr << "[Quest Save Fail] User: " << session->GetUserId() << " QuestId: " << packet.questId << std::endl;
         return false;
     }
 
@@ -593,6 +657,20 @@ bool PacketMethod::HandlePacket(Session* session, const NetPackets::PacketHeader
         NetPackets::PKT_MAP_CHANGE_REQ pkt{};
         std::memcpy(&pkt, payload, sizeof(pkt));
         return HandleMapChangeReq(session, pkt);
+    }
+    case NetPackets::PacketId::C2S_QUEST_RESET:
+    {
+        if (payloadSize != sizeof(NetPackets::PKT_QUEST_RESET)) return false;
+        NetPackets::PKT_QUEST_RESET pkt{};
+        std::memcpy(&pkt, payload, sizeof(pkt));
+        return HandleQuestResetRequest(session, pkt);
+    }
+    case NetPackets::PacketId::C2S_QUEST_SAVE:
+    {
+        if (payloadSize != sizeof(NetPackets::PKT_QUEST_DATA)) return false;
+        NetPackets::PKT_QUEST_DATA pkt{};
+        std::memcpy(&pkt, payload, sizeof(pkt));
+        return HandleQuestSaveRequest(session, pkt);
     }
     default:
         

@@ -324,7 +324,8 @@
 			// UV Distortion
 
 		#if _CFXR_UV_DISTORTION
-			float2 distortionUvSource = _CFXR_UV2_DISTORTION ? i.custom1.xy : i.uv_random.xy;
+			float2 distortionUvSource = _CFXR_UV2_DISTORTION 
+i.custom1.xy : i.uv_random.xy;
 			float2 uvDistortion = tex2D(_DistortTex, distortionUvSource.xy * _DistortScrolling.zw + i.uv_random.zw + frac(_DistortScrolling.xy * _Time.yy)).rg;
 			uvDistortion = _CFXR_UV_DISTORTION_ADD ? i.uv_random.xy + (uvDistortion * 2.0 - 1.0) * _Distort : lerp(i.uv_random.xy, uvDistortion, _Distort);
 

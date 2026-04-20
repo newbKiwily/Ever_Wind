@@ -33,13 +33,7 @@ public class QuestManager : SingletonBase<QuestManager>
     {
         SubscribeEvents();
         SyncQuestTable();
-
-        _isInitializing = true;
-        foreach (Quest quest in _questTable.Values)
-        {
-            AcceptQuest(quest);
-        }
-        _isInitializing = false;
+        LoadQuestProgress();
 
         UIEvents.EvQuestProgressChanged();
     }
@@ -94,6 +88,30 @@ public class QuestManager : SingletonBase<QuestManager>
             UIEvents.EvQuestProgressChanged();
     }
 
+    public List<DataCenter.QuestLoadData> GetSaveData()
+    {
+        List<DataCenter.QuestLoadData> saveData = new List<DataCenter.QuestLoadData>(_activeQuests.Count);
+
+        for (int i = 0; i < _activeQuests.Count; i++)
+        {
+            QuestProgressData questProgress = _activeQuests[i];
+            if (questProgress.Quest == null)
+                continue;
+
+            DataCenter.QuestLoadData data = new DataCenter.QuestLoadData
+            {
+                QuestId = questProgress.Quest.QuestId,
+                IsCompleted = questProgress.IsCompleted,
+                RewardClaimed = questProgress.RewardClaimed,
+                CurrentCounts = new List<int>(questProgress.CurrentCounts)
+            };
+
+            saveData.Add(data);
+        }
+
+        return saveData;
+    }
+
     public int GetConditionProgress(int questId, int conditionIndex)
     {
         QuestProgressData questProgress = FindQuestProgress(questId);
@@ -124,6 +142,51 @@ public class QuestManager : SingletonBase<QuestManager>
 
             _questTable[quest.QuestId] = quest;
         }
+    }
+
+    private void LoadQuestProgress()
+    {
+        _activeQuests.Clear();
+        _isInitializing = true;
+
+        DataCenter dataCenter = SingletonManager.Instance.GetSingleton<DataCenter>();
+        if (dataCenter != null && dataCenter.LoadQuests.Count > 0)
+        {
+            for (int i = 0; i < dataCenter.LoadQuests.Count; i++)
+            {
+                DataCenter.QuestLoadData loadData = dataCenter.LoadQuests[i];
+                if (!_questTable.TryGetValue(loadData.QuestId, out Quest quest) || quest == null)
+                    continue;
+
+                QuestProgressData progressData = new QuestProgressData
+                {
+                    Quest = quest,
+                    IsCompleted = loadData.IsCompleted,
+                    RewardClaimed = loadData.RewardClaimed,
+                    CurrentCounts = new List<int>()
+                };
+
+                int conditionCount = quest.Conditions.Count;
+                for (int j = 0; j < conditionCount; j++)
+                {
+                    int currentCount = j < loadData.CurrentCounts.Count ? loadData.CurrentCounts[j] : 0;
+                    progressData.CurrentCounts.Add(currentCount);
+                }
+
+                _activeQuests.Add(progressData);
+            }
+
+            dataCenter.LoadQuests.Clear();
+        }
+        else
+        {
+            foreach (Quest quest in _questTable.Values)
+            {
+                AcceptQuest(quest);
+            }
+        }
+
+        _isInitializing = false;
     }
 
     private void HandleCombatEnemyKilled(int targetId, int amount)

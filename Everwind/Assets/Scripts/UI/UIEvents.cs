@@ -12,6 +12,7 @@ public static class UIEvents
     public static event Action<List<GameObject>> OnEnemyListUpdated;
     public static event Action<Vector3, int> OnDamageTextRequested;
     public static event Action<Sprite, Vector3, Vector3> OnMinimapImageChanged;
+    public static event Action<Player> OnLocalPlayerSpawned;
     public static event Action OnDeadUiOpenRequested;
     public static event Action OnDeadUiCloseRequested;
     public static event Action OnReviveRequested;
@@ -40,6 +41,11 @@ public static class UIEvents
     public static void EvMinimapImageChanged(Sprite minimapSprite, Vector3 minimapPosition, Vector3 minimapRotation)
     {
         OnMinimapImageChanged?.Invoke(minimapSprite, minimapPosition, minimapRotation);
+    }
+
+    public static void EvLocalPlayerSpawned(Player player)
+    {
+        OnLocalPlayerSpawned?.Invoke(player);
     }
 
     public static void EvDeadUiOpenRequested()

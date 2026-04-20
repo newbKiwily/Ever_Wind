@@ -62,7 +62,8 @@ public class QuestUI : MonoBehaviour
         }
         else
         {
-            _eventCamera = canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
+            _eventCamera = canvas.worldCamera != null 
+                ?canvas.worldCamera : Camera.main;
         }
         SetupVerticalScroll();
         _isInitialized = true;

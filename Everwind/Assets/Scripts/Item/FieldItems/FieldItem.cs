@@ -38,7 +38,8 @@ public abstract class FieldItem : MonoBehaviour, IObtainable
     protected void EndRooting()
     {
         ItemMediator itemMediator = SingletonManager.Instance.GetSingleton<ItemMediator>();
-        int fieldItemId = itemMediator != null ? itemMediator.GetFieldItemId(gameObject) : 0;
+        int fieldItemId = itemMediator != null? 
+            itemMediator.GetFieldItemId(gameObject) : 0;
 
         PlayEvents.EvGatherCompleted(fieldItemId);
         EvObtained?.Invoke();

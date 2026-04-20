@@ -33,6 +33,14 @@ public class DataCenter : SingletonBase<DataCenter>
         public Vector3 Position;
     }
 
+    public struct QuestLoadData
+    {
+        public int QuestId;
+        public bool IsCompleted;
+        public bool RewardClaimed;
+        public List<int> CurrentCounts;
+    }
+
 
     public LoginData loginData = new LoginData();
 
@@ -43,6 +51,7 @@ public class DataCenter : SingletonBase<DataCenter>
     public Queue<string> LoadEquipItems = new Queue<string>();
     public Queue<int> OtherPlayers = new Queue<int>();
     public Queue<EnemyInfo> LoadEnemies = new Queue<EnemyInfo>();
+    public List<QuestLoadData> LoadQuests = new List<QuestLoadData>();
 
     public void FlushQueue()
     {
