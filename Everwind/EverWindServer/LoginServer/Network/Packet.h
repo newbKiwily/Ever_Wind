@@ -79,6 +79,7 @@ namespace NetPackets
         float PosX;
         float PosY;
         float PosZ;
+        int32_t TutorialStep;
     };
 
     struct PKT_SIGNUP_REQ
@@ -130,6 +131,7 @@ namespace NetPackets
         float hp;
         float max_hp;
         float speed;
+        int32_t tutorialStep;
     };
 
     

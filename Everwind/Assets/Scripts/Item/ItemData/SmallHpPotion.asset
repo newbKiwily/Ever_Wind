@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8acdcfd37151df4e91e6202a5610d54, type: 3}
+  m_Name: SmallHpPotion
+  m_EditorClassIdentifier: 
+  ItemName: SmallHpPotion
+  ItemImage: {fileID: 21300000, guid: 49cfe97e7f6d389479a5bb2eb8585c9b, type: 3}
+  IsStackable: 1
+  ItemInstruction: Healing HP 30point
+  IsFromEquipmentUI: 0
+  HealAmount: 30

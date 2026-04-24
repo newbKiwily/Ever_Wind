@@ -16,6 +16,7 @@ public class DataCenter : SingletonBase<DataCenter>
     {
         public Vector3 Position;
         public int MapId;
+        public int TutorialStep;
     }
 
     public struct InventoryData

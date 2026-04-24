@@ -7,7 +7,7 @@ public class PlaceItem : ConsumeItem
 
     public override void Use()
     {
-        GameObject playerObj = GameObject.Find("Player");
+        GameObject playerObj = SingletonManager.Instance.GetSingleton<WorldLoader>().InstancedPlayer;
         if (playerObj == null)
             return;
 

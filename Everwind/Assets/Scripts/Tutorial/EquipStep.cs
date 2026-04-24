@@ -3,9 +3,11 @@ using System;
 public class EquipStep : ITutorialStep
 {
     private Action<int, int> _deleteAction;
+    private bool _mapChangeRequested;
 
     public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
     {
+        _mapChangeRequested = false;
         _deleteAction += (_, _) => ClearEvent(step, textRenderManager);
         PlayEvents.OnEquipCompleted += _deleteAction;
 
@@ -18,12 +20,21 @@ public class EquipStep : ITutorialStep
         if (_deleteAction != null)
             return;
 
+        if (_mapChangeRequested)
+            return;
+
         if (!textRenderManager.IsDoneShowingText())
             return;
 
-        if (inputManager.AnyKeyDownExcludeMouse())
-        {
-        }
+        step.CompleteTutorial();
+
+        var dataCenter = SingletonManager.Instance.GetSingleton<DataCenter>();
+        dataCenter.FlushQueue();
+
+        var networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
+        var pkt = PacketMethod.BuildMapChangeReq(networkClient.UserDbId, 1);
+        networkClient.Send(pkt);
+        _mapChangeRequested = true;
     }
 
     public void ExitStep(TutorialGuide step)
@@ -32,6 +43,7 @@ public class EquipStep : ITutorialStep
             PlayEvents.OnEquipCompleted -= _deleteAction;
 
         _deleteAction = null;
+        _mapChangeRequested = false;
     }
 
     public void ClearEvent(TutorialGuide step, TextRenderManager textRenderManager)

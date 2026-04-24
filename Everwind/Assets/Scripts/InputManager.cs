@@ -22,6 +22,11 @@ public class InputManager : SingletonBase<InputManager>
         }
     }
 
+    private bool HasTutorialRestriction()
+    {
+        return _tutorialGuide != null && _tutorialGuide.HasActiveTutorial();
+    }
+
     public bool GetInventoryKeyDown()
     {
         if (_isRestricted)
@@ -31,8 +36,9 @@ public class InputManager : SingletonBase<InputManager>
 
     public bool GetCraftUIKeyDown()
     {
-        if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move ||
-            _tutorialGuide.GetTutorialStepType() == TutorialStep.Combat || _tutorialGuide.GetTutorialStepType() == TutorialStep.Interact || _isRestricted)
+        if (HasTutorialRestriction() &&
+            (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move ||
+            _tutorialGuide.GetTutorialStepType() == TutorialStep.Combat || _tutorialGuide.GetTutorialStepType() == TutorialStep.Interact) || _isRestricted)
             return false;
 
         return Input.GetKeyDown(KeyCode.C);
@@ -60,7 +66,7 @@ public class InputManager : SingletonBase<InputManager>
 
     public float GetHorizontal()
     {
-        if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _isRestricted)
+        if ((HasTutorialRestriction() && _tutorialGuide.GetTutorialStepType() == TutorialStep.Camera) || _isRestricted)
             return 0;
 
         return Input.GetAxis("Horizontal");
@@ -68,22 +74,24 @@ public class InputManager : SingletonBase<InputManager>
 
     public float GetVertical()
     {
-        if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _isRestricted)
+        if ((HasTutorialRestriction() && _tutorialGuide.GetTutorialStepType() == TutorialStep.Camera) || _isRestricted)
             return 0;
         return Input.GetAxis("Vertical");
     }
 
     public bool GetInteractDown()
     {
-        if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move ||
-            _tutorialGuide.GetTutorialStepType() == TutorialStep.Combat || _isRestricted)
+        if ((HasTutorialRestriction() &&
+            (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move ||
+            _tutorialGuide.GetTutorialStepType() == TutorialStep.Combat)) || _isRestricted)
             return false;
         return Input.GetKeyDown(KeyCode.Space);
     }
 
     public bool GetEnterCombatDown()
     {
-        if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move || _isRestricted)
+        if ((HasTutorialRestriction() &&
+            (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move)) || _isRestricted)
             return false;
         return Input.GetMouseButtonDown(0);
     }
@@ -95,7 +103,8 @@ public class InputManager : SingletonBase<InputManager>
 
     public bool GetChangeTargetDown()
     {
-        if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move || _isRestricted)
+        if ((HasTutorialRestriction() &&
+            (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move)) || _isRestricted)
             return false;
         return Input.GetKeyDown(KeyCode.E);
     }
@@ -112,7 +121,8 @@ public class InputManager : SingletonBase<InputManager>
 
     public int GetAttackKeyDown()
     {
-        if (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move || _isRestricted)
+        if ((HasTutorialRestriction() &&
+            (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move)) || _isRestricted)
             return 0;
         for (int i = 1; i <= 5; i++)
         {

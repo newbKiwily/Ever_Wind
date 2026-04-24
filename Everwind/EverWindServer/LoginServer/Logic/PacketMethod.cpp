@@ -32,8 +32,8 @@ PacketMethod::PacketMethod(DBManager& dbManager, IOCPServer* server)
 PacketMethod::~PacketMethod() { delete query_; }
 
 
-std::vector<char> PacketMethod::BuildLoginAck(int resultCode, int userDbId, int mapId, float x, float y, float z) {
-    NetPackets::PKT_LOGIN_ACK ack{ resultCode, userDbId, mapId, x, y, z };
+std::vector<char> PacketMethod::BuildLoginAck(int resultCode, int userDbId, int mapId, float x, float y, float z, int tutorialStep) {
+    NetPackets::PKT_LOGIN_ACK ack{ resultCode, userDbId, mapId, x, y, z, tutorialStep };
 
     NetPackets::PacketHeader header;
     header.Length = static_cast<uint16_t>(sizeof(header) + sizeof(ack)); 
@@ -95,6 +95,7 @@ std::vector<char> PacketMethod::BuildStatAck(int atk, int def, float speed, floa
     ack.speed = speed;
     ack.hp = hp;
     ack.max_hp = max_hp;
+    ack.tutorialStep = 0;
 
     NetPackets::PacketHeader header{};
     header.Id = static_cast<uint16_t>(NetPackets::PacketId::_PLAYERSTAT);
@@ -360,7 +361,7 @@ bool PacketMethod::HandleLoginRequest(Session* session, const NetPackets::PKT_LO
 
     if (userId.empty() || password.empty())
     {
-        std::vector<char> failAck = BuildLoginAck(1, 0, 0, 0, 0, 0);
+        std::vector<char> failAck = BuildLoginAck(1, 0, 0, 0, 0, 0, 0);
         session->PostSend(failAck.data(), failAck.size());
         return false;
     }
@@ -368,12 +369,13 @@ bool PacketMethod::HandleLoginRequest(Session* session, const NetPackets::PKT_LO
     std::string dbUserId;
     int mapId = 0;
     float x = 0, y = 0, z = 0;
+    int tutorialStep = 0;
     std::string dbHash, dbSalt;
     bool found = false;
 
-    if (!query_->FetchUser(userId, dbUserId, dbHash, dbSalt, mapId, x, y, z, found) || !found)
+    if (!query_->FetchUser(userId, dbUserId, dbHash, dbSalt, mapId, x, y, z, tutorialStep, found) || !found)
     {
-        std::vector<char> failAck = BuildLoginAck(1, 0, 0, 0, 0, 0);
+        std::vector<char> failAck = BuildLoginAck(1, 0, 0, 0, 0, 0, 0);
         session->PostSend(failAck.data(), failAck.size());
         return true;
     }
@@ -381,14 +383,14 @@ bool PacketMethod::HandleLoginRequest(Session* session, const NetPackets::PKT_LO
     SHA256 sha;
     if (sha.CalculateHex(password + dbSalt) != dbHash)
     {
-        std::vector<char> failAck = BuildLoginAck(2, 0, 0, 0, 0, 0);
+        std::vector<char> failAck = BuildLoginAck(2, 0, 0, 0, 0, 0, 0);
         session->PostSend(failAck.data(), failAck.size());
         return true;
     }
 
     if (server_->GetSessionManager()->isSessionLogin(session))
     {
-        std::vector<char> failAck = BuildLoginAck(3, 0, 0, 0, 0, 0);
+        std::vector<char> failAck = BuildLoginAck(3, 0, 0, 0, 0, 0, 0);
         session->PostSend(failAck.data(), failAck.size());
         return true;
     }
@@ -403,7 +405,7 @@ bool PacketMethod::HandleLoginRequest(Session* session, const NetPackets::PKT_LO
     if (!mapData)
     {
         std::cerr << "[MapData Error] Map " << mapId << " not found in memory." << std::endl;
-        std::vector<char> failAck = BuildLoginAck(4, 0, 0, 0, 0, 0);
+        std::vector<char> failAck = BuildLoginAck(4, 0, 0, 0, 0, 0, 0);
         session->PostSend(failAck.data(), failAck.size());
         return false;
     }
@@ -458,7 +460,7 @@ bool PacketMethod::HandleLoginRequest(Session* session, const NetPackets::PKT_LO
         }
     }
 
-    std::vector<char> loginAckBuf = BuildLoginAck(0, session->GetServerUserId(), mapId, x, y, z);
+    std::vector<char> loginAckBuf = BuildLoginAck(0, session->GetServerUserId(), mapId, x, y, z, tutorialStep);
     session->PostSend(loginAckBuf.data(), loginAckBuf.size());
 
     std::vector<GameStruct::InventoryItem> items;

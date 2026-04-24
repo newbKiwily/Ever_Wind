@@ -61,6 +61,11 @@ public class Player : MonoBehaviour, IDamageable
         _combatManager.KnockBack();
     }
 
+    public void RefreshHpUI()
+    {
+        OnTakeDamage?.Invoke(_statManager.GetHp());
+    }
+
     public Vector3 GetInputVector()
     {
         if (_isMoveto)

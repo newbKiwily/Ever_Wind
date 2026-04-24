@@ -17,6 +17,8 @@ public class TutorialGuide : MonoBehaviour
     private TutorialStep _currentStepType;
     private TextRenderManager _textRenderManager;
     private InputManager _inputManager;
+    private DataCenter _dataCenter;
+    private bool _hasActiveTutorial;
     private Dictionary<TutorialStep, ITutorialStep> _stateTable = new Dictionary<TutorialStep, ITutorialStep>();
 
     public GameObject moveT_taretBox;
@@ -28,12 +30,15 @@ public class TutorialGuide : MonoBehaviour
             _currentStep.ExitStep(this);
 
         _currentStepType = targetState;
+        _hasActiveTutorial = true;
+        _dataCenter.loginData.TutorialStep = (int)targetState;
         _currentStep = _stateTable[targetState];
         _currentStep.EnterStep(this, _textRenderManager);
     }
 
     private void Start()
     {
+        _dataCenter = SingletonManager.Instance.GetSingleton<DataCenter>();
         _inputManager = SingletonManager.Instance.GetSingleton<InputManager>();
         _textRenderManager = SingletonManager.Instance.GetSingleton<TextRenderManager>();
 
@@ -44,7 +49,19 @@ public class TutorialGuide : MonoBehaviour
         _stateTable.Add(TutorialStep.Craft, new CraftStep());
         _stateTable.Add(TutorialStep.Equip, new EquipStep());
 
-        TransitionStep(TutorialStep.Craft);
+        int savedStep = _dataCenter.loginData.TutorialStep;
+        if (savedStep < 0)
+        {
+            CompleteTutorial();
+            return;
+        }
+
+        if (savedStep > (int)TutorialStep.Equip)
+        {
+            savedStep = (int)TutorialStep.Camera;
+        }
+
+        TransitionStep((TutorialStep)savedStep);
     }
 
     private void Update()
@@ -55,9 +72,26 @@ public class TutorialGuide : MonoBehaviour
         }
     }
 
+    public void CompleteTutorial()
+    {
+        if (_currentStep != null)
+        {
+            _currentStep.ExitStep(this);
+        }
+
+        _currentStep = null;
+        _hasActiveTutorial = false;
+        _dataCenter.loginData.TutorialStep = -1;
+    }
+
     public TutorialStep GetTutorialStepType()
     {
         return _currentStepType;
+    }
+
+    public bool HasActiveTutorial()
+    {
+        return _hasActiveTutorial;
     }
 }
 

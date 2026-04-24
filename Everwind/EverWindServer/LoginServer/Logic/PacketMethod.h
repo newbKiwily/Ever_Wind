@@ -42,7 +42,7 @@ public:
 
 private:
 
-    std::vector<char> BuildLoginAck(int resultCode, int userDbId, int mapId, float x, float y, float z);
+    std::vector<char> BuildLoginAck(int resultCode, int userDbId, int mapId, float x, float y, float z, int tutorialStep);
     std::vector<char> BuildSignUpAck(int resultCode);
     std::vector<char> BuildPlayerListAck(int playerDbId);
     std::vector<char> BuildMoveSyncAck(int playerDbId, float x, float y, float z, float speed, uint64_t timestamp);

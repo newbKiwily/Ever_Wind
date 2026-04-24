@@ -275,6 +275,22 @@ public class CombatManager : MonoBehaviour
         }
     }
 
+    public void ClearCombatState()
+    {
+        _prevKeyCode = KeyCode.None;
+        _currKeyCode = KeyCode.None;
+        _bufferedSkillIndex = -1;
+        CurrentCastingSkill = null;
+        CurrentCastingSkillIndex = -1;
+        _prevTargetEnemy = null;
+        TargetEnemy = null;
+
+        if (TargetingUI != null && TargetingUI.activeSelf)
+        {
+            TargetingUI.SetActive(false);
+        }
+    }
+
     private bool ExecuteBufferedSkill(int skillIndex)
     {
         if (skillIndex < 0 || skillIndex >= Skills.Length || Skills[skillIndex] == null)
@@ -392,6 +408,11 @@ public class CombatManager : MonoBehaviour
     public void OnTargetArrived()
     {
         var tempStateContexter = _player.GetPlayerStateContexter();
+        if (tempStateContexter == null || tempStateContexter.GetCurrState() is not CombatRunState)
+        {
+            return;
+        }
+
         if (CurrentCastingSkill != null)
         {
             tempStateContexter.TransitionState(States.Attack);

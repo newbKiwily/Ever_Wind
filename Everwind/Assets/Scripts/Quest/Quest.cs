@@ -13,6 +13,13 @@ public class Quest : ScriptableObject
         public int RequiredCount;
     }
 
+    [Serializable]
+    public class QuestReward
+    {
+        public string ItemKey;
+        public int Amount = 1;
+    }
+
     public enum QuestConditionType
     {
         Combat,
@@ -24,6 +31,6 @@ public class Quest : ScriptableObject
     public string QuestName;
     public string QuestDescription;
     public List<QuestRequirement> Conditions = new();
-
+    public List<QuestReward> Rewards = new();
 }
 

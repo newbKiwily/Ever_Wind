@@ -12,14 +12,14 @@ Queries::Queries(DBManager& db)
 }
 
 bool Queries::FetchUser(const std::string& userId, std::string& outUserId, std::string& outPasswordHash, std::string& outSalt, int& outMapId,
-    float& outPosX, float& outPosY, float& outPosZ, bool& outFound)
+    float& outPosX, float& outPosY, float& outPosZ, int& outTutorialStep, bool& outFound)
 {
     outFound = false;
     MYSQL* connection = db_.GetConnection();
     if (!connection) return false;
 
     const char* sql = "SELECT A.UserID, A.PasswordHash, A.Salt, I.MapId, "
-        "COALESCE(I.PosX, M.SpawnX), COALESCE(I.PosY, M.SpawnY), COALESCE(I.PosZ, M.SpawnZ) "
+        "COALESCE(I.PosX, M.SpawnX), COALESCE(I.PosY, M.SpawnY), COALESCE(I.PosZ, M.SpawnZ), I.TutorialStep "
         "FROM UserAccount A "
         "INNER JOIN UserInfo I ON A.UserID = I.UserID "
         "LEFT JOIN MapInfo M ON I.MapId = M.MapId "
@@ -41,7 +41,7 @@ bool Queries::FetchUser(const std::string& userId, std::string& outUserId, std::
 
     char szUserId[33]{}, szPwHash[65]{}, szSalt[33]{};
     unsigned long lenId, lenHash, lenSalt;
-    MYSQL_BIND result[7]{};
+    MYSQL_BIND result[8]{};
 
     result[0].buffer_type = MYSQL_TYPE_STRING; result[0].buffer = szUserId; result[0].buffer_length = sizeof(szUserId); result[0].length = &lenId;
     result[1].buffer_type = MYSQL_TYPE_STRING; result[1].buffer = szPwHash; result[1].buffer_length = sizeof(szPwHash); result[1].length = &lenHash;
@@ -50,6 +50,7 @@ bool Queries::FetchUser(const std::string& userId, std::string& outUserId, std::
     result[4].buffer_type = MYSQL_TYPE_FLOAT;  result[4].buffer = &outPosX;
     result[5].buffer_type = MYSQL_TYPE_FLOAT;  result[5].buffer = &outPosY;
     result[6].buffer_type = MYSQL_TYPE_FLOAT;  result[6].buffer = &outPosZ;
+    result[7].buffer_type = MYSQL_TYPE_LONG;   result[7].buffer = &outTutorialStep;
 
     mysql_stmt_bind_result(stmt, result);
     if (mysql_stmt_fetch(stmt) == 0) {
@@ -88,7 +89,7 @@ bool Queries::InsertUser(const std::string& userId, const std::string& passwordH
     }
     mysql_stmt_close(stmt);
 
-    const char* sqlInfo = "INSERT INTO UserInfo (UserID, PosX, PosY, PosZ) VALUES (?, NULL, NULL, NULL)";
+    const char* sqlInfo = "INSERT INTO UserInfo (UserID, PosX, PosY, PosZ, TutorialStep) VALUES (?, NULL, NULL, NULL, 0)";
     stmt = mysql_stmt_init(conn);
     mysql_stmt_prepare(stmt, sqlInfo, (unsigned long)strlen(sqlInfo));
     mysql_stmt_bind_param(stmt, &bind[0]);
@@ -535,7 +536,7 @@ bool Queries::UpdateUserStat(const std::string& userId, const NetPackets::PKT_US
     MYSQL* conn = db_.GetConnection();
     if (!conn) return false;
 
-    const char* sql = "UPDATE UserInfo SET AttackPower=?, DefencePower=?, HP=?, MaxHP=?, Speed=? WHERE UserID=?";
+    const char* sql = "UPDATE UserInfo SET AttackPower=?, DefencePower=?, HP=?, MaxHP=?, Speed=?, TutorialStep=? WHERE UserID=?";
 
     std::lock_guard<std::mutex> guard(db_.GetMutex());
     MYSQL_STMT* stmt = mysql_stmt_init(conn);
@@ -544,7 +545,7 @@ bool Queries::UpdateUserStat(const std::string& userId, const NetPackets::PKT_US
         return false;
     }
 
-    MYSQL_BIND bind[6]{};
+    MYSQL_BIND bind[7]{};
     unsigned long idLen = userId.size();
 
     bind[0].buffer_type = MYSQL_TYPE_LONG;  bind[0].buffer = (void*)&stat.attack_power;
@@ -552,7 +553,8 @@ bool Queries::UpdateUserStat(const std::string& userId, const NetPackets::PKT_US
     bind[2].buffer_type = MYSQL_TYPE_FLOAT; bind[2].buffer = (void*)&stat.hp;
     bind[3].buffer_type = MYSQL_TYPE_FLOAT; bind[3].buffer = (void*)&stat.max_hp;
     bind[4].buffer_type = MYSQL_TYPE_FLOAT; bind[4].buffer = (void*)&stat.speed;
-    bind[5].buffer_type = MYSQL_TYPE_STRING; bind[5].buffer = (char*)userId.c_str(); bind[5].length = &idLen;
+    bind[5].buffer_type = MYSQL_TYPE_LONG;  bind[5].buffer = (void*)&stat.tutorialStep;
+    bind[6].buffer_type = MYSQL_TYPE_STRING; bind[6].buffer = (char*)userId.c_str(); bind[6].length = &idLen;
 
     mysql_stmt_bind_param(stmt, bind);
     bool ok = (mysql_stmt_execute(stmt) == 0);

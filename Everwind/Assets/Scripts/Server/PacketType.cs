@@ -76,6 +76,7 @@ public struct PKT_LOGIN_ACK
     public float PosX;
     public float PosY;
     public float PosZ;
+    public int TutorialStep;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -135,6 +136,7 @@ public struct PKT_USERSTAT
     public float Hp;
     public float MaxHp;
     public float Speed;
+    public int TutorialStep;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

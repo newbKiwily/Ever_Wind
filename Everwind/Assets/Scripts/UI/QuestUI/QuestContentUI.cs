@@ -2,8 +2,9 @@ using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class QuestContentUI : MonoBehaviour
+public class QuestContentUI : ButtonSlot
 {
     [SerializeField]
     private TMP_Text _questNameText;
@@ -20,6 +21,18 @@ public class QuestContentUI : MonoBehaviour
     [SerializeField]
     private Color _completeColor = Color.green;
 
+    private QuestManager.QuestProgressData _questProgress;
+
+    protected override void Awake()
+    {
+        if (GetComponent<Button>() == null)
+        {
+            gameObject.AddComponent<Button>();
+        }
+
+        base.Awake();
+    }
+
     public void Init(QuestManager.QuestProgressData questProgress)
     {
         FindMissingReferences();
@@ -27,13 +40,18 @@ public class QuestContentUI : MonoBehaviour
         if (questProgress == null || questProgress.Quest == null)
             return;
 
+        _questProgress = questProgress;
+        _item = null;
+
         string conditionText = BuildConditionText(questProgress);
+        string rewardText = BuildRewardText(questProgress);
+        string statusText = BuildStatusText(questProgress);
 
         if (_questNameText != null && _questDescriptionText != null && _conditionText != null)
         {
             _questNameText.text = questProgress.Quest.QuestName;
             _questDescriptionText.text = questProgress.Quest.QuestDescription;
-            _conditionText.text = conditionText;
+            _conditionText.text = $"{conditionText}\n{rewardText}\n{statusText}";
             return;
         }
 
@@ -41,7 +59,22 @@ public class QuestContentUI : MonoBehaviour
         if (combinedText == null)
             return;
 
-        combinedText.text = $"{questProgress.Quest.QuestName}\n{questProgress.Quest.QuestDescription}\n{conditionText}";
+        combinedText.text = $"{questProgress.Quest.QuestName}\n{questProgress.Quest.QuestDescription}\n{conditionText}\n{rewardText}\n{statusText}";
+    }
+
+    protected override void OnClick()
+    {
+        if (_questProgress == null || _questProgress.Quest == null)
+            return;
+
+        if (!_questProgress.IsCompleted || _questProgress.RewardClaimed)
+            return;
+
+        QuestManager questManager = SingletonManager.Instance.GetSingleton<QuestManager>();
+        if (questManager == null)
+            return;
+
+        questManager.ClaimReward(_questProgress.Quest.QuestId);
     }
 
     private void Reset()
@@ -94,5 +127,37 @@ public class QuestContentUI : MonoBehaviour
         }
 
         return builder.ToString();
+    }
+
+    private string BuildRewardText(QuestManager.QuestProgressData questProgress)
+    {
+        if (questProgress.Quest.Rewards == null || questProgress.Quest.Rewards.Count == 0)
+            return "Reward: None";
+
+        StringBuilder builder = new StringBuilder("Reward: ");
+
+        for (int i = 0; i < questProgress.Quest.Rewards.Count; i++)
+        {
+            Quest.QuestReward reward = questProgress.Quest.Rewards[i];
+            if (i > 0)
+                builder.Append(", ");
+
+            builder.Append(reward.ItemKey);
+            builder.Append(" x");
+            builder.Append(reward.Amount);
+        }
+
+        return builder.ToString();
+    }
+
+    private string BuildStatusText(QuestManager.QuestProgressData questProgress)
+    {
+        if (!questProgress.IsCompleted)
+            return "Status: In Progress";
+
+        if (questProgress.RewardClaimed)
+            return "Status: Claimed";
+
+        return "Status: Complete (Click to Claim)";
     }
 }

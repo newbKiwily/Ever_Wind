@@ -13,7 +13,7 @@ public:
     explicit Queries(DBManager& db);
 
     bool FetchUser(const std::string& userId, std::string& outUserId, std::string& outPasswordHash, std::string& outSalt, int& outMapId,
-        float& outPosX, float& outPosY, float& outPosZ, bool& outFound);
+        float& outPosX, float& outPosY, float& outPosZ, int& outTutorialStep, bool& outFound);
 
     bool InsertUser(const std::string& userId, const std::string& passwordHash, const std::string& salt, bool& duplicated);
 

@@ -19,3 +19,6 @@ MonoBehaviour:
   - ConditionType: 1
     TargetId: 0
     RequiredCount: 2
+  Rewards:
+  - ItemKey: SmallHpPotion
+    Amount: 1

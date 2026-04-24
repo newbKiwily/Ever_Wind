@@ -158,6 +158,9 @@ public class QuestUI : MonoBehaviour
         IReadOnlyList<QuestManager.QuestProgressData> activeQuests = questManager.ActiveQuests;
         for (int i = 0; i < activeQuests.Count; i++)
         {
+            if (activeQuests[i] == null || activeQuests[i].RewardClaimed)
+                continue;
+
             GameObject questContentObject = Instantiate(_contentPrefab, _contentParent);
             QuestContentUI questContentUI = questContentObject.GetComponent<QuestContentUI>();
             if (questContentUI == null)

@@ -4313,6 +4313,8 @@ MonoBehaviour:
     _serializedList:
     - Key: Branch
       Value: {fileID: 11400000, guid: 9af72be9c3f67de4e841541795c16d1a, type: 2}
+    - Key: SmallHpPotion
+      Value: {fileID: 11400000, guid: 7e8e30be792255a44b13513e2ef6f237, type: 2}
     - Key: CampFire
       Value: {fileID: 11400000, guid: 6e6bfe2d4b71aa647801ffbc057c9c90, type: 2}
     - Key: BasicHelmet

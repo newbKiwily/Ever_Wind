@@ -124,6 +124,43 @@ public class QuestManager : SingletonBase<QuestManager>
         return questProgress.CurrentCounts[conditionIndex];
     }
 
+    public bool ClaimReward(int questId)
+    {
+        QuestProgressData questProgress = FindQuestProgress(questId);
+        if (questProgress == null || questProgress.Quest == null)
+            return false;
+
+        if (!questProgress.IsCompleted || questProgress.RewardClaimed)
+            return false;
+
+        ItemMediator itemMediator = SingletonManager.Instance.GetSingleton<ItemMediator>();
+        if (itemMediator == null)
+            return false;
+
+        for (int i = 0; i < questProgress.Quest.Rewards.Count; i++)
+        {
+            Quest.QuestReward reward = questProgress.Quest.Rewards[i];
+            if (string.IsNullOrWhiteSpace(reward.ItemKey) || reward.Amount <= 0)
+                continue;
+
+            InventoryItem rewardItem = itemMediator.GetItemInfo(reward.ItemKey);
+            if (rewardItem == null)
+            {
+                Debug.LogWarning($"Quest reward item not found: {reward.ItemKey}");
+                continue;
+            }
+
+            for (int j = 0; j < reward.Amount; j++)
+            {
+                itemMediator.Mediation(reward.ItemKey);
+            }
+        }
+
+        questProgress.RewardClaimed = true;
+        UIEvents.EvQuestProgressChanged();
+        return true;
+    }
+
     private void SyncQuestTable()
     {
         List<Quest> quests = new List<Quest>(_questTable.Values);

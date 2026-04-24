@@ -4,6 +4,7 @@ public class IdleState : IState
     {
         controller.GetAnimationContexter().PlayIdle(true);
         controller.player.StopMoveto();
+        controller.player.GetCombatManager().ClearCombatState();
         controller.OffWeapon();
         var networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
         var pkt = PacketMethod.BuildCombatStateSync(networkClient.UserDbId, false);

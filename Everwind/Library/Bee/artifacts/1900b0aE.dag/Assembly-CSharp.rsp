@@ -362,6 +362,7 @@
 "Assets/Scripts/Item/FieldItems/FieldItem.cs"
 "Assets/Scripts/Item/FieldItems/Grass.cs"
 "Assets/Scripts/Item/FieldItems/IObtainable.cs"
+"Assets/Scripts/Item/HPPotion.cs"
 "Assets/Scripts/Item/InventoryItem.cs"
 "Assets/Scripts/Item/ItemMediator.cs"
 "Assets/Scripts/Item/IUsableItem.cs"

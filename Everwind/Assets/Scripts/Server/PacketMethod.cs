@@ -67,6 +67,7 @@ public static unsafe class PacketMethod
             body->Hp = stat.Hp;
             body->MaxHp = stat.MaxHp;
             body->Speed = stat.Speed;
+            body->TutorialStep = SingletonManager.Instance.GetSingleton<DataCenter>().loginData.TutorialStep;
         }
         return buffer;
     }
@@ -299,6 +300,7 @@ public static unsafe class PacketMethod
             DataCenter.LoginData tempData = new DataCenter.LoginData();
             tempData.Position = new Vector3(pkt->PosX, pkt->PosY, pkt->PosZ);
             tempData.MapId = pkt->UserMapId;
+            tempData.TutorialStep = pkt->TutorialStep;
             dataCenter.loginData = tempData;
 
             int result = pkt->ResultCode;
@@ -676,7 +678,8 @@ public static unsafe class PacketMethod
                 dataCenter.loginData = new DataCenter.LoginData
                 {
                     MapId = pkt->MapId,
-                    Position = new Vector3(pkt->PosX, pkt->PosY, pkt->PosZ)
+                    Position = new Vector3(pkt->PosX, pkt->PosY, pkt->PosZ),
+                    TutorialStep = dataCenter.loginData.TutorialStep
                 };
 
                 var worldLoader = SingletonManager.Instance.GetSingleton<WorldLoader>();
