@@ -22,6 +22,7 @@ ScriptsOnlyBuild:
     - EquipmentSlot
     - EquipmentUI
     - Grass
+    - HPPotion
     - IngredientSlot
     - InputManager
     - Inventory
@@ -41,6 +42,9 @@ ScriptsOnlyBuild:
     - PlayerStatManager
     - PlayerStateContexter
     - PopUpUIManager
+    - Quest
+    - QuestManager
+    - QuestUI
     - SceneLoader
     - SingletonManager
     - Skeleton
@@ -88,26 +92,33 @@ ScriptsOnlyBuild:
     - UnityEngine.UI.GridLayoutGroup
     - UnityEngine.UI.Image
     - UnityEngine.UI.LayoutElement
+    - UnityEngine.UI.Mask
     - UnityEngine.UI.RawImage
     - UnityEngine.UI.RectMask2D
+    - UnityEngine.UI.ScrollRect
+    - UnityEngine.UI.Scrollbar
     - UnityEngine.UI.VerticalLayoutGroup
   serializedClasses:
     AYellowpaper.SerializedCollections:
     - AYellowpaper.SerializedCollections.SerializedDictionary`2[DisplayUIManager/ProfileState,UnityEngine.Sprite]
     - AYellowpaper.SerializedCollections.SerializedDictionary`2[EquipmentItem/EquipmentType,EquipmentSlot]
     - AYellowpaper.SerializedCollections.SerializedDictionary`2[System.Int32,MapData]
+    - AYellowpaper.SerializedCollections.SerializedDictionary`2[System.Int32,Quest]
     - AYellowpaper.SerializedCollections.SerializedDictionary`2[System.Int32,UnityEngine.GameObject]
     - AYellowpaper.SerializedCollections.SerializedDictionary`2[System.String,InventoryItem]
     - AYellowpaper.SerializedCollections.SerializedDictionary`2[System.String,UnityEngine.ParticleSystem]
     - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[DisplayUIManager/ProfileState,UnityEngine.Sprite]
     - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[EquipmentItem/EquipmentType,EquipmentSlot]
     - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[System.Int32,MapData]
+    - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[System.Int32,Quest]
     - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[System.Int32,UnityEngine.GameObject]
     - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[System.String,InventoryItem]
     - AYellowpaper.SerializedCollections.SerializedKeyValuePair`2[System.String,UnityEngine.ParticleSystem]
     Assembly-CSharp:
     - CraftItemRecipe/Ingredient
     - MapData
+    - Quest/QuestRequirement
+    - Quest/QuestReward
     CFXRRuntime:
     - CartoonFX.CFXR_Effect/AnimatedLight
     - CartoonFX.CFXR_Effect/CameraShake
@@ -150,8 +161,13 @@ ScriptsOnlyBuild:
     - UnityEngine.UI.ColorBlock
     - UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
     - UnityEngine.UI.Navigation
+    - UnityEngine.UI.ScrollRect/ScrollRectEvent
+    - UnityEngine.UI.Scrollbar/ScrollEvent
     - UnityEngine.UI.SpriteState
   methodsToPreserve:
+  - assembly: Assembly-CSharp
+    fullTypeName: PopUpUIManager
+    methodName: OnOffQuestUI
   - assembly: Assembly-CSharp
     fullTypeName: PopUpUIManager
     methodName: OpenCraftUI
@@ -198,83 +214,97 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 16936}
     - Class: 114
-      Script: {instanceID: 16950}
+      Script: {instanceID: 16948}
+    - Class: 114
+      Script: {instanceID: 16984}
     - Class: 114
       Script: {instanceID: 17038}
     - Class: 114
       Script: {instanceID: 17040}
     - Class: 114
-      Script: {instanceID: 17072}
+      Script: {instanceID: 17056}
     - Class: 114
-      Script: {instanceID: 17178}
+      Script: {instanceID: 17074}
     - Class: 114
-      Script: {instanceID: 17220}
+      Script: {instanceID: 17180}
     - Class: 114
-      Script: {instanceID: 17278}
+      Script: {instanceID: 17222}
     - Class: 114
-      Script: {instanceID: 17294}
+      Script: {instanceID: 17280}
     - Class: 114
-      Script: {instanceID: 17364}
+      Script: {instanceID: 17296}
     - Class: 114
-      Script: {instanceID: 17376}
+      Script: {instanceID: 17366}
     - Class: 114
-      Script: {instanceID: 17468}
+      Script: {instanceID: 17378}
     - Class: 114
-      Script: {instanceID: 17524}
+      Script: {instanceID: 17424}
     - Class: 114
-      Script: {instanceID: 17582}
+      Script: {instanceID: 17472}
     - Class: 114
-      Script: {instanceID: 17702}
+      Script: {instanceID: 17528}
     - Class: 114
-      Script: {instanceID: 17708}
+      Script: {instanceID: 17578}
     - Class: 114
-      Script: {instanceID: 17718}
+      Script: {instanceID: 17586}
     - Class: 114
-      Script: {instanceID: 17780}
+      Script: {instanceID: 17706}
+    - Class: 114
+      Script: {instanceID: 17712}
+    - Class: 114
+      Script: {instanceID: 17722}
+    - Class: 114
+      Script: {instanceID: 17732}
     - Class: 114
       Script: {instanceID: 17784}
     - Class: 114
-      Script: {instanceID: 17860}
+      Script: {instanceID: 17788}
     - Class: 114
-      Script: {instanceID: 17902}
+      Script: {instanceID: 17864}
     - Class: 114
       Script: {instanceID: 17906}
     - Class: 114
-      Script: {instanceID: 17936}
+      Script: {instanceID: 17910}
     - Class: 114
-      Script: {instanceID: 17968}
+      Script: {instanceID: 17924}
     - Class: 114
-      Script: {instanceID: 17976}
+      Script: {instanceID: 17942}
     - Class: 114
-      Script: {instanceID: 17980}
+      Script: {instanceID: 17974}
     - Class: 114
-      Script: {instanceID: 18048}
+      Script: {instanceID: 17982}
     - Class: 114
-      Script: {instanceID: 18066}
+      Script: {instanceID: 17986}
     - Class: 114
-      Script: {instanceID: 18076}
+      Script: {instanceID: 18054}
     - Class: 114
-      Script: {instanceID: 18218}
+      Script: {instanceID: 18072}
     - Class: 114
-      Script: {instanceID: 18244}
+      Script: {instanceID: 18082}
     - Class: 114
-      Script: {instanceID: 18272}
+      Script: {instanceID: 18226}
     - Class: 114
-      Script: {instanceID: 18278}
+      Script: {instanceID: 18254}
     - Class: 114
-      Script: {instanceID: 18280}
+      Script: {instanceID: 18282}
     - Class: 114
-      Script: {instanceID: 18302}
+      Script: {instanceID: 18288}
     - Class: 114
-      Script: {instanceID: 18420}
+      Script: {instanceID: 18290}
     - Class: 114
-      Script: {instanceID: 18444}
+      Script: {instanceID: 18312}
     - Class: 114
-      Script: {instanceID: 18480}
+      Script: {instanceID: 18322}
     - Class: 114
-      Script: {instanceID: 18502}
+      Script: {instanceID: 18430}
     - Class: 114
-      Script: {instanceID: 18520}
+      Script: {instanceID: 18454}
+    - Class: 114
+      Script: {instanceID: 18490}
+    - Class: 114
+      Script: {instanceID: 18512}
+    - Class: 114
+      Script: {instanceID: 18530}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -353,7 +383,7 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 16936}
     - Class: 114
-      Script: {instanceID: 16976}
+      Script: {instanceID: 16974}
     - Class: 114
       Script: {instanceID: 16986}
     - Class: 114
@@ -363,73 +393,73 @@ ScriptsOnlyBuild:
     - Class: 114
       Script: {instanceID: 17054}
     - Class: 114
-      Script: {instanceID: 17088}
+      Script: {instanceID: 17090}
     - Class: 114
-      Script: {instanceID: 17114}
+      Script: {instanceID: 17116}
     - Class: 114
-      Script: {instanceID: 17178}
+      Script: {instanceID: 17180}
     - Class: 114
-      Script: {instanceID: 17198}
+      Script: {instanceID: 17200}
     - Class: 114
-      Script: {instanceID: 17238}
+      Script: {instanceID: 17240}
     - Class: 114
-      Script: {instanceID: 17316}
+      Script: {instanceID: 17318}
     - Class: 114
-      Script: {instanceID: 17370}
+      Script: {instanceID: 17372}
     - Class: 114
-      Script: {instanceID: 17428}
+      Script: {instanceID: 17432}
     - Class: 114
-      Script: {instanceID: 17438}
+      Script: {instanceID: 17442}
     - Class: 114
-      Script: {instanceID: 17454}
+      Script: {instanceID: 17458}
     - Class: 114
-      Script: {instanceID: 17612}
+      Script: {instanceID: 17616}
     - Class: 114
-      Script: {instanceID: 17630}
+      Script: {instanceID: 17634}
     - Class: 114
-      Script: {instanceID: 17754}
+      Script: {instanceID: 17758}
     - Class: 114
-      Script: {instanceID: 17780}
+      Script: {instanceID: 17784}
     - Class: 114
-      Script: {instanceID: 17798}
+      Script: {instanceID: 17802}
     - Class: 114
-      Script: {instanceID: 17816}
+      Script: {instanceID: 17820}
     - Class: 114
-      Script: {instanceID: 17906}
+      Script: {instanceID: 17910}
     - Class: 114
-      Script: {instanceID: 17922}
+      Script: {instanceID: 17928}
     - Class: 114
-      Script: {instanceID: 17936}
+      Script: {instanceID: 17942}
     - Class: 114
-      Script: {instanceID: 17980}
+      Script: {instanceID: 17986}
     - Class: 114
-      Script: {instanceID: 18016}
+      Script: {instanceID: 18022}
     - Class: 114
-      Script: {instanceID: 18032}
+      Script: {instanceID: 18038}
     - Class: 114
-      Script: {instanceID: 18060}
+      Script: {instanceID: 18066}
     - Class: 114
-      Script: {instanceID: 18076}
+      Script: {instanceID: 18082}
     - Class: 114
-      Script: {instanceID: 18078}
-    - Class: 114
-      Script: {instanceID: 18244}
-    - Class: 114
-      Script: {instanceID: 18246}
+      Script: {instanceID: 18084}
     - Class: 114
       Script: {instanceID: 18254}
     - Class: 114
-      Script: {instanceID: 18302}
+      Script: {instanceID: 18256}
     - Class: 114
-      Script: {instanceID: 18340}
+      Script: {instanceID: 18264}
     - Class: 114
-      Script: {instanceID: 18354}
+      Script: {instanceID: 18312}
     - Class: 114
-      Script: {instanceID: 18408}
+      Script: {instanceID: 18350}
     - Class: 114
-      Script: {instanceID: 18412}
+      Script: {instanceID: 18364}
     - Class: 114
-      Script: {instanceID: 18516}
+      Script: {instanceID: 18418}
+    - Class: 114
+      Script: {instanceID: 18422}
+    - Class: 114
+      Script: {instanceID: 18526}
     - Class: 115
       Script: {instanceID: 0}
     - Class: 128
@@ -501,6 +531,12 @@ ScriptsOnlyBuild:
     className: TMP_InputField
   - hash:
       serializedVersion: 2
+      Hash: 4fa9879529e33821d4859888cb9cc83c
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: QuestUI
+  - hash:
+      serializedVersion: 2
       Hash: 4768ae101ae4d403a7af322716cd202b
     assemblyName: Assembly-CSharp
     namespaceName: 
@@ -541,6 +577,12 @@ ScriptsOnlyBuild:
     assemblyName: UnityEngine.UI
     namespaceName: UnityEngine.UI
     className: LayoutElement
+  - hash:
+      serializedVersion: 2
+      Hash: 6ae03b7551cd66da4b14a80e9f8474b4
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: HPPotion
   - hash:
       serializedVersion: 2
       Hash: 00bbd9db8634496d079d17711b2ff7c4
@@ -723,6 +765,12 @@ ScriptsOnlyBuild:
     className: Dropdown
   - hash:
       serializedVersion: 2
+      Hash: 88c0f6512f6485ce91769284a69458b8
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: QuestManager
+  - hash:
+      serializedVersion: 2
       Hash: 6aad420e9ae09f03f10b47b3b0a25bf8
     assemblyName: Assembly-CSharp
     namespaceName: 
@@ -813,7 +861,7 @@ ScriptsOnlyBuild:
     className: Player
   - hash:
       serializedVersion: 2
-      Hash: e2e5b896ae76e6e683a9e9ea81658e61
+      Hash: 723576503df550c89b7f673c7fe07b16
     assemblyName: Assembly-CSharp
     namespaceName: 
     className: EnemyHpUIManager
@@ -867,7 +915,7 @@ ScriptsOnlyBuild:
     className: CanvasScaler
   - hash:
       serializedVersion: 2
-      Hash: a7bf1252d49771a3c64da4b4dad50867
+      Hash: 21bccb7ac7ca687606ed1e32bbe9dad9
     assemblyName: Assembly-CSharp
     namespaceName: 
     className: DisplayUIManager
@@ -925,6 +973,12 @@ ScriptsOnlyBuild:
     assemblyName: Unity.TextMeshPro
     namespaceName: TMPro
     className: TMP_Dropdown
+  - hash:
+      serializedVersion: 2
+      Hash: 6c8166f29265948f5b096fc661fa07c7
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: Quest
   - hash:
       serializedVersion: 2
       Hash: 88480b6717ba124e4cbb4983590ecc5d
@@ -1005,7 +1059,7 @@ ScriptsOnlyBuild:
     className: GraphicRaycaster
   - hash:
       serializedVersion: 2
-      Hash: d5efef36bfd9866933eedf77a7be35a4
+      Hash: 965ba85ec50e6670440e09760baee76b
     assemblyName: Assembly-CSharp
     namespaceName: 
     className: Skeleton
@@ -1047,13 +1101,19 @@ ScriptsOnlyBuild:
     className: DeadUI
   - hash:
       serializedVersion: 2
+      Hash: 92e4293d2a1d8a42d3b53baf4ccc51bc
+    assemblyName: Assembly-CSharp
+    namespaceName: 
+    className: QuestContentUI
+  - hash:
+      serializedVersion: 2
       Hash: a0a0916f8f94e345611e8f3bb34e2472
     assemblyName: Assembly-CSharp
     namespaceName: 
     className: Branch
   - hash:
       serializedVersion: 2
-      Hash: 376b1a82e64139aad3e654d0ce9c28db
+      Hash: e64664ecaa58e1f8dd7f6f4cb3fbd4b4
     assemblyName: Assembly-CSharp
     namespaceName: 
     className: Spider
@@ -1193,5 +1253,4 @@ ScriptsOnlyBuild:
   scenePathNames:
   - Assets/Scenes/LogIn.unity
   - Assets/Scenes/InGame.unity
-  playerPath: "C:/Users/tlsal/OneDrive/\uBC14\uD0D5 \uD654\uBA74/\uC0C8 \uD3F4\uB354
-    (2)/Everwind.exe"
+  playerPath: "C:/Users/tlsal/OneDrive/\uBC14\uD0D5 \uD654\uBA74/\uBE4C\uB4DC\uD30C\uC77C/Everwind.exe"

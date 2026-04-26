@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3b8e18aaa5c0ad49a61b3d972cd6e2a, type: 3}
+  m_Name: IronGloves
+  m_EditorClassIdentifier: 
+  ItemName: IronGloves
+  ItemImage: {fileID: 141933137, guid: 29cc95ba3d500c747b6e0e33802ef900, type: 3}
+  IsStackable: 0
+  ItemInstruction: 10+ defence point
+  IsFromEquipmentUI: 0
+  Type: 1001
+  Power: 10

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Branch
   m_EditorClassIdentifier: 
   ItemName: Branch
-  ItemImage: {fileID: 21300000, guid: 7ab74e659e1f0a34d9cfec21c478fc12, type: 3}
+  ItemImage: {fileID: 21300000, guid: 985522aa310769847adff8a288ac92ca, type: 3}
   IsStackable: 1
   ItemInstruction: 
   IsFromEquipmentUI: 0

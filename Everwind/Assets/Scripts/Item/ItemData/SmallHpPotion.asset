@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SmallHpPotion
   m_EditorClassIdentifier: 
   ItemName: SmallHpPotion
-  ItemImage: {fileID: 21300000, guid: 49cfe97e7f6d389479a5bb2eb8585c9b, type: 3}
+  ItemImage: {fileID: -818760373, guid: 29cc95ba3d500c747b6e0e33802ef900, type: 3}
   IsStackable: 1
   ItemInstruction: Healing HP 30point
   IsFromEquipmentUI: 0

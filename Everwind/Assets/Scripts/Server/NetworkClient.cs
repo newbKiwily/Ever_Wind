@@ -200,20 +200,6 @@ public class NetworkClient : SingletonBase<NetworkClient>
         }
     }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.M))
-        {
-            SingletonManager.Instance.GetSingleton<DataCenter>().FlushQueue();
-            var pkt = PacketMethod.BuildMapChangeReq(UserDbId, 1);
-            Send(pkt);
-        }
-        if(Input.GetKeyDown(KeyCode.B))
-        {
-            SingletonManager.Instance.GetSingleton<DataCenter>().FlushQueue();
-            var pkt = PacketMethod.BuildMapChangeReq(UserDbId, 0);
-            Send(pkt);
-        }
-    }
+       
 }
 
