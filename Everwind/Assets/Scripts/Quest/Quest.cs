@@ -17,7 +17,7 @@ public class Quest : ScriptableObject
     public class QuestReward
     {
         public string ItemKey;
-        public int Amount = 1;
+        public int Amount;
     }
 
     public enum QuestConditionType

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CampFire
   m_EditorClassIdentifier: 
   ItemName: CampFire
-  ItemImage: {fileID: 21300040, guid: 7ab74e659e1f0a34d9cfec21c478fc12, type: 3}
+  ItemImage: {fileID: 21300000, guid: e952091f3ef0107498fc898210543cb4, type: 3}
   IsStackable: 0
   ItemInstruction: 
   IsFromEquipmentUI: 0
