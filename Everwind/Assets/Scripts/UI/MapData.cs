@@ -9,4 +9,5 @@ public class MapData
     public Sprite MinimapImage;
     public Vector3 Position;
     public Vector3 Rotation;
+    public float Scale;
 }

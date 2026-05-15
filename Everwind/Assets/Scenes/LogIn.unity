@@ -634,15 +634,17 @@ MonoBehaviour:
     - Key: 0
       Value:
         MapPrefab: {fileID: 6589841440693068858, guid: 83cbd76136cf9794a962668ff1e85b70, type: 3}
-        MinimapImage: {fileID: 21300000, guid: 26dd30800edb19b4fa249aaa9857bfdb, type: 3}
-        Position: {x: -477, y: -280, z: -24}
-        Rotation: {x: 90, y: 0, z: 52.226}
+        MinimapImage: {fileID: 21300000, guid: a3e693c40dd00634e909d43b8766d2ed, type: 3}
+        Position: {x: 313, y: 209.6, z: -58.4}
+        Rotation: {x: 90, y: 0, z: 56.026}
+        Scale: 15.3
     - Key: 1
       Value:
         MapPrefab: {fileID: 6589841440693068858, guid: 07da352d7d6c1c546a603499209ce840, type: 3}
-        MinimapImage: {fileID: 21300000, guid: 910808a1bfd8e4c45added4f3aa16020, type: 3}
-        Position: {x: -476, y: -280, z: -28}
-        Rotation: {x: 90, y: 0, z: 0.702}
+        MinimapImage: {fileID: 21300000, guid: 32876ff483edd544abeb38d0f27e12a8, type: 3}
+        Position: {x: 301.9, y: 200, z: -72.3}
+        Rotation: {x: 90, y: 0, z: 72}
+        Scale: 15.3
   MonsterTable:
     _serializedList:
     - Key: 0

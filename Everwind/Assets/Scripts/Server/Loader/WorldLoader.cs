@@ -86,7 +86,7 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
             _currentMapInstance = Instantiate(mapData.MapPrefab, Vector3.zero, Quaternion.identity);
             _currentMapInstance.name = $"Map_{mapId}";
-            UIEvents.EvMinimapImageChanged(mapData.MinimapImage, mapData.Position, mapData.Rotation);
+            UIEvents.EvMinimapImageChanged(mapData.MinimapImage, mapData.Position, mapData.Rotation, mapData.Scale);
         }
         else
         {

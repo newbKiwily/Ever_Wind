@@ -29,7 +29,7 @@ public class NetworkClient : SingletonBase<NetworkClient>
     {
         try
         {
-            _client = new TcpClient("127.0.0.1", 4000);
+            _client = new TcpClient("127.0.7.1", 4000);
             Stream = _client.GetStream();
 
             _recvThread = new Thread(ReceiveLoop);

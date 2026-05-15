@@ -47,7 +47,6 @@ public class SingletonBase<T> : SingletonBasest where T : MonoBehaviour
             _instance = null;
         }
     }
-
     public override void Init() { }
 }
 

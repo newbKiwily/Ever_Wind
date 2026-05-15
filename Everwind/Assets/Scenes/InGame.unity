@@ -4620,7 +4620,6 @@ RectTransform:
   m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1246492298}
   - {fileID: 2028997690}
   m_Father: {fileID: 1000891374}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -5606,6 +5605,7 @@ MonoBehaviour:
     - Key: 3
       Value: {fileID: 21300000, guid: 5cf0b524359febc4db85fbe15a93a5d3, type: 3}
   _minimapCamera: {fileID: 984218821}
+  _minimapSpriteRenderer: {fileID: 1246492297}
 --- !u!1 &1003063099
 GameObject:
   m_ObjectHideFlags: 0
@@ -6308,7 +6308,7 @@ Transform:
   m_LocalScale: {x: 4, y: 4, z: 4}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 886261508}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0.702}
 --- !u!1 &1304717583
 GameObject:
@@ -6722,7 +6722,7 @@ GameObject:
   - component: {fileID: 1359732436}
   - component: {fileID: 1359732435}
   m_Layer: 5
-  m_Name: RawImage
+  m_Name: EquipmentRawImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

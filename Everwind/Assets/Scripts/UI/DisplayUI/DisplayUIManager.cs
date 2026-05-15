@@ -114,7 +114,7 @@ public class DisplayUIManager : MonoBehaviour
         if (!dataCenter.MapTable.TryGetValue(dataCenter.loginData.MapId, out MapData mapData) || mapData == null)
             return;
 
-        HandleMinimapImageChanged(mapData.MinimapImage, mapData.Position, mapData.Rotation);
+        HandleMinimapImageChanged(mapData.MinimapImage, mapData.Position, mapData.Rotation, mapData.Scale);
     }
 
     private void UpdateHpBar(float hp)
@@ -134,7 +134,7 @@ public class DisplayUIManager : MonoBehaviour
         ChangeProfile(state, duration);
     }
 
-    private void HandleMinimapImageChanged(Sprite minimapSprite, Vector3 minimapPosition, Vector3 minimapRotation)
+    private void HandleMinimapImageChanged(Sprite minimapSprite, Vector3 minimapPosition, Vector3 minimapRotation, float minimapScale)
     {
         BindMinimapRenderer();
         if (_minimapSpriteRenderer == null)
@@ -143,6 +143,7 @@ public class DisplayUIManager : MonoBehaviour
         _minimapSpriteRenderer.sprite = minimapSprite;
         _minimapSpriteRenderer.transform.localPosition = minimapPosition;
         _minimapSpriteRenderer.transform.localEulerAngles = minimapRotation;
+        _minimapSpriteRenderer.transform.localScale = new Vector3(minimapScale, minimapScale, minimapScale);
     }
 
     private void HandleLocalPlayerSpawned(Player player)
