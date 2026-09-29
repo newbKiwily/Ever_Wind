@@ -1,4 +1,4 @@
-#include "Session.h"
+ï»¿#include "Session.h"
 #include "IOCPServer.h"
 #include "Packet.h"
 #include "../Logic/PacketMethod.h"
@@ -8,8 +8,99 @@
 #include "SessionManager.h"
 #include <iostream>
 #include <cstring>
+#include <sstream>
 
 using namespace NetPackets;
+
+namespace
+{
+    const char* GetPacketName(PacketId packetId)
+    {
+        switch (packetId)
+        {
+        case PacketId::C2S_LOGIN_REQ: return "C2S_LOGIN_REQ";
+        case PacketId::S2C_LOGIN_ACK: return "S2C_LOGIN_ACK";
+        case PacketId::C2S_SIGNUP_REQ: return "C2S_SIGNUP_REQ";
+        case PacketId::S2C_SIGNUP_ACK: return "S2C_SIGNUP_ACK";
+        case PacketId::C2S_MOVESYNC_REQ: return "C2S_MOVESYNC_REQ";
+        case PacketId::SC2_MOVESYNC_ACK: return "SC2_MOVESYNC_ACK";
+        case PacketId::S2C_PLAYERLIST_ACK: return "S2C_PLAYERLIST_ACK";
+        case PacketId::S2C_PLAYERLIST_RUNTIME: return "S2C_PLAYERLIST_RUNTIME";
+        case PacketId::S2C_LOGOUT_ACK: return "S2C_LOGOUT_ACK";
+        case PacketId::_INVENTORYITEM: return "_INVENTORYITEM";
+        case PacketId::_PLAYERSTAT: return "_PLAYERSTAT";
+        case PacketId::S2C_ENEMY_SPAWN: return "S2C_ENEMY_SPAWN";
+        case PacketId::C2S_ATTACK_REQ: return "C2S_ATTACK_REQ";
+        case PacketId::S2C_ENEMY_DAMAGED: return "S2C_ENEMY_DAMAGED";
+        case PacketId::C2S_ENEMY_MOVE_SYNC: return "C2S_ENEMY_MOVE_SYNC";
+        case PacketId::S2C_ENEMY_MOVE_SYNC: return "S2C_ENEMY_MOVE_SYNC";
+        case PacketId::C2S_ENEMY_ATTACK_ANIM: return "C2S_ENEMY_ATTACK_ANIM";
+        case PacketId::S2C_ENEMY_ATTACK_ANIM: return "S2C_ENEMY_ATTACK_ANIM";
+        case PacketId::_ONESHOT_ANIM_SYNC: return "_ONESHOT_ANIM_SYNC";
+        case PacketId::_INTERACT_SYNC: return "_INTERACT_SYNC";
+        case PacketId::_DEAD_SYNC: return "_DEAD_SYNC";
+        case PacketId::_COMBAT_STATE_SYNC: return "_COMBAT_STATE_SYNC";
+        case PacketId::C2S_MAP_CHANGE_REQ: return "C2S_MAP_CHANGE_REQ";
+        case PacketId::S2C_MAP_CHANGE_ACK: return "S2C_MAP_CHANGE_ACK";
+        case PacketId::C2S_ENEMY_DEAD_REQ: return "C2S_ENEMY_DEAD_REQ";
+        case PacketId::S2C_ENEMY_DEAD_ACK: return "S2C_ENEMY_DEAD_ACK";
+        case PacketId::S2C_QUEST_INFO: return "S2C_QUEST_INFO";
+        case PacketId::C2S_QUEST_RESET: return "C2S_QUEST_RESET";
+        case PacketId::C2S_QUEST_SAVE: return "C2S_QUEST_SAVE";
+        default: return "UNKNOWN_PACKET";
+        }
+    }
+
+    bool ShouldLogPacket(PacketId packetId)
+    {
+        switch (packetId)
+        {
+        case PacketId::C2S_MOVESYNC_REQ:
+        case PacketId::SC2_MOVESYNC_ACK:
+        case PacketId::C2S_ENEMY_MOVE_SYNC:
+        case PacketId::S2C_ENEMY_MOVE_SYNC:
+            return false;
+        default:
+            return true;
+        }
+    }
+
+    std::string BuildSessionLabel(const Session& session)
+    {
+        std::ostringstream oss;
+        const std::string& userId = session.GetUserId();
+
+        oss << "User ";
+        if (userId.empty())
+        {
+            oss << "'Anonymous'";
+        }
+        else
+        {
+            oss << "'" << userId << "'";
+        }
+
+        oss << " [ServerUserId: " << session.GetServerUserId()
+            << ", MapId: " << session.GetMapId() << "]";
+        return oss.str();
+    }
+
+    void LogPacketEvent(const Session& session, const char* direction, const PacketHeader& header)
+    {
+        const PacketId packetId = static_cast<PacketId>(header.Id);
+        if (!ShouldLogPacket(packetId))
+        {
+            return;
+        }
+
+        std::cout << "[Packet " << direction << "] "
+            << BuildSessionLabel(session)
+            << " - " << GetPacketName(packetId)
+            << " (0x" << std::hex << header.Id << std::dec
+            << ", " << header.Length << " bytes)"
+            << std::endl;
+    }
+}
 
 
 Session::IOContext::IOContext(std::shared_ptr<Session> o, IOOperation op)
@@ -21,7 +112,7 @@ Session::IOContext::IOContext(std::shared_ptr<Session> o, IOOperation op)
 }
 
 Session::Session(IOCPServer* server, SOCKET socket)
-    : server_(server), socket_(socket), closed_(false), sending_(false),userId("")
+    : userId(""), serverUserId(-1), mapId(0), position{}, server_(server), socket_(socket), closed_(false), sending_(false)
 {
     recvBuffer_.reserve(4096);
 }
@@ -68,6 +159,11 @@ bool Session::PostSend(const char* data, size_t len)
 
     std::vector<char> packet(len);
     std::memcpy(packet.data(), data, len);
+    if (len >= sizeof(PacketHeader))
+    {
+        const PacketHeader* header = reinterpret_cast<const PacketHeader*>(packet.data());
+        LogPacketEvent(*this, "Send", *header);
+    }
     sendQueue_.push(std::move(packet));
 
     if (sending_)
@@ -170,7 +266,7 @@ void Session::Close()
     {
         if (!userId.empty()) {
 
-            // 1. ¸Ê¿¡¼­ ³ª¸¦ Á¦°Å (Ãß°¡µÊ)
+            // 1. ë§µì—ì„œ ë‚˜ë¥¼ ì œê±° (ì¶”ê°€ë¨)
             auto mapMgr = server_->GetSessionManager()->GetMapDataManager();
             if (auto currMap = mapMgr->findMapData(this->mapId)) {
                 currMap->RemoveSession(shared_from_this());
@@ -178,7 +274,7 @@ void Session::Close()
             server_->GetPacketMethod()->SendPlayerLogOut(this, serverUserId);
             
 
-            // 3. ¼¼¼Ç ¸Å´ÏÀú Á¦°Å ¹× DB ÀúÀå
+            // 3. ì„¸ì…˜ ë§¤ë‹ˆì € ì œê±° ë° DB ì €ìž¥
             server_->GetSessionManager()->RemoveSession(serverUserId);
             server_->GetPacketMethod()->getQuery()->UpdateUserPosition(userId, mapId, position.x, position.y, position.z);
             
@@ -232,6 +328,8 @@ bool Session::HandlePackets()
 
 bool Session::ProcessPacket(const PacketHeader& header, const char* payload, size_t payloadSize)
 {
+    LogPacketEvent(*this, "Recv", header);
     return server_->OnPacketReceived(this, header, payload, payloadSize);
 }
+
 

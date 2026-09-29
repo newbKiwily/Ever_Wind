@@ -73,11 +73,11 @@ public:
         std::lock_guard<std::mutex> lock(positionMutex_);
         return position;
     }
-    IOCPServer* GetServer()
+    IOCPServer* GetServer() const
     {
         return server_;
     }
-    int GetMapId()
+    int GetMapId() const
     {
         return mapId;
     }
@@ -93,7 +93,7 @@ public:
     {
         serverUserId = id;
     }
-    const int& GetServerUserId()
+    const int& GetServerUserId() const
     {
         return serverUserId;
     }

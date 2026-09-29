@@ -24,7 +24,7 @@ public class Player : MonoBehaviour, IDamageable
     private uint _moveTimeStamp = 0;
 
     private float _moveSyncTimer;
-    private const float MOVE_SYNC_INTERVAL = 0.05f;
+    private const float MOVE_SYNC_INTERVAL = 0.02f;
 
     public event Action OnDied;
 
