@@ -1,0 +1,36 @@
+# Unity-generated directories
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Bb]uild/
+/[Bb]uilds/
+
+# IDE-generated files at the Unity project root
+/.vs/
+/*.csproj
+/*.sln
+/*.suo
+/*.user
+/*.userprefs
+/*.pidb
+/*.booproj
+/*.svd
+/*.pdb
+/*.mdb
+/*.opendb
+/*.VC.db
+
+# Unity crash, capture, and recording output
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+/sysinfo.txt
+
+# Build packages and temporary generated assets
+/*.apk
+/*.aab
+/*.unitypackage
+/crashlytics-build.properties
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/
