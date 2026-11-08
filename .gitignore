@@ -113,3 +113,7 @@ x86/
 *.dbmdl
 *.opendb
 *.VC.db
+
+# Preserve previously tracked Unity plugin binaries after flattening the project.
+!/Assets/Plugins/Demigiant/DOTween/DOTween.dll
+!/Assets/Plugins/Demigiant/DOTween/Editor/DOTweenEditor.dll
