@@ -43,7 +43,7 @@ public class SingletonBase<T> : SingletonBasest where T : MonoBehaviour
     {
         if (_instance == this as T)
         {
-            SingletonManager.Instance?.Unregister(this);
+            SingletonManager.Existing?.Unregister(this);
             _instance = null;
         }
     }

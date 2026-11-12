@@ -43,6 +43,7 @@ public class Inventory : MonoBehaviour
             _eventCamera = canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
         }
 
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) { RefreshContentHeight(); return; }
         var loadItems = SingletonManager.Instance.GetSingleton<DataCenter>().LoadItems;
         var itemMediator = SingletonManager.Instance.GetSingleton<ItemMediator>();
 
@@ -79,6 +80,7 @@ public class Inventory : MonoBehaviour
 
     public void PutItem(InventoryItem item)
     {
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) return;
         if (item.IsStackable)
         {
             foreach (var slot in _slots)
@@ -107,11 +109,13 @@ public class Inventory : MonoBehaviour
 
     public void UseItem(InventorySlot slot)
     {
+        if(slot==null)return;
         var itemInSlot = slot.GetInventoryItem();
         if (slot == null || itemInSlot == null) return;
 
         if (itemInSlot is IUsableItem usable)
         {
+            if(EverWind.Gameplay.GameplayIntegration.Active!=null){EverWind.Gameplay.GameplayIntegration.Active.Use(itemInSlot);return;}
             usable.Use();
             slot.count -= 1;
             UpdateInventory();
@@ -144,6 +148,7 @@ public class Inventory : MonoBehaviour
 
     public int GetItemCount(InventoryItem item)
     {
+        if(EverWind.Gameplay.GameplayIntegration.Active!=null)return _slots.Where(slot=>slot.GetInventoryItem()==item).Sum(slot=>slot.count);
         foreach (InventorySlot slotItem in _slots)
         {
             if (slotItem.GetInventoryItem() == item) return slotItem.count;
@@ -153,6 +158,7 @@ public class Inventory : MonoBehaviour
 
     public void ConsumeItem(string itemName, int amount)
     {
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) return;
         foreach (InventorySlot slotItem in _slots)
         {
             var itemInSlot = slotItem.GetInventoryItem();
@@ -220,5 +226,19 @@ public class Inventory : MonoBehaviour
         float usableWidth = width - gridLayout.padding.left - gridLayout.padding.right + gridLayout.spacing.x;
         float cellWidth = gridLayout.cellSize.x + gridLayout.spacing.x;
         return Mathf.Max(1, Mathf.FloorToInt(usableWidth / Mathf.Max(1f, cellWidth)));
+    }
+    public void ApplyServerInventory(IReadOnlyDictionary<int,int> amounts, EverWind.Gameplay.GameplayCatalog catalog)
+    {
+        foreach(var slot in _slots) { slot.gameObject.SetActive(false); Destroy(slot.gameObject); }
+        _slots.Clear();
+        foreach(var pair in amounts.OrderBy(p=>p.Key)) {
+            InventoryItem item=catalog.Item(pair.Key); if(item==null || pair.Value<=0)continue;
+            int slots=item.IsStackable?1:pair.Value;
+            for(int i=0;i<slots;i++){
+                var slot=Instantiate(SlotPrefab,LayoutParent).GetComponent<InventorySlot>();
+                slot.Initialize(this,item,item.IsStackable?pair.Value:1);_slots.Add(slot);
+            }
+        }
+        RefreshContentHeight();
     }
 }

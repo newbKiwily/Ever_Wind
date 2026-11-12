@@ -1,154 +1,155 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "IOCPServer.h"
-#include "../LoginServer/SessionManager.h"
+#include "../Gameplay/Protocol.h"
 #include "Packet.h"
-#include "../Logic/PacketMethod.h"
+#include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <stdexcept>
 
 IOCPServer::IOCPServer()
-    : listenSocket_(INVALID_SOCKET), completionPort_(nullptr), running_(false), loginLogic_(nullptr), port_(0)
+    : listenSocket_(INVALID_SOCKET), completionPort_(nullptr), running_(false), sessionManager_(nullptr),
+      port_(0)
 {
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-    {
-        throw std::runtime_error("Failed to initialize Winsock");
-    }
 }
-
 IOCPServer::~IOCPServer()
 {
     Shutdown();
-    WSACleanup();
 }
-
-bool IOCPServer::Initialize(uint16_t port, size_t workerCount, PacketMethod* packetMethod, SessionManager* sessionManager)
+bool IOCPServer::Initialize(uint16_t port, size_t workerCount, SessionManager *sessions)
 {
+    if (initialized_ || winsockReady_ || !sessions)
+        return false;
+    sessionManager_ = sessions;
     port_ = port;
+    workerCount_ = workerCount;
+    WSADATA data{};
+    if (WSAStartup(MAKEWORD(2, 2), &data) != 0)
+        return false;
+    winsockReady_ = true;
     listenSocket_ = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, nullptr, 0, WSA_FLAG_OVERLAPPED);
     if (listenSocket_ == INVALID_SOCKET)
     {
+        Shutdown();
         return false;
     }
-
     BOOL opt = TRUE;
-    setsockopt(listenSocket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&opt), sizeof(opt));
-
+    setsockopt(listenSocket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&opt), sizeof opt);
     SOCKADDR_IN addr{};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    if (bind(listenSocket_, reinterpret_cast<SOCKADDR*>(&addr), sizeof(addr)) == SOCKET_ERROR)
+    if (bind(listenSocket_, reinterpret_cast<SOCKADDR *>(&addr), sizeof addr) == SOCKET_ERROR)
     {
+        Shutdown();
         return false;
     }
-
-    if (listen(listenSocket_, SOMAXCONN) == SOCKET_ERROR)
-    {
-        return false;
-    }
-
     completionPort_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
     if (!completionPort_)
     {
+        Shutdown();
         return false;
     }
-
-    running_.store(true);
-
-    acceptThread_ = std::thread(&IOCPServer::AcceptLoop, this);
-
-    if (workerCount == 0)
-    {
-        SYSTEM_INFO sysInfo;
-        GetSystemInfo(&sysInfo);
-        workerCount = sysInfo.dwNumberOfProcessors * 2;
-    }
-
-    for (size_t i = 0; i < workerCount; ++i)
-    {
-        workerThreads_.emplace_back(&IOCPServer::WorkerLoop, this);
-    }
-
-    loginLogic_ = packetMethod;
-    sessionManager_ = sessionManager;
-
+    initialized_ = true;
     return true;
 }
-
-void IOCPServer::Shutdown()
+bool IOCPServer::Start()
 {
-    if (!running_.exchange(false))
+    if (!initialized_ || running_.load() || !onGameplayPacket_ || !onAuthenticationPacket_)
+        return false;
+    if (listen(listenSocket_, SOMAXCONN) == SOCKET_ERROR)
+        return false;
+    if (workerCount_ == 0)
     {
-        return;
+        SYSTEM_INFO info{};
+        GetSystemInfo(&info);
+        workerCount_ = info.dwNumberOfProcessors * 2;
     }
-
-    if (completionPort_)
+    running_ = true;
+    accepting_ = true;
+    try
     {
-        for (size_t i = 0; i < workerThreads_.size(); ++i)
-        {
-            PostQueuedCompletionStatus(completionPort_, 0, 0, nullptr);
-        }
+        for (size_t i = 0; i < workerCount_; ++i)
+            workerThreads_.emplace_back(&IOCPServer::WorkerLoop, this);
+        acceptThread_ = std::thread(&IOCPServer::AcceptLoop, this, listenSocket_);
     }
-
-    if (acceptThread_.joinable())
+    catch (...)
     {
-        acceptThread_.join();
+        Shutdown();
+        throw;
     }
-
-    for (auto& thread : workerThreads_)
-    {
-        if (thread.joinable())
-        {
-            thread.join();
-        }
-    }
-    workerThreads_.clear();
-
-   
-
+    return true;
+}
+void IOCPServer::StopAccepting()
+{
+    accepting_ = false;
     if (listenSocket_ != INVALID_SOCKET)
     {
         closesocket(listenSocket_);
         listenSocket_ = INVALID_SOCKET;
     }
-
+    if (acceptThread_.joinable())
+        acceptThread_.join();
+}
+void IOCPServer::Shutdown()
+{
+    StopAccepting();
+    if (sessionManager_)
+        sessionManager_->CloseAll();
+    // Cancellation completions release all Session-owning contexts before transport destruction.
+    {
+        std::unique_lock<std::mutex> lock(ioMutex_);
+        ioDrained_.wait(lock, [this] { return outstandingIO_ == 0; });
+    }
+    running_ = false;
+    if (completionPort_)
+        for (size_t i = 0; i < workerThreads_.size(); ++i)
+            PostQueuedCompletionStatus(completionPort_, 0, 0, nullptr);
+    for (auto &worker : workerThreads_)
+        if (worker.joinable())
+            worker.join();
+    workerThreads_.clear();
     if (completionPort_)
     {
         CloseHandle(completionPort_);
         completionPort_ = nullptr;
     }
+    if (winsockReady_)
+    {
+        WSACleanup();
+        winsockReady_ = false;
+    }
+    initialized_ = false;
 }
-
-void IOCPServer::AcceptLoop()
+void IOCPServer::AcceptLoop(SOCKET listener)
 {
-    while (running_.load())
+    while (accepting_.load())
     {
         SOCKADDR_IN clientAddr;
         int addrLen = sizeof(clientAddr);
-        SOCKET clientSocket = accept(listenSocket_, reinterpret_cast<SOCKADDR*>(&clientAddr), &addrLen);
+        SOCKET clientSocket = accept(listener, reinterpret_cast<SOCKADDR *>(&clientAddr), &addrLen);
         if (clientSocket == INVALID_SOCKET)
         {
-            if (!running_.load())
+            if (!accepting_.load())
             {
                 break;
             }
             continue;
         }
 
-        HANDLE hResult = CreateIoCompletionPort(
-            reinterpret_cast<HANDLE>(clientSocket),
-            completionPort_,
-            0,
-            0
-        );
+        HANDLE hResult =
+            CreateIoCompletionPort(reinterpret_cast<HANDLE>(clientSocket), completionPort_, 0, 0);
+        if (!hResult)
+        {
+            closesocket(clientSocket);
+            continue;
+        }
 
         u_long mode = 1;
         ioctlsocket(clientSocket, FIONBIO, &mode);
 
         auto session = std::make_shared<Session>(this, clientSocket);
-        int result=sessionManager_->AddSession(session);
+        int result = sessionManager_->AddSession(session);
         session->SetServerUserId(result);
         session->PostRecv();
     }
@@ -162,14 +163,10 @@ void IOCPServer::WorkerLoop()
         ULONG_PTR completionKey = 0;
         LPOVERLAPPED overlapped = nullptr;
 
-        BOOL success = GetQueuedCompletionStatus(
-            completionPort_,
-            &bytesTransferred,
-            &completionKey,
-            &overlapped,
-            INFINITE);
+        BOOL success = GetQueuedCompletionStatus(completionPort_, &bytesTransferred, &completionKey,
+                                                 &overlapped, INFINITE);
 
-        // ¼­¹ö Á¾·á¿ë wake-up ÆÐÅ¶
+        // ì„œë²„ ì¢…ë£Œìš© wake-up íŒ¨í‚·
         if (overlapped == nullptr)
         {
             if (!running_.load())
@@ -177,22 +174,24 @@ void IOCPServer::WorkerLoop()
             continue;
         }
 
-       
-        auto* context = reinterpret_cast<Session::IOContext*>(overlapped);
+        auto *context = reinterpret_cast<Session::IOContext *>(overlapped);
         if (!context)
             continue;
 
+        // Keep completion processing counted while it releases old IO and issues the next IO.
+        BeginIO();
         std::shared_ptr<Session> session = context->owner;
 
-        // IO ½ÇÆÐ (Å¬¶ó °­Á¦ Á¾·á / ¼ÒÄÏ close Æ÷ÇÔ)
-        if (!success)   
+        // IO ì‹¤íŒ¨ (í´ë¼ ê°•ì œ ì¢…ë£Œ / ì†Œì¼“ close í¬í•¨)
+        if (!success)
         {
-            session->Close();   // ¿¬°á¸¸ Á¾·á
-            delete context;     // IOContext ÇØÁ¦
+            session->Close(); // ì—°ê²°ë§Œ ì¢…ë£Œ
+            delete context;   // IOContext í•´ì œ
+            EndIO();
             continue;
         }
 
-        // Á¤»ó IO ¿Ï·á
+        // ì •ìƒ IO ì™„ë£Œ
         if (context->operation == Session::IOOperation::Recv)
         {
             session->OnRecvCompleted(context, bytesTransferred);
@@ -201,17 +200,47 @@ void IOCPServer::WorkerLoop()
         {
             session->OnSendCompleted(context, bytesTransferred);
         }
+        EndIO();
     }
 }
 
-
-bool IOCPServer::OnPacketReceived(Session* session, const NetPackets::PacketHeader& header, const char* payload, size_t payloadSize)
+bool IOCPServer::OnPacketReceived(Session *session, const NetPackets::PacketHeader &header,
+                                  const char *payload, size_t payloadSize)
 {
-    if (!loginLogic_)
+    if (header.Id == EverWind::Gameplay::RequestPacket)
     {
-        return false;
+        return session && onGameplayPacket_ && onGameplayPacket_(*session, header.Id, payload, payloadSize);
     }
-
-    return loginLogic_->HandlePacket(session, header, payload, payloadSize);
+    if (header.Id != static_cast<uint16_t>(NetPackets::PacketId::C2S_LOGIN_REQ) &&
+        header.Id != static_cast<uint16_t>(NetPackets::PacketId::C2S_SIGNUP_REQ))
+        return false;
+    return session && onAuthenticationPacket_ &&
+           onAuthenticationPacket_(*session, header, payload, payloadSize);
+}
+void IOCPServer::SetAuthenticationInput(
+    std::function<bool(Session &, const NetPackets::PacketHeader &, const char *, size_t)> callback)
+{
+    onAuthenticationPacket_ = std::move(callback);
 }
 
+SessionManager *IOCPServer::GetSessionManager()
+{
+    return sessionManager_;
+}
+
+void IOCPServer::SetGameplayInput(std::function<bool(Session &, uint16_t, const char *, size_t)> callback)
+{
+    onGameplayPacket_ = std::move(callback);
+}
+
+void IOCPServer::BeginIO()
+{
+    std::lock_guard<std::mutex> lock(ioMutex_);
+    ++outstandingIO_;
+}
+void IOCPServer::EndIO()
+{
+    std::lock_guard<std::mutex> lock(ioMutex_);
+    if (--outstandingIO_ == 0)
+        ioDrained_.notify_all();
+}

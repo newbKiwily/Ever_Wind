@@ -1,0 +1,54 @@
+클래스별 헤더/구현 파일 분리 결과 — 2026-11-11
+
+규칙
+- C++ class와 struct 68개를 각각 자기 이름의 .h/.cpp 쌍으로 분리했다.
+- 해당 헤더에는 자기 클래스/구조체의 선언·정의만 직접 작성한다.
+- 다른 클래스의 전방 선언은 제거하고 필요한 소유 헤더를 include한다.
+- 상호 참조가 있는 기존 클래스는 자기 자신의 전방 선언만 자기 헤더에 둔다.
+- .cpp 안의 클래스 정의와 지역 구조체 정의는 남겨두지 않았다.
+- 함수 본문은 .cpp로 옮겼다. 템플릿과 삭제된 복사 함수 선언은 C++ 규칙에 따라 헤더에 유지한다.
+- 데이터만 가진 구조체도 동일한 이름의 .cpp를 제공한다.
+
+주요 이동
+Gameplay/World.cpp → Core.h/.cpp, CoreImpl.h/.cpp, Service.h/.cpp, ServiceImpl.h/.cpp
+Gameplay/World.cpp의 검증 타입 → IRequestValidator.h/.cpp, LambdaValidator.h/.cpp, ValidationGroup.h/.cpp
+Gameplay/World.cpp의 데이터 타입 → Actor, Player, Action, Map, Box, Zone, Skill, Recipe,
+  Resource, Context, CachedRequest, ServiceWork 각각의 .h/.cpp
+Gameplay/Protocol.h → Request/Event/Header/Vec3 각각의 .h/.cpp 및 개별 enum 헤더
+Network/Session.h의 IOContext → Network/IOContext.h/.cpp
+  Session::IOContext와 Session::IOOperation 사용법은 별칭으로 유지했다.
+TimerManager.h의 TimerCompare → TimerCompare.h/.cpp
+EnemyState → EnemyState.h. 기존 Enemy::EnemyState 사용법은 별칭으로 유지했다.
+Network/Packet.h의 패킷 구조체 26개 → Network/Packets 아래 개별 .h/.cpp
+Structs.h의 데이터 구조체 → Data 아래 Vector3/InventoryItem/MapInitialInfo/QuestSaveData .h/.cpp
+테스트 소스의 Client/Link → tests/gameplay 아래 각 .h/.cpp
+테스트의 지역 Login 구조체 → 기존 PKT_LOGIN_ACK 타입 재사용
+
+World.h / Protocol.h / Packet.h / Structs.h는 기존 include 사용법을 보존하는 집계 헤더다.
+이 헤더들 안에는 여러 클래스를 직접 선언·정의하지 않는다.
+게임 규칙과 네트워크 패킷 크기/필드 순서는 변경하지 않았다.
+
+Visual Studio
+솔루션: EverWindServer/LoginServer/LoginServer.sln
+- LoginServer: 운영 서버, 소스 71개/헤더 85개 등록
+- GameplayCoreTests: 동일 게임플레이 코어를 사용하는 회귀 검사 실행 프로젝트
+- GameplayLoopbackHost: 로컬 TCP 통합 검증용 서버 프로젝트
+각 프로젝트의 .vcxproj 및 .vcxproj.filters를 등록했다.
+Header Files / Source Files 아래 실제 디렉터리에 맞는 하위 필터를 제공한다.
+기존 Unity용 *.sln 무시 규칙에서 이 서버 솔루션만 예외로 두었다.
+Unity가 생성하는 루트 EverWind.sln은 수정하지 않았다.
+
+검증
+- node tools/check-cpp-layout.cjs: PASS
+  헤더 87개/소스 75개 검사. 클래스·구조체 68쌍, 다른 클래스 선언 0,
+  .cpp 내부 클래스 정의 0, 운영 프로젝트와 필터 등록 누락 0.
+- LoginServer x64 Debug 전체 빌드: 성공
+- GameplayCoreTests x64 Debug Visual Studio 프로젝트 빌드 및 실행: PASS
+- GameplayLoopbackHost x64 Debug Visual Studio 프로젝트 빌드: 성공
+- 기존 서버 코어 회귀 검사: 타격 시점, 취소, 쿨타임, 이동 검증, 넉백,
+  사망/부활, 채집/제작, 중복 지급 방지, 맵 세대/재입장 검사 PASS
+- 기존 코드의 문자 인코딩/정수 변환 경고는 남아 있으며 빌드 오류는 없다.
+
+실행 중인 서버나 Visual Studio 인스턴스는 종료하지 않았다.
+빌드 검증 산출물은 .utmp/gameplay 아래 별도 폴더에 저장했다.
+이미 솔루션이 열려 있다면 외부 파일 변경을 다시 로드하면 새 목록을 볼 수 있다.

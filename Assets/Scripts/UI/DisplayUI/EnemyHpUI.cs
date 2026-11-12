@@ -8,6 +8,7 @@ public class EnemyHpUI : MonoBehaviour
     public GameObject hpFilledArea;
     public GameObject targetEnemy;
     private Enemy enemy;
+    private EverWind.Gameplay.ServerTransceiver serverEnemy;
     public TextMeshProUGUI enemyName;
 
     private Transform mainCameraTransform;
@@ -17,6 +18,7 @@ public class EnemyHpUI : MonoBehaviour
         targetEnemy = target;
         enemyName.text = targetEnemy.name;
         enemy = targetEnemy.GetComponent<Enemy>();
+        serverEnemy=targetEnemy.GetComponent<EverWind.Gameplay.ServerTransceiver>();
 
         if (Camera.main != null)
             mainCameraTransform = Camera.main.transform;
@@ -24,7 +26,7 @@ public class EnemyHpUI : MonoBehaviour
 
     void Update()
     {
-        if (targetEnemy == null || enemy == null) return;
+        if (targetEnemy == null || (enemy == null && serverEnemy == null) || mainCameraTransform == null) return;
 
         Vector3 basePos = targetEnemy.transform.position + Vector3.up * 3.5f;
         transform.position = basePos;
@@ -32,8 +34,8 @@ public class EnemyHpUI : MonoBehaviour
         transform.LookAt(transform.position + mainCameraTransform.rotation * Vector3.forward,
                          mainCameraTransform.rotation * Vector3.up);
 
-        float currHp = enemy.GetHp();
-        float maxHp = 100f;
+        float currHp = serverEnemy!=null?serverEnemy.Hp:enemy.GetHp();
+        float maxHp = serverEnemy!=null?serverEnemy.MaxHp:100f;
 
         float ratio = Mathf.Clamp01(currHp / maxHp);
         Vector3 scale = hpFilledArea.transform.localScale;

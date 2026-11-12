@@ -37,6 +37,7 @@ ExportedObj/
 *.csproj
 *.unityproj
 *.sln
+!/EverWindServer/LoginServer/LoginServer.sln
 *.suo
 *.tmp
 *.user

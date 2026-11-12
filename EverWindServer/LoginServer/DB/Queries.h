@@ -1,21 +1,24 @@
 #pragma once
+class Queries;
+#include "DBManager.h"
 
 #include <string>
 #include <vector>
-#include "../Network/Session.h"
+
 #include "../Network/Packet.h"
 #include "Structs.h"
-class DBManager;
-class Packet;
+
 class Queries
 {
 public:
     explicit Queries(DBManager& db);
 
-    bool FetchUser(const std::string& userId, std::string& outUserId, std::string& outPasswordHash, std::string& outSalt, int& outMapId,
+    bool FetchUser(const std::string& userId, std::string& outUserId, int& outMapId,
         float& outPosX, float& outPosY, float& outPosZ, int& outTutorialStep, bool& outFound);
 
-    bool InsertUser(const std::string& userId, const std::string& passwordHash, const std::string& salt, bool& duplicated);
+    bool InsertUser(const std::string& userId, const std::string& password, bool& duplicated);
+
+    bool VerifyPassword(const std::string& userId, const std::string& password, bool& matches);
 
     bool UpdateUserPosition(const std::string& userId, int mapId, float x, float y, float z);
 
@@ -30,7 +33,7 @@ public:
     bool UpdateUserStat(const std::string& userId, const NetPackets::PKT_USERSTAT& stat);
     bool ResetUserQuests(const std::string& userId);
     bool UpdateUserQuest(const std::string& userId, const NetPackets::PKT_QUEST_DATA& quest);
-   
+
 private:
     DBManager& db_;
 };

@@ -6,7 +6,7 @@ public class InputManager : SingletonBase<InputManager>
     private TutorialGuide _tutorialGuide;
 
     private bool _isRestricted = false;
-    public override bool IsPersistent => true;
+    public override bool IsPersistent => EverWind.Gameplay.GameplayIntegration.Active == null;
 
     protected override void Awake()
     {

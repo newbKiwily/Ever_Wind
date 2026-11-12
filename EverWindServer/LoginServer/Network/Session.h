@@ -1,4 +1,6 @@
 #pragma once
+class Session;
+#include "IOCPServer.h"
 
 #include <winsock2.h>
 #include <mswsock.h>
@@ -12,36 +14,16 @@
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Mswsock.lib")
 #include "Structs.h"
-namespace NetPackets
-{
-    struct PacketHeader;
-    enum class PacketId : uint16_t;
-}
-
-class IOCPServer;
+#include "Packet.h"
+#include "IOContext.h"
 
 class Session : public std::enable_shared_from_this<Session>
 {
 public:
-    static constexpr size_t MAX_IO_BUFFER = 2048;
+    static constexpr size_t MAX_IO_BUFFER = NetworkMaxIoBuffer;
+    using IOOperation = ::IOOperation;
+    using IOContext = ::IOContext;
 
-    enum class IOOperation
-    {
-        Recv,
-        Send,
-    };
-
-    struct IOContext
-    {
-        OVERLAPPED overlapped;
-        WSABUF wsaBuf;
-        IOOperation operation;
-        std::shared_ptr<Session> owner;
-        size_t expectedBytes;
-        char buffer[MAX_IO_BUFFER];
-
-        IOContext(std::shared_ptr<Session> o, IOOperation op);
-    };
 public:
     Session(IOCPServer* server, SOCKET socket);
     ~Session();
@@ -49,7 +31,7 @@ public:
     Session(const Session&) = delete;
     Session& operator=(const Session&) = delete;
 
-    SOCKET GetSocket() const { return socket_; }
+    SOCKET GetSocket() const;
 
     bool PostRecv();
     bool PostSend(const char* data, size_t len);
@@ -58,45 +40,18 @@ public:
     void OnSendCompleted(IOContext* context, size_t bytesTransferred);
 
     void Close();
-    bool IsClosed() const { return closed_.load(); }
-    void SetMapId(int assigned_mapId) { mapId = assigned_mapId; return; }
-    void SetPosition(float x, float y, float z)
-    {   
-        std::lock_guard<std::mutex> lock(positionMutex_);
-        position.x = x;
-        position.y = y;
-        position.z = z;
-        return;
-    }
-    GameStruct::Vector3 GetPostion()
-    {   
-        std::lock_guard<std::mutex> lock(positionMutex_);
-        return position;
-    }
-    IOCPServer* GetServer() const
-    {
-        return server_;
-    }
-    int GetMapId() const
-    {
-        return mapId;
-    }
-    void SetUserId(const std::string& id)
-    { 
-        userId = id;
-    }
-    const std::string& GetUserId() const 
-    { 
-        return userId;
-    }
-    void SetServerUserId(const int& id)
-    {
-        serverUserId = id;
-    }
-    const int& GetServerUserId() const
-    {
-        return serverUserId;
-    }
+    bool IsClosed() const;
+    void SetMapId(int assigned_mapId);
+    void SetPosition(float x, float y, float z);
+    GameStruct::Vector3 GetPostion();
+    IOCPServer* GetServer() const;
+    int GetMapId() const;
+    void SetUserId(const std::string& id);
+    const std::string& GetUserId() const;
+    void SetServerUserId(const int& id);
+    const int& GetServerUserId() const;
+    void SetGameplayMoveSpeed(float speed);
+    float GetGameplayMoveSpeed() const;
 private:
     bool HandlePackets();
     bool ProcessPacket(const NetPackets::PacketHeader& header, const char* payload, size_t payloadSize);
@@ -107,7 +62,6 @@ private:
 
     int mapId;
     GameStruct::Vector3 position;
-    
 
     IOCPServer* server_;
     SOCKET socket_;
@@ -117,5 +71,5 @@ private:
     std::mutex positionMutex_;
     std::queue<std::vector<char>> sendQueue_;
     bool sending_;
+    std::atomic<float> gameplayMoveSpeed_{5.0f};
 };
-

@@ -15,6 +15,7 @@ public class EquipmentSlot : ButtonSlot
 
     public void Initialize(EquipmentItem newItem, EquipmentUI equipmentUI)
     {
+        if(_itemImage==null)_itemImage=GetComponent<Image>();
         this._equipmentUI = equipmentUI;
         this._item = newItem;
         this.IsEquipped = true;
@@ -28,6 +29,7 @@ public class EquipmentSlot : ButtonSlot
 
     public void Clear()
     {
+        if(_itemImage==null)_itemImage=GetComponent<Image>();
         this._item = null;
         this.IsEquipped = false;
         _itemImage.color = new UnityEngine.Color(1.0f, 1.0f, 1.0f, 0.0f);

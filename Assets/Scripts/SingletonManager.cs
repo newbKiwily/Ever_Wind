@@ -9,6 +9,7 @@ public class SingletonManager : SingletonBase<SingletonManager>
     private Dictionary<Type, SingletonBasest> _singletons = new Dictionary<Type, SingletonBasest>();
 
     public new static SingletonManager Instance => SingletonBase<SingletonManager>.Instance;
+    public static SingletonManager Existing => UnityEngine.Object.FindFirstObjectByType<SingletonManager>();
     public override bool IsPersistent => true;
 
     protected override void Awake()
@@ -25,6 +26,12 @@ public class SingletonManager : SingletonBase<SingletonManager>
     public void Register(SingletonBasest manager)
     {
         Type type = manager.GetType();
+        if (_singletons.TryGetValue(type,out var previous) && previous == null)
+        {
+            _singletons.Remove(type);
+            _ingameSingletonsForInit.RemoveAll(item=>item==null);
+            _serverSingletonsForInit.RemoveAll(item=>item==null);
+        }
         if (!_singletons.ContainsKey(type))
         {
             if (manager.Priority < 0)
@@ -38,12 +45,12 @@ public class SingletonManager : SingletonBase<SingletonManager>
 
     public void Unregister(SingletonBasest manager)
     {
-        if (manager == null)
+        if (ReferenceEquals(manager, null))
             return;
 
         Type type = manager.GetType();
 
-        if (_singletons.TryGetValue(type, out var registered) && registered == manager)
+        if (_singletons.TryGetValue(type, out var registered) && ReferenceEquals(registered, manager))
         {
             _singletons.Remove(type);
         }

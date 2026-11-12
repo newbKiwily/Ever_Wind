@@ -1,0 +1,71 @@
+원본 카메라·이동·타겟 조작 적용 — 2026-11-11
+
+원본 확인 경로
+Assets/Scripts/CameraMoving.cs
+Assets/Scripts/InputManager.cs
+Assets/Scripts/Player.cs
+Assets/Scripts/Skill/CombatManager.cs
+Assets/Scenes/InGame.unity (미리보기로 읽기만 함)
+
+적용 내용
+- GameplayVerification 씬에 GameplayCameraController를 연결했다.
+- 우클릭을 누른 동안 마우스 X/Y로 회전하고 커서를 잠근다. 해제하면 이전 커서 상태를 복구한다.
+- 원본 회전 감도 2, SmoothDamp 시간 0.05초, 상하 각도 -10~80도를 사용한다.
+- 휠 감도 8, 거리 8~20, 초기 거리 20, 초기 회전 0/0을 사용한다.
+- 카메라 위치는 플레이어 위치 - 카메라 forward * 거리다. 고정 탑다운 추적을 제거했다.
+- 원본 Camera 렌즈/렌더 설정을 복사했다. FOV 60, near 0.3, far 1000이다.
+- 이전 레벨의 절대 월드 좌표는 사용하지 않고 새 맵의 플레이어를 같은 상대 거리로 따라간다.
+- Input.GetAxis(Horizontal/Vertical)를 그대로 사용해 프로젝트의 기존 가속·감속 설정을 따른다.
+- Player.cs와 같은 카메라 전방의 XZ 투영 + 카메라 right 계산을 사용한다.
+- 이동 입력 크기를 정규화하지 않는다. 원본의 부드러운 시작/정지와 대각선 속도를 유지한다.
+- 캐릭터 회전은 원본과 같이 Quaternion.Slerp(..., Time.deltaTime * 10)이다.
+- 충돌 때문에 이동하지 못하더라도 입력 방향으로 회전한다.
+- 자동 접근은 별도로 단위 방향을 사용한다. 기존 Action/State 및 인터럽트 구조는 유지한다.
+
+타겟과 상호작용
+- 클릭 위치로 타겟을 찾던 Raycast/클릭 선택 경로를 제거했다.
+- 좌클릭은 원본처럼 비전투에서 전투 모드로 진입할 뿐, 클릭한 오브젝트를 선택하지 않는다.
+- 공격 시 대상이 없거나 유효하지 않으면 반경 50 내 가까운 살아 있는 몬스터를 선택한다.
+- 전투 중 E로 거리순 후보를 순환한다. 마지막 대상 다음에는 첫 대상으로 돌아간다.
+- 죽거나 사라진 대상, 반경 밖 대상은 목록에서 제외한다.
+- 접근 중 E를 누르면 기존 접근을 취소하고 새 대상에 대한 접근 Action을 만든다.
+- 이미 서버에서 시작한 공격은 타겟 선택이 바뀌어도 원래 대상에 대한 판정을 유지한다.
+- 기존 InGame의 TargetingUI 스프라이트를 별도 시각용 프리팹으로 복사해 재사용했다.
+- 타겟 표시 높이 4.2 및 카메라를 향하는 표시 방식도 원본을 따른다.
+- E와 충돌하던 채집 입력은 원본과 같은 Space로 바꾸고 가까운 자원을 자동 선택한다.
+- 계정/비밀번호 입력 중에는 캐릭터 이동·공격 키를 처리하지 않는다.
+
+이동 속도와 서버
+- 기존 로그인 경로에서 조회하던 UserInfo.Speed를 Session에 보관한다.
+- Gameplay Service/Core의 플레이어 생성에 해당 서버 속도를 전달한다.
+- Spawn 이벤트의 duration 필드에 엔티티 이동 속도를 전달한다.
+  ActionStarted의 duration은 기존처럼 행동 길이다. 본문 크기 108바이트는 바뀌지 않는다.
+- MovementMotor 및 재사용 MoveAction/ApproachTargetAction이 스폰의 서버 속도를 사용한다.
+- 원본은 대각선 입력을 정규화하지 않으므로 검증 예산의 최대 이동률은 Speed * sqrt(2)다.
+- 장애물/경계/이동 순번/세대 검증은 유지한다.
+- 원본 스탯 조회를 재사용하며 DB 스키마나 계정 데이터는 변경하지 않았다.
+
+검증 결과
+- Unity 런타임 및 Editor 스크립트 컴파일 성공.
+- 기존 씬 설정 이식 후 시각 에셋 감사: 프리팹 6개, 이벤트 없는 클립 27개, 프로필 3개 PASS.
+- 실제 C++ LoginServer 전체 빌드 성공.
+- C++ 회귀 검사 PASS. 속도 2/10 캐릭터를 같은 시간/이동량으로 검사해 속도별 승인 차이와
+  스폰 속도 전달을 확인했다. 이전 전투/취소/채집/제작/맵 검사도 PASS.
+- Unity Play Mode의 독립 TCP 클라이언트 2개와 동일 C++ 코어로 PASS:
+  카메라 회전/줌 한계/추적 거리, 입력 크기 보존, E 순환/원위치 복귀,
+  서버 속도 적용, 원본 대각선 이동 승인, 가까운 자원 선택,
+  자동 접근 후 공격, 공격 중 선택 변경 시 기존 대상 유지, 양쪽 HP 일치,
+  인터럽트, 제작, 맵 전환.
+- 통합 검사는 로컬 전용 테스트 서버의 속도를 8로 지정해 기본값 5에 고정되지 않았음을 확인했다.
+- 실제 마우스/키보드 감각의 주관적 평가는 사용자 검수가 필요하다. 수학식과 원본 설정을 기준으로 검증했다.
+- 실제 계정 로그인 전체 경로는 이번에도 자동 통합 검사 대상이 아니며, 기존 스탯 연결 코드는 빌드로 확인했다.
+- 실행 화면: .utmp/gameplay/legacy-controls.png
+- 기존 Assets/Scripts와 Assets/Scenes 원본은 변경하지 않았다.
+
+새 코드
+Assets/EverWindGameplay/Runtime/GameplayCameraController.cs
+Assets/EverWindGameplay/Runtime/GameplayInput.cs
+Assets/EverWindGameplay/Runtime/GameplayTargetIndicator.cs
+Assets/EverWindGameplay/Editor/LegacyControlsSetup.cs
+적용 도구: AgentScripts/ApplyLegacyControls.cs
+BuildGameplayScene도 같은 설정 이식 함수를 사용하므로 씬 재생성 시 조작이 유지된다.

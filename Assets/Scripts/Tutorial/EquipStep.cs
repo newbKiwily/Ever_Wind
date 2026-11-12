@@ -28,6 +28,7 @@ public class EquipStep : ITutorialStep
 
         step.CompleteTutorial();
 
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) { _mapChangeRequested=true; return; }
         var dataCenter = SingletonManager.Instance.GetSingleton<DataCenter>();
         dataCenter.FlushQueue();
 

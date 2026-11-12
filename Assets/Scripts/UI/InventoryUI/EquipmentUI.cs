@@ -10,6 +10,7 @@ public class EquipmentUI : MonoBehaviour
 
     public void Init()
     {
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) return;
         var equipItems = SingletonManager.Instance.GetSingleton<DataCenter>().LoadEquipItems;
         var itemMediator = SingletonManager.Instance.GetSingleton<ItemMediator>();
 
@@ -28,6 +29,7 @@ public class EquipmentUI : MonoBehaviour
 
     public void Equip(EquipmentItem item)
     {
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.Use(item); return; }
         if (_equipmentSlots.TryGetValue(item.Type, out var equipmentSlot))
         {
             equipmentSlot.Initialize(item, this);
@@ -61,6 +63,7 @@ public class EquipmentUI : MonoBehaviour
         EquipmentItem equippedItem = slot.GetInventoryItem() as EquipmentItem;
         if (equippedItem == null) return;
 
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.Unequip(equippedItem.Type); return; }
         switch (equippedItem.Type)
         {
             case EquipmentItem.EquipmentType.Helmet:
@@ -87,6 +90,14 @@ public class EquipmentUI : MonoBehaviour
                 slot.GetInventoryItem().IsFromEquipmentUI = 1;
                 Unequip(slot);
             }
+        }
+    }
+    public void ApplyServerEquipment(System.Collections.Generic.IReadOnlyDictionary<int,int> equipped, EverWind.Gameplay.GameplayCatalog catalog)
+    {
+        foreach(var pair in _equipmentSlots) {
+            if(equipped.TryGetValue((int)pair.Key,out int item) && catalog.Item(item) is EquipmentItem equipment)
+                pair.Value.Initialize(equipment,this);
+            else pair.Value.Clear();
         }
     }
 }

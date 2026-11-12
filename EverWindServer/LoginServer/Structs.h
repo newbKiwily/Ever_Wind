@@ -1,30 +1,25 @@
 #pragma once
 #include <vector>
-namespace GameStruct 
-{   
 
-    struct Vector3
-    {
-        float x, y, z;
-    };
+namespace GameStruct
+{
+struct InventoryItem
+{
+    char ItemId[32];
 
-    struct InventoryItem
-    {
-        char ItemId[32];
+    int amount;
+    int slotIndex;
+    int isEquipped;
+};
+} // namespace GameStruct
 
-        int amount;
-        int slotIndex;
-        int isEquipped;
-    };
-}
-
-struct MapInitialInfo {
+struct MapInitialInfo
+{
     int mapId;
     float enemySpawnX, enemySpawnY, enemySpawnZ, radius;
     float playerSpawnX, playerSpawnY, playerSpawnZ;
     int maxEnemyCount;
     std::vector<int> enemyIdList;
-    
 };
 
 struct QuestSaveData
@@ -34,3 +29,11 @@ struct QuestSaveData
     bool rewardClaimed = false;
     std::vector<int> currentCounts;
 };
+
+namespace GameStruct
+{
+struct Vector3
+{
+    float x, y, z;
+};
+} // namespace GameStruct

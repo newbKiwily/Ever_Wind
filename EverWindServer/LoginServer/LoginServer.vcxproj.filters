@@ -1,98 +1,149 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4E0F06EE-7E21-4AF7-9E88-5D209610AC0D}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{EBFE49D1-5D5A-4A0F-8F76-1C826EAC6E65}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
+    <Filter Include="Header Files"><UniqueIdentifier>{16EDA14F-376C-5D57-1A50-89364FA01216}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\DB"><UniqueIdentifier>{37760717-195F-3E6C-9721-FB027001D7B7}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Gameplay"><UniqueIdentifier>{F1D10481-DD2A-869F-22F2-A9DD81B9C0E1}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Gameplay\Authentication"><UniqueIdentifier>{959A7F42-3831-BDF9-6F9F-C9BFBBA3B406}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Gameplay\Map"><UniqueIdentifier>{B06473B5-B813-2CB7-29FF-CEA30FBAD8D1}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Gameplay\Refill"><UniqueIdentifier>{C7D25BDD-3C03-159F-1B51-81E146609ADE}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Gameplay\Rule"><UniqueIdentifier>{9092CE5B-2A23-A6CB-A102-3B11A953B50F}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Gameplay\Validation"><UniqueIdentifier>{16145B8E-16F6-0BD6-74B1-8542E5CE39C4}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Gameplay\Validation\Ingame"><UniqueIdentifier>{AA92E7BB-D388-CB45-3830-D88058498A80}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Network"><UniqueIdentifier>{0F1104DB-C551-5788-EE88-85558A3D79B4}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files"><UniqueIdentifier>{D9FDDB14-DA9C-5D6B-3322-DC133DAC97C8}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\DB"><UniqueIdentifier>{B343665A-928E-D344-D063-61A01BFF1C76}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Gameplay"><UniqueIdentifier>{1C54BE02-7AA1-AB0B-4E87-6763F08D5758}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Gameplay\Authentication"><UniqueIdentifier>{B285E7E4-27D2-E8D1-94C5-E0E04C384CFC}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Gameplay\Map"><UniqueIdentifier>{36C6FA45-6E85-5C34-56D1-6EA113A42D44}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Gameplay\Refill"><UniqueIdentifier>{79F4796C-0093-7245-CD35-D6983E4839CC}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Gameplay\Rule"><UniqueIdentifier>{408FD97E-69E3-8F39-202C-39B733FA8770}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Gameplay\Validation"><UniqueIdentifier>{1568C978-4F76-97EE-43CB-9B02827D6E17}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Gameplay\Validation\Ingame"><UniqueIdentifier>{63C5A624-F1AC-472A-5B79-BFE769E0CB29}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Network"><UniqueIdentifier>{394DA5AF-F822-FACF-B0E7-1D6C7AE844DA}</UniqueIdentifier></Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Network\IOCPServer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Network\Session.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DB\DBManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DB\Queries.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Logic\PacketMethod.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Util\SHA256.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SessionManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MapData.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MapDataManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Enemy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TimerManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Timer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Network\IOCPServer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Network\Session.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Network\Packet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DB\DBManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DB\Queries.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Logic\PacketMethod.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Util\SHA256.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SessionManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MapData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MapDataManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Enemy.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Structs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TimerManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Timer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <ClCompile Include="DB\DBManager.cpp"><Filter>Source Files\DB</Filter></ClCompile>
+    <ClCompile Include="DB\GameplayPersistence.cpp"><Filter>Source Files\DB</Filter></ClCompile>
+    <ClCompile Include="DB\Queries.cpp"><Filter>Source Files\DB</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Authentication\PacketMethod.cpp"><Filter>Source Files\Gameplay\Authentication</Filter></ClCompile>
+    <ClCompile Include="Gameplay\GameplayProcessor.cpp"><Filter>Source Files\Gameplay</Filter></ClCompile>
+    <ClCompile Include="Gameplay\GameplayValidation.cpp"><Filter>Source Files\Gameplay</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Map\WorldState.cpp"><Filter>Source Files\Gameplay\Map</Filter></ClCompile>
+    <ClCompile Include="Gameplay\PacketValidation.cpp"><Filter>Source Files\Gameplay</Filter></ClCompile>
+    <ClCompile Include="Gameplay\ReceiveStep.cpp"><Filter>Source Files\Gameplay</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Refill\RefillSystem.cpp"><Filter>Source Files\Gameplay\Refill</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Rule\GameRules.cpp"><Filter>Source Files\Gameplay\Rule</Filter></ClCompile>
+    <ClCompile Include="Gameplay\SendStep.cpp"><Filter>Source Files\Gameplay</Filter></ClCompile>
+    <ClCompile Include="Gameplay\ServerRuntime.cpp"><Filter>Source Files\Gameplay</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Service.cpp"><Filter>Source Files\Gameplay</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ActionIdleValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\AliveRequestValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\AttackCooldownValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\AttackRangeValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\AttackTargetValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\CancelActionValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\CombatModeValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\CraftIngredientsValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\EquipmentSlotValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\EquipmentTypeValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ForcedMovementValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\GatherRangeValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ItemExistsValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ItemOwnershipValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ItemUseValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\MapExistsValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ModeRequestValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\MoveSequenceValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\MovementBudgetValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\MovementGeometryValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\NonCombatModeValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\QuestRewardValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\RecipeExistsValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ResourceAvailabilityValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ResourceExistsValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ResourceRefillValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ReviveDelayValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\ReviveStateValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\SkillExistsValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\TutorialAttackValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\TutorialMapValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\TutorialMovementValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\TutorialProgressValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Ingame\WorldEpochValidator.cpp"><Filter>Source Files\Gameplay\Validation\Ingame</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\IngameValidator.cpp"><Filter>Source Files\Gameplay\Validation</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\PacketValidator.cpp"><Filter>Source Files\Gameplay\Validation</Filter></ClCompile>
+    <ClCompile Include="Gameplay\Validation\Validator.cpp"><Filter>Source Files\Gameplay\Validation</Filter></ClCompile>
+    <ClCompile Include="Gameplay\WorldTypes.cpp"><Filter>Source Files\Gameplay</Filter></ClCompile>
+    <ClCompile Include="Network\GameplaySender.cpp"><Filter>Source Files\Network</Filter></ClCompile>
+    <ClCompile Include="Network\IOCPServer.cpp"><Filter>Source Files\Network</Filter></ClCompile>
+    <ClCompile Include="Network\IOContext.cpp"><Filter>Source Files\Network</Filter></ClCompile>
+    <ClCompile Include="Network\Packet.cpp"><Filter>Source Files\Network</Filter></ClCompile>
+    <ClCompile Include="Network\Session.cpp"><Filter>Source Files\Network</Filter></ClCompile>
+    <ClCompile Include="Network\SessionManager.cpp"><Filter>Source Files\Network</Filter></ClCompile>
+    <ClCompile Include="ServerApplication.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="main.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClInclude Include="DB\DBManager.h"><Filter>Header Files\DB</Filter></ClInclude>
+    <ClInclude Include="DB\GameplayPersistence.h"><Filter>Header Files\DB</Filter></ClInclude>
+    <ClInclude Include="DB\Queries.h"><Filter>Header Files\DB</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Authentication\PacketMethod.h"><Filter>Header Files\Gameplay\Authentication</Filter></ClInclude>
+    <ClInclude Include="Gameplay\GameplayProcessor.h"><Filter>Header Files\Gameplay</Filter></ClInclude>
+    <ClInclude Include="Gameplay\GameplayValidation.h"><Filter>Header Files\Gameplay</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Map\WorldState.h"><Filter>Header Files\Gameplay\Map</Filter></ClInclude>
+    <ClInclude Include="Gameplay\PacketValidation.h"><Filter>Header Files\Gameplay</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Protocol.h"><Filter>Header Files\Gameplay</Filter></ClInclude>
+    <ClInclude Include="Gameplay\ReceiveStep.h"><Filter>Header Files\Gameplay</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Refill\RefillSystem.h"><Filter>Header Files\Gameplay\Refill</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Rule\GameRules.h"><Filter>Header Files\Gameplay\Rule</Filter></ClInclude>
+    <ClInclude Include="Gameplay\SendStep.h"><Filter>Header Files\Gameplay</Filter></ClInclude>
+    <ClInclude Include="Gameplay\ServerRuntime.h"><Filter>Header Files\Gameplay</Filter></ClInclude>
+    <ClInclude Include="Gameplay\ServerSteps.h"><Filter>Header Files\Gameplay</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Service.h"><Filter>Header Files\Gameplay</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ActionIdleValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\AliveRequestValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\AttackCooldownValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\AttackRangeValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\AttackTargetValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\CancelActionValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\CombatModeValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\CraftIngredientsValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\EquipmentSlotValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\EquipmentTypeValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ForcedMovementValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\GatherRangeValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ItemExistsValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ItemOwnershipValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ItemUseValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\MapExistsValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ModeRequestValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\MoveSequenceValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\MovementBudgetValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\MovementGeometryValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\NonCombatModeValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\QuestRewardValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\RecipeExistsValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ResourceAvailabilityValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ResourceExistsValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ResourceRefillValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ReviveDelayValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\ReviveStateValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\SkillExistsValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\TutorialAttackValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\TutorialMapValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\TutorialMovementValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\TutorialProgressValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Ingame\WorldEpochValidator.h"><Filter>Header Files\Gameplay\Validation\Ingame</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\IngameValidator.h"><Filter>Header Files\Gameplay\Validation</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\PacketValidator.h"><Filter>Header Files\Gameplay\Validation</Filter></ClInclude>
+    <ClInclude Include="Gameplay\Validation\Validator.h"><Filter>Header Files\Gameplay\Validation</Filter></ClInclude>
+    <ClInclude Include="Gameplay\WorldTypes.h"><Filter>Header Files\Gameplay</Filter></ClInclude>
+    <ClInclude Include="Network\GameplaySender.h"><Filter>Header Files\Network</Filter></ClInclude>
+    <ClInclude Include="Network\IOCPServer.h"><Filter>Header Files\Network</Filter></ClInclude>
+    <ClInclude Include="Network\IOContext.h"><Filter>Header Files\Network</Filter></ClInclude>
+    <ClInclude Include="Network\Packet.h"><Filter>Header Files\Network</Filter></ClInclude>
+    <ClInclude Include="Network\Session.h"><Filter>Header Files\Network</Filter></ClInclude>
+    <ClInclude Include="Network\SessionManager.h"><Filter>Header Files\Network</Filter></ClInclude>
+    <ClInclude Include="ServerApplication.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="Structs.h"><Filter>Header Files</Filter></ClInclude>
   </ItemGroup>
 </Project>

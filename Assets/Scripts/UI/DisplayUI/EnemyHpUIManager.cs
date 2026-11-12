@@ -87,6 +87,7 @@ public class EnemyHpUIManager : MonoBehaviour
 
     public void UpdateEnemyList(List<GameObject> enemies)
     {
+        foreach(var bar in _hpBars) { var ui=bar.GetComponent<EnemyHpUI>(); if(ui.targetEnemy==null || !enemies.Contains(ui.targetEnemy)) { _activeEnemies.Remove(ui.targetEnemy); ui.targetEnemy=null;bar.SetActive(false); } }
         foreach (var enemy in enemies)
         {
             if (_activeEnemies.Contains(enemy))
@@ -97,8 +98,7 @@ public class EnemyHpUIManager : MonoBehaviour
 
             var enemyComp = enemy.GetComponent<Enemy>();
 
-            enemyComp.OnEnemyDied -= OnEnemyDied;
-            enemyComp.OnEnemyDied += OnEnemyDied;
+            if(enemyComp!=null) { enemyComp.OnEnemyDied -= OnEnemyDied; enemyComp.OnEnemyDied += OnEnemyDied; }
 
             _activeEnemies.Add(enemy);
             hpBar.SetActive(true);

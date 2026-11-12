@@ -76,6 +76,7 @@ public class CraftUI : MonoBehaviour
 
     private void Update()
     {
+        if (_selectedRecipe != null) _craftButton.interactable = CanCraft(_selectedRecipe);
         if (_scrollRect == null || _scrollArea == null)
             return;
 
@@ -167,6 +168,7 @@ public class CraftUI : MonoBehaviour
             return;
         }
 
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.Craft(_selectedRecipe); return; }
         foreach (var ingredient in _selectedRecipe.Ingredients)
         {
             Inventory.ConsumeItem(ingredient.IngredientItem.ItemName, ingredient.Amount);

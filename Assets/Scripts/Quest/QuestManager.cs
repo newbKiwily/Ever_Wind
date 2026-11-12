@@ -31,6 +31,7 @@ public class QuestManager : SingletonBase<QuestManager>
 
     public override void Init()
     {
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) { UnsubscribeEvents(); SyncQuestTable(); _activeQuests.Clear(); foreach(var quest in _questTable.Values) AcceptQuest(quest); return; }
         SubscribeEvents();
         SyncQuestTable();
         LoadQuestProgress();
@@ -133,6 +134,7 @@ public class QuestManager : SingletonBase<QuestManager>
         if (!questProgress.IsCompleted || questProgress.RewardClaimed)
             return false;
 
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.Claim(questId); return true; }
         ItemMediator itemMediator = SingletonManager.Instance.GetSingleton<ItemMediator>();
         if (itemMediator == null)
             return false;
@@ -317,6 +319,12 @@ public class QuestManager : SingletonBase<QuestManager>
         }
 
         return null;
+    }
+    public void ApplyServerProgress(int questId,int condition,int count,bool completed,bool claimed)
+    {
+        var progress=FindQuestProgress(questId);if(progress==null)return;
+        if(condition>=0 && condition<progress.CurrentCounts.Count) progress.CurrentCounts[condition]=count;
+        progress.IsCompleted=completed;progress.RewardClaimed=claimed;UIEvents.EvQuestProgressChanged();
     }
 }
 

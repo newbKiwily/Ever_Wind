@@ -30,6 +30,8 @@ public class MoveStep : ITutorialStep
 
     public void ExitStep(TutorialGuide step)
     {
+        GameObject.Destroy(_targetBox);
+        _targetBox=null;
         if (_deleteAction != null)
             PlayEvents.OnMoveCompleted -= _deleteAction;
 

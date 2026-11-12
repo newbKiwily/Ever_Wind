@@ -43,9 +43,10 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup><LocalDebuggerWorkingDirectory>$(ProjectDir)..\..</LocalDebuggerWorkingDirectory><DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor></PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions><WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -61,7 +62,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions><WarningLevel>Level4</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
@@ -80,36 +81,136 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="DB\DBManager.cpp" />
+    <ClCompile Include="DB\GameplayPersistence.cpp" />
     <ClCompile Include="DB\Queries.cpp" />
-    <ClCompile Include="Enemy.cpp" />
-    <ClCompile Include="Logic\PacketMethod.cpp" />
-    <ClCompile Include="MapData.cpp" />
-    <ClCompile Include="MapDataManager.cpp" />
+    <ClCompile Include="Gameplay\Authentication\PacketMethod.cpp" />
+    <ClCompile Include="Gameplay\GameplayProcessor.cpp" />
+    <ClCompile Include="Gameplay\GameplayValidation.cpp" />
+    <ClCompile Include="Gameplay\Map\WorldState.cpp" />
+    <ClCompile Include="Gameplay\PacketValidation.cpp" />
+    <ClCompile Include="Gameplay\ReceiveStep.cpp" />
+    <ClCompile Include="Gameplay\Refill\RefillSystem.cpp" />
+    <ClCompile Include="Gameplay\Rule\GameRules.cpp" />
+    <ClCompile Include="Gameplay\SendStep.cpp" />
+    <ClCompile Include="Gameplay\ServerRuntime.cpp" />
+    <ClCompile Include="Gameplay\Service.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ActionIdleValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\AliveRequestValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\AttackCooldownValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\AttackRangeValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\AttackTargetValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\CancelActionValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\CombatModeValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\CraftIngredientsValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\EquipmentSlotValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\EquipmentTypeValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ForcedMovementValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\GatherRangeValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ItemExistsValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ItemOwnershipValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ItemUseValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\MapExistsValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ModeRequestValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\MoveSequenceValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\MovementBudgetValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\MovementGeometryValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\NonCombatModeValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\QuestRewardValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\RecipeExistsValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ResourceAvailabilityValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ResourceExistsValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ResourceRefillValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ReviveDelayValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\ReviveStateValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\SkillExistsValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\TutorialAttackValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\TutorialMapValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\TutorialMovementValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\TutorialProgressValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Ingame\WorldEpochValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\IngameValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\PacketValidator.cpp" />
+    <ClCompile Include="Gameplay\Validation\Validator.cpp" />
+    <ClCompile Include="Gameplay\WorldTypes.cpp" />
+    <ClCompile Include="Network\GameplaySender.cpp" />
     <ClCompile Include="Network\IOCPServer.cpp" />
+    <ClCompile Include="Network\IOContext.cpp" />
+    <ClCompile Include="Network\Packet.cpp" />
     <ClCompile Include="Network\Session.cpp" />
-    <ClCompile Include="SessionManager.cpp" />
-    <ClCompile Include="Timer.cpp" />
-    <ClCompile Include="TimerManager.cpp" />
-    <ClCompile Include="Util\SHA256.cpp" />
+    <ClCompile Include="Network\SessionManager.cpp" />
+    <ClCompile Include="ServerApplication.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DB\DBManager.h" />
+    <ClInclude Include="DB\GameplayPersistence.h" />
     <ClInclude Include="DB\Queries.h" />
-    <ClInclude Include="Enemy.h" />
-    <ClInclude Include="Logic\PacketMethod.h" />
-    <ClInclude Include="MapData.h" />
-    <ClInclude Include="MapDataManager.h" />
+    <ClInclude Include="Gameplay\Authentication\PacketMethod.h" />
+    <ClInclude Include="Gameplay\GameplayProcessor.h" />
+    <ClInclude Include="Gameplay\GameplayValidation.h" />
+    <ClInclude Include="Gameplay\Map\WorldState.h" />
+    <ClInclude Include="Gameplay\PacketValidation.h" />
+    <ClInclude Include="Gameplay\Protocol.h" />
+    <ClInclude Include="Gameplay\ReceiveStep.h" />
+    <ClInclude Include="Gameplay\Refill\RefillSystem.h" />
+    <ClInclude Include="Gameplay\Rule\GameRules.h" />
+    <ClInclude Include="Gameplay\SendStep.h" />
+    <ClInclude Include="Gameplay\ServerRuntime.h" />
+    <ClInclude Include="Gameplay\ServerSteps.h" />
+    <ClInclude Include="Gameplay\Service.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ActionIdleValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\AliveRequestValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\AttackCooldownValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\AttackRangeValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\AttackTargetValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\CancelActionValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\CombatModeValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\CraftIngredientsValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\EquipmentSlotValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\EquipmentTypeValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ForcedMovementValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\GatherRangeValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ItemExistsValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ItemOwnershipValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ItemUseValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\MapExistsValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ModeRequestValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\MoveSequenceValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\MovementBudgetValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\MovementGeometryValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\NonCombatModeValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\QuestRewardValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\RecipeExistsValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ResourceAvailabilityValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ResourceExistsValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ResourceRefillValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ReviveDelayValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\ReviveStateValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\SkillExistsValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\TutorialAttackValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\TutorialMapValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\TutorialMovementValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\TutorialProgressValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Ingame\WorldEpochValidator.h" />
+    <ClInclude Include="Gameplay\Validation\IngameValidator.h" />
+    <ClInclude Include="Gameplay\Validation\PacketValidator.h" />
+    <ClInclude Include="Gameplay\Validation\Validator.h" />
+    <ClInclude Include="Gameplay\WorldTypes.h" />
+    <ClInclude Include="Network\GameplaySender.h" />
     <ClInclude Include="Network\IOCPServer.h" />
+    <ClInclude Include="Network\IOContext.h" />
     <ClInclude Include="Network\Packet.h" />
     <ClInclude Include="Network\Session.h" />
-    <ClInclude Include="SessionManager.h" />
+    <ClInclude Include="Network\SessionManager.h" />
+    <ClInclude Include="ServerApplication.h" />
     <ClInclude Include="Structs.h" />
-    <ClInclude Include="Timer.h" />
-    <ClInclude Include="TimerManager.h" />
-    <ClInclude Include="Util\SHA256.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <Target Name="CopyGameplayRuntime" AfterTargets="Build">
+    <ItemGroup><GameplayRuntime Include="$(ProjectDir)..\..\Shared\*.rules;$(ProjectDir)..\..\Shared\*.heights" /></ItemGroup>
+    <Copy SourceFiles="@(GameplayRuntime)" DestinationFolder="$(OutDir)Shared" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="C:\Bitnami\wampstack-8.1.2-0\mariadb\lib\libmariadb.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="Exists('C:\Bitnami\wampstack-8.1.2-0\mariadb\lib\libmariadb.dll')" />
+  </Target>
 </Project>

@@ -45,12 +45,18 @@ public class DeadUI : MonoBehaviour
 
     void Update()
     {
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) {
+            _timer=EverWind.Gameplay.GameplayIntegration.Active.ReviveRemaining;
+            introductionDead.text=_timer>0 ? $"ì‚¬ë§í–ˆìŠµë‹ˆë‹¤.\n{Mathf.CeilToInt(_timer)}ì´ˆ í›„ ë¶€í™œí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤." : "ì§€ê¸ˆ ë¶€í™œí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.";
+            if(revive!=null)revive.interactable=_timer<=0;
+            return;
+        }
         if (_isCountingDown)
         {
             if (_timer > 0)
             {
                 _timer -= Time.deltaTime;
-                introductionDead.text = $"´ç½ÅÀ» Á×¾ú½À´Ï´Ù.\n{Mathf.CeilToInt(_timer)}ÃÊ ÈÄ¿¡ ºÎÈ°ÇÒ ¼ö ÀÖ½À´Ï´Ù";
+                introductionDead.text = $"ë‹¹ì‹ ì„ ì£½ì—ˆìŠµë‹ˆë‹¤.\n{Mathf.CeilToInt(_timer)}ì´ˆ í›„ì— ë¶€í™œí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤";
             }
             else
             {
@@ -63,7 +69,7 @@ public class DeadUI : MonoBehaviour
     {
         _isCountingDown = false;
         _timer = 0;
-        introductionDead.text = "ÀÌÁ¦ ºÎÈ°ÇÒ ¼ö ÀÖ½À´Ï´Ù";
+        introductionDead.text = "ì´ì œ ë¶€í™œí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤";
 
         if (revive != null)
         {
@@ -73,6 +79,7 @@ public class DeadUI : MonoBehaviour
 
     public void OnRevive()
     {
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.Revive(); return; }
         var popUpUIManager = GetComponentInParent<PopUpUIManager>();
         if (popUpUIManager != null)
         {
@@ -82,5 +89,6 @@ public class DeadUI : MonoBehaviour
         UIEvents.EvReviveRequested();
         OnRevived?.Invoke();
     }
+    private void OnDisable(){if(!ReferenceEquals(_canvasGroup,null))DOTween.Kill(_canvasGroup);}
 }
 

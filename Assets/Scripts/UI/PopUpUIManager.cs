@@ -41,24 +41,24 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
         IsPopUpOn = false;
         UIEvents.SetPopupOpenState(IsPopUpOn);
 
-        _cameraMoving.OffPreviCam();
+        if (_cameraMoving != null) _cameraMoving.OffPreviCam(); else EverWind.Gameplay.GameplayIntegration.Active?.Preview(false);
 
-        Inventory = GetComponentInChildren<Inventory>();
+        Inventory = GetComponentInChildren<Inventory>(true);
         Inventory.Init();
 
-        CraftUI = GetComponentInChildren<CraftUI>();
+        CraftUI = GetComponentInChildren<CraftUI>(true);
         CraftUI.Init(this);
 
         ItemTooltip = this.GetComponent<ItemTooltip>();
         ItemTooltip.Init();
 
-        DeadUI = GetComponentInChildren<DeadUI>();
+        DeadUI = GetComponentInChildren<DeadUI>(true);
         DeadUI.Init();
 
-        EquipmentUI = GetComponentInChildren<EquipmentUI>();
+        EquipmentUI = GetComponentInChildren<EquipmentUI>(true);
         EquipmentUI.Init();
 
-        QuestUI = GetComponentInChildren<QuestUI>();
+        QuestUI = GetComponentInChildren<QuestUI>(true);
         QuestUI.Init();
 
         Inventory.gameObject.SetActive(false);
@@ -95,7 +95,7 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
         Inventory.gameObject.SetActive(true);
         _currentUI = Inventory.gameObject;
         Inventory.UpdateInventory();
-        _cameraMoving.OnPreviewCam();
+        if (_cameraMoving != null) _cameraMoving.OnPreviewCam(); else EverWind.Gameplay.GameplayIntegration.Active?.Preview(true);
         ItemTooltip.gameObject.SetActive(true);
     }
 
@@ -124,18 +124,19 @@ public class PopUpUIManager : SingletonBase<PopUpUIManager>
 
     public void CloseCurrentUI()
     {
-        if (_currentUI == null) return;
+        if (_currentUI == null || _currentUI == DeadUI.gameObject) return;
 
         _currentUI.gameObject.SetActive(false);
         _currentUI = null;
         IsPopUpOn = false;
         UIEvents.SetPopupOpenState(IsPopUpOn);
         ItemTooltip.tooltipWindow.SetActive(false);
-        _cameraMoving.OffPreviCam();
+        if (_cameraMoving != null) _cameraMoving.OffPreviCam(); else EverWind.Gameplay.GameplayIntegration.Active?.Preview(false);
     }
 
     private void Update()
     {
+        if (Inventory == null) return;
         if (InputManager.Instance.GetInventoryKeyDown())
             OpenInventory();
         if (InputManager.Instance.GetCraftUIKeyDown())

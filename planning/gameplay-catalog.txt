@@ -1,0 +1,20 @@
+item 1 Branch
+item 2 Rock
+item 3 CampFire
+item 4 AdvancedBranch
+item 5 CrownHelmet
+item 6 Grass
+item 7 Iron
+item 8 IronBody
+item 9 IronBoots
+item 10 IronGloves
+item 11 IronSword
+item 12 SmallHpPotion
+recipe 1 2.5 3 1 2 4 1 6 1
+recipe 2 2.5 4 1 1 1 2
+recipe 3 2.5 5 1 1 1 1
+recipe 4 2.5 7 1 1 2 2
+recipe 5 2.5 8 1 1 7 1
+recipe 6 2.5 9 1 1 7 1
+recipe 7 2.5 10 1 1 7 1
+recipe 8 2.5 11 1 3 4 1 7 1 6 1

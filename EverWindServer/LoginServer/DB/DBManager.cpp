@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 DBManager::DBManager()
-    : connection_(mysql_init(nullptr))
+    : connection_(nullptr)
 {
 }
 
@@ -42,3 +42,8 @@ void DBManager::Disconnect()
     }
 }
 
+MYSQL* DBManager::GetConnection() const
+{ return connection_; }
+
+std::mutex& DBManager::GetMutex()
+{ return mutex_; }

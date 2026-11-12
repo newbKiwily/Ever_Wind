@@ -25,6 +25,7 @@ public class SkillButton : MonoBehaviour
         _combatManager = manager;
         if (_button == null)
             _button = GetComponentInChildren<Button>();
+        _button.onClick.RemoveListener(OnButtonClick);
         _button.onClick.AddListener(OnButtonClick);
         RefreshFromManager();
     }
@@ -62,6 +63,7 @@ public class SkillButton : MonoBehaviour
 
     private void OnButtonClick()
     {
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.Attack(_skillIndex); return; }
         if (_combatManager != null)
         {
             _combatManager.ExecuteSkill(_skillIndex);

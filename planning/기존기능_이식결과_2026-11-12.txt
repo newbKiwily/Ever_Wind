@@ -1,0 +1,77 @@
+EverWind 기존 기능 이식 결과
+2026-11-12 / 검수 기준
+
+실행 경로
+1. tools/build-server.ps1로 서버를 빌드한다. Visual Studio의 LoginServer 프로젝트 빌드도 가능하다.
+2. tools/run-gameplay-server.ps1로 서버를 실행한다. 기본 출력은 .utmp/gameplay/production-server/LoginServer.exe이다.
+3. Unity에서 Assets/Scenes/LogIn.unity를 열어 실행한다. 기존 로그인/회원가입 버튼을 사용한다.
+4. 인증 및 서버 스냅샷을 받은 뒤 Assets/Scenes/InGame.unity로 넘어간다.
+5. 로그아웃은 서버 저장 결과를 받은 뒤 로그인 씬으로 돌아간다. 연결이 끊겨도 로그인 씬으로 복귀한다.
+
+씬 및 데이터
+- 실제 LogIn/InGame 씬과 기존 Canvas/인벤토리/제작/퀘스트/HUD 계층을 사용한다.
+- GameplayVerification.unity와 이를 새로 만드는 기존 빌더를 제거했다. Build Settings는 LogIn/InGame 두 씬이다.
+- 기존 맵 2개를 행동 스크립트가 없는 외형 프리팹으로 내보냈다. 채집물 36개를 별도 서버 엔티티로 분리했다.
+- 기존 아이템 12종, 제작법 8개, 퀘스트 3개를 같은 데이터 정의에 연결했다.
+- 서버와 클라이언트가 같은 0.5m 지형 높이 자료와 장애물 발자국 자료를 사용한다.
+- 맵 외형/높이/장애물/자원 배치를 바꾼 경우 AgentScripts/MigrateProductionScenes.cs를 Unity CLI로 실행해 양쪽 자료를 다시 내보낸다.
+- 서버 실행 시 기존 MapInfo/Monster 조회 결과로 플레이어 생성 위치, 몬스터 종류/최대 수/생성 중심·반경을 적용한다. 몬스터는 기존 원형 범위 무작위 생성 방식을 따른다.
+
+이식한 기존 기능과 연결
+- 로그인/회원가입: 기존 LoginUI, SHA256/계정 DB 인증을 재사용한다. 실제 게임 연결과 씬 수명은 GameplaySession이 관리한다.
+- 아이템/제작: ItemMediator의 기존 아이템 조회와 InventoryItem/CraftItemRecipe 정의를 재사용한다. 서버는 숫자 ID와 기존 아이템 키를 매핑한다.
+- 인벤토리: 기존 슬롯, 아이콘, 툴팁, 스크롤을 사용한다. 서버 잔량을 절대값으로 표시하며 비중첩 아이템은 개별 슬롯에 표시한다.
+- 장비: 기존 다섯 장비 슬롯을 사용한다. 장착/교체/해제와 공격력·방어력 계산은 서버가 처리한다.
+- 물약: 기존 HealAmount를 서버 규칙에 옮겼다. 유효한 사용에만 회복 및 수량 차감을 적용한다.
+- 설치: 기존 설치 외형을 사용하고 서버가 소유 수량과 설치 위치를 확인한 뒤 맵에 생성한다.
+- 제작: 기존 제작 UI와 재료 표시를 유지하고 Controller의 기존 CraftAction으로 요청한다. 서버가 완료 시 재료 및 결과 수량을 바꾼다.
+- 채집: 기존 Space 입력과 접근/ObtainAction을 사용한다. 5초 채집, 나뭇가지 5초/돌·풀 10초 리필 값을 적용했다.
+- 리필: 클라이언트 ResourceRefillController가 타이머를 실행한다. 서버는 고갈 여부/경과 시간/세대/플레이어 점유를 확인한다. 서버가 시간을 세어 자동 생성하는 경로는 없다.
+- 퀘스트: 기존 QuestManager/QuestUI/조건/보상 정의를 사용한다. 처치·채집·제작 증거 및 보상 중복 검사는 서버가 처리한다. 기존 TargetId=0의 전체 대상 조건도 유지한다.
+- 튜토리얼: 기존 Camera/Move/Combat/Interact/Craft/Equip 여섯 단계와 문구/대화 흐름을 사용한다. 서버 활동 결과로 단계를 검증하고 마지막 완료 후 기존 두 번째 맵으로 이동한다.
+- 전투: 작성된 AttackAction/ApproachTargetAction과 모드 전환을 유지했다. 기존 윈드밀을 세 번째 스킬로 연결하고 서버에서 범위 내 몬스터에 한 번씩 적용한다.
+- 피해 계산: 기존 공격력 + 공격력 × 비율, 방어력에 따른 100/(100+방어력) 공식을 서버로 옮겼다.
+- 표시: 기존 HP 바/프로필/미니맵/스킬 버튼과 쿨타임 표시, EnemyHpUIManager 데미지 텍스트 풀, EffectManager 이펙트 풀을 연결했다.
+- 사망/부활: 기존 DeadUI를 사용한다. 서버 부활 대기 시간과 승인 결과를 표시한다.
+- 저장: 기존 UserInfo/Inventory/UserQuest/UserQuestProgress에 서버 확정 상태를 트랜잭션으로 저장한다. 클라이언트가 보낸 최종 수량/HP를 저장하지 않는다.
+
+유지·제외
+- NonCombat/Combat/Looting/Dead, MoveAction 상속 구조, 공격과 이동의 분리, 입력 우선 인터럽트 구성은 유지했다.
+- 기존 카메라 우클릭·휠 줌·인벤토리 미리보기, 카메라 기준 축 입력, E 타겟 순환을 유지한다. 마우스 클릭 타겟 지정은 없다.
+- 자동 접근 완료 시 마지막 예측 이동을 행동 요청보다 먼저 전송하도록 보완했다. Action/State 종류를 바꾼 수정은 아니다.
+- 기존 Player/Enemy/FieldItem/CombatManager와 모델·레벨 내장 MonoBehaviour를 새 캐릭터/맵에 붙이지 않는다. 원본 소스와 원본 에셋은 참고 자료로 남아 있다.
+- UI에서 쓰던 TMP/DOTween/SerializedDictionary는 기존 UI 기능을 위해 유지한다. 캐릭터/레벨 내장 게임플레이 스크립트에 의존하지 않는다.
+- 기존 일반공격/스매시의 새 Action 타이밍은 이미 구현된 값을 유지했다. 이전 구형 스킬의 즉시 로컬 피해 방식은 이식하지 않았다.
+- 구형 위치/스탯/인벤토리/몬스터 변경 패킷은 서버 진입부에서 차단한다. 기존 인증/회원가입 형식만 유지한다.
+- BT, NavMesh 등 새 행동 기술은 도입하지 않았다.
+
+코드 검수 시작점
+- Assets/EverWindGameplay/Runtime/GameplaySession.cs: 인증 이후 씬 전환, 저장 후 로그아웃, 연결 끊김 처리.
+- Assets/EverWindGameplay/Runtime/GameplayIntegration.cs: 기존 UI/퀘스트/튜토리얼과 서버 이벤트 연결.
+- Assets/EverWindGameplay/Runtime/ResourceRefillController.cs: 클라이언트 리필 타이머.
+- Assets/Scripts/UI/InventoryUI/Inventory.cs 및 EquipmentUI.cs: 기존 슬롯 UI와 서버 수량/장비 표시.
+- Assets/Scripts/Quest/QuestManager.cs 및 Tutorial/TutorialGuide.cs: 서버 확정 진행을 기존 표시 구조에 적용.
+- EverWindServer/LoginServer/Gameplay/Core.cpp: 공통/구체화 검증과 기능 실행, 기존 DB 맵 설정 적용.
+- EverWindServer/LoginServer/DB/GameplayPersistence.cpp: 기존 키/테이블을 사용하는 서버 상태 로드·저장.
+- AgentScripts/MigrateProductionScenes.cs: 원본 데이터 추출 및 실제 씬 연결.
+- tests/gameplay/FeatureTests.cpp: 경제/튜토리얼/범위 공격/부활 회귀 검사.
+
+검증 결과
+- Unity C# 재컴파일 성공, 마지막 반복 접속 검사에서 새 예외·경고 0건.
+- 실제 DB 로그인 → 기존 인게임 UI 초기화 → 장비 장착/해제 → 슬롯 클릭 물약 회복/설치 → 제작 → 저장 후 로그아웃 성공.
+- 실제 맵에서 접근 후 채집 → 클라이언트 타이머 리필 → 재채집 → 퀘스트 완료/보상 → 맵 1 전환 → 저장 성공.
+- 실제 서버에 두 TCP 클라이언트 접속: DB 몬스터 수, 맵·보상 복원, 중복 로그인 차단, 반복 보상 차단, 구형 스탯 조작 패킷 차단 성공.
+- 튜토리얼 단계 저장/재접속 복원, 연결 끊김 시 로그인 복귀, UI 싱글턴 재등록 성공.
+- C++ 검사: 이동/속도/충돌/보정/중복 요청/공격 타이머/취소/넉백/채집/제작/장비/물약/설치/보상/리필/저장 및 재접속 통과.
+- 추가 C++ 검사: 튜토리얼 6단계 서버 증거, 윈드밀 대상별 1회 타격, 부활 대기 시간 통과.
+- 외형 검사: 스크립트가 없는 외형 셸 24개, 이벤트 없는 클립 28개, 교체 가능한 표현 프로필 3개 통과. 맵 바닥에는 Unity 네이티브 Collider를 유지한다.
+- C++ 파일 검사: 클래스/구조체 75쌍, 헤더 95개/소스 83개, 외부 클래스 직접 선언 없음, Visual Studio 파일 등록 완료.
+- 테스트 계정은 이 작업에서만 새로 생성했으며 검증 종료 후 삭제를 확인했다. 기존 사용자 데이터와 DB 스키마는 변경하지 않았다.
+
+현재 동작의 범위
+- 장애물 검증은 기존 합의에 따른 보수적인 XZ 발자국 검사와 지면 높이 자료를 사용한다. 원본 MeshCollider의 세밀한 곡면/다층 공간을 그대로 재현하는 물리 엔진은 아니다.
+- 접근은 기존 직선 접근 정책을 유지하며 벽으로 막히면 Blocked로 종료한다. 자동 우회 경로 탐색은 추가하지 않았다.
+- 설치물과 고갈/몬스터 상태는 서버 실행 중 맵에 보존된다. 월드 설치물의 서버 재시작 후 영구 복원은 기존 프로젝트에 없던 기능으로 추가하지 않았다.
+- 이번 검증은 로컬 Editor 및 TCP 연결을 사용했다. 외부 PC·포트포워딩과 대규모 부하 성능을 인증한 결과는 아니다.
+
+후속 구조 정리: CoreImpl을 Core로, ServiceImpl을 Service로 통합했다. World.h/World.cpp 호환 파일을 삭제하고 IOCPServer는 Service.h를 직접 포함한다. 게임 규칙과 패킷 형식은 유지했다.

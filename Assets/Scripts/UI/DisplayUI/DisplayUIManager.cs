@@ -17,6 +17,7 @@ public class DisplayUIManager : MonoBehaviour
     private CombatManager _combatManager;
     [SerializeField]
     private Player _player;
+    private EverWind.Gameplay.ServerTransceiver serverPlayer;
     private SkillButtonManager _skillButtonManager;
 
     public Image HpBar;
@@ -84,6 +85,7 @@ public class DisplayUIManager : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (_minimapCamera != null && serverPlayer != null) { var p=serverPlayer.transform.position; _minimapCamera.transform.position=new Vector3(p.x,_minimapCamera.transform.position.y,p.z); return; }
         if (_minimapCamera == null || _player == null)
             return;
 
@@ -165,10 +167,17 @@ public class DisplayUIManager : MonoBehaviour
 
     public void OnQuitButton()
     {
+        if (EverWind.Gameplay.GameplaySession.Current != null) { EverWind.Gameplay.GameplaySession.Current.Logout(); return; }
         var networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
         if (!networkClient)
             return;
         networkClient.Logout();
     }
+    public void BindServerPlayer(EverWind.Gameplay.ServerTransceiver player)
+    {
+        serverPlayer=player;_skillButtonManager=GetComponentInChildren<SkillButtonManager>(true);_skillButtonManager?.Init(null);
+        if(player!=null)ApplyServerStats(player.Hp,player.MaxHp);
+    }
+    public void ApplyServerStats(float hp,float maxHp){_tempHpRatio=maxHp>0?Mathf.Clamp01(hp/maxHp):0;HpBar.fillAmount=_tempHpRatio;}
 }
 

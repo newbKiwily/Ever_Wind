@@ -64,5 +64,10 @@ public class EffectManager : SingletonBase<EffectManager>
             PlayEffect(key, position);
         }
     }
+    private void Update()
+    {
+        foreach(var pool in _particlePool.Values) foreach(var particle in pool)
+            if(particle.gameObject.activeSelf && !particle.IsAlive(true))particle.gameObject.SetActive(false);
+    }
 }
 

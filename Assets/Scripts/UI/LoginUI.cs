@@ -19,7 +19,7 @@ public class LoginUI : MonoBehaviour
         loginButton.onClick.AddListener(OnLoginButtonClicked);
         signupButton.onClick.AddListener(OnSignupButtonClicked);
 
-        // ¸Ş½ÃÁö ¹Ú½º ÃÊ±â »óÅÂ
+        // ë©”ì‹œì§€ ë°•ìŠ¤ ì´ˆê¸° ìƒíƒœ
         messageBox.SetActive(false);
     }
 
@@ -29,10 +29,11 @@ public class LoginUI : MonoBehaviour
         string pw = passwordField.text;
         if (id == "" || pw == "")
         {
-            SetResult("¾ÆÀÌµğ È¤Àº ºñ¹Ğ¹øÈ£¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä");
+            SetResult("ì•„ì´ë”” í˜¹ì€ ë¹„ë°€ë²ˆí˜¸ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”");
             return;
         }
 
+        if (EverWind.Gameplay.GameplaySession.Current != null) { EverWind.Gameplay.GameplaySession.Current.Login(id,pw); return; }
         byte[] packet = PacketMethod.BuildLoginRequest(id, pw);
         SingletonManager.Instance.GetSingleton<NetworkClient>().Send(packet);
     }
@@ -43,10 +44,11 @@ public class LoginUI : MonoBehaviour
         string pw = passwordField.text;
         if (id == "" || pw == "")
         {
-            SetResult("¾ÆÀÌµğ È¤Àº ºñ¹Ğ¹øÈ£¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä");
+            SetResult("ì•„ì´ë”” í˜¹ì€ ë¹„ë°€ë²ˆí˜¸ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”");
             return;
         }
 
+        if (EverWind.Gameplay.GameplaySession.Current != null) { EverWind.Gameplay.GameplaySession.Current.Signup(id,pw); return; }
         byte[] packet = PacketMethod.BuildSignupRequest(id, pw);
         SingletonManager.Instance.GetSingleton<NetworkClient>().Send(packet);
     }

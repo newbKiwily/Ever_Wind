@@ -13,6 +13,7 @@ public enum TutorialStep
 
 public class TutorialGuide : MonoBehaviour
 {
+    private bool applyingServer;
     private ITutorialStep _currentStep;
     private TutorialStep _currentStepType;
     private TextRenderManager _textRenderManager;
@@ -26,6 +27,7 @@ public class TutorialGuide : MonoBehaviour
 
     public void TransitionStep(TutorialStep targetState)
     {
+        if (!applyingServer && EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.AdvanceTutorial((int)_currentStepType); return; }
         if (_currentStep != null)
             _currentStep.ExitStep(this);
 
@@ -49,6 +51,7 @@ public class TutorialGuide : MonoBehaviour
         _stateTable.Add(TutorialStep.Craft, new CraftStep());
         _stateTable.Add(TutorialStep.Equip, new EquipStep());
 
+        if (EverWind.Gameplay.GameplayIntegration.Active != null) return;
         int savedStep = _dataCenter.loginData.TutorialStep;
         if (savedStep < 0)
         {
@@ -74,6 +77,7 @@ public class TutorialGuide : MonoBehaviour
 
     public void CompleteTutorial()
     {
+        if (!applyingServer && EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.AdvanceTutorial(5); return; }
         if (_currentStep != null)
         {
             _currentStep.ExitStep(this);
@@ -93,5 +97,16 @@ public class TutorialGuide : MonoBehaviour
     {
         return _hasActiveTutorial;
     }
+    public void ApplyServerStep(int phase)
+    {
+        if(_hasActiveTutorial && phase==(int)_currentStepType)return;
+        bool completed=_hasActiveTutorial && _currentStepType==TutorialStep.Equip && phase<0;
+        applyingServer=true;
+        if(phase<0)CompleteTutorial();else TransitionStep((TutorialStep)phase);
+        applyingServer=false;
+        if(completed) EverWind.Gameplay.GameplayIntegration.Active.Send(new EverWind.Gameplay.Request{Kind=EverWind.Gameplay.RequestKind.ChangeMap,Definition=1});
+    }
+    private void OnDestroy(){_currentStep?.ExitStep(this);}
 }
+
 

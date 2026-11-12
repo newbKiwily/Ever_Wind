@@ -18,8 +18,10 @@ public class InventorySlot : ButtonSlot
 
     public void Initialize(Inventory inv, InventoryItem newItem, int amount)
     {
+        if (_countText == null) _countText = transform.Find("Count").GetComponent<TextMeshProUGUI>();
+        if (_itemImage == null) _itemImage = transform.Find("ItemSlot").GetComponent<Image>();
         this._inventory = inv;
-        this._item = newItem; // Slot.cs¿« protected item ªÁøÎ
+        this._item = newItem; // Slot.csÏùò protected item ÏÇ¨Ïö©
         this.count = amount;
 
         if (_itemImage != null && _item != null) _itemImage.sprite = _item.ItemImage;

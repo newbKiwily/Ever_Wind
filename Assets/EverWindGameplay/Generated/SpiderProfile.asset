@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2181b1ebab56ee34c938b56fb34c3ea8, type: 3}
+  m_Name: SpiderProfile
+  m_EditorClassIdentifier: Assembly-CSharp::EverWind.Gameplay.ActionVisualProfile
+  Controller: {fileID: 9100000, guid: fc6eeb68a4fd83e43af8394f43334445, type: 2}
+  VisualOffset: {x: 0, y: 0, z: 0}
+  VisualEuler: {x: 0, y: 180, z: 0}
+  VisualScale: 1
+  Idle: Idle
+  Run: Run
+  CombatIdle: CombatIdle
+  CombatRun: CombatRun
+  Gather: Gather
+  Damaged: Damaged
+  Dead: Dead
+  Attacks:
+  - Attack1
+  - Attack2
+  Clips:
+  - State: Idle
+    Clip: {fileID: 7400000, guid: 0a1652f52a8fad040b7c228719632e7c, type: 2}
+  - State: Run
+    Clip: {fileID: 7400000, guid: 9cd5b355a81edea42a1a8d8b7a5ae154, type: 2}
+  - State: CombatIdle
+    Clip: {fileID: 7400000, guid: dcd0ff0877f4f3143a10bb71fa2b8e04, type: 2}
+  - State: CombatRun
+    Clip: {fileID: 7400000, guid: 99ae24515c3ef4943abf20e9df54069d, type: 2}
+  - State: Attack1
+    Clip: {fileID: 7400000, guid: bc47871df34b46a45ac80aa326773fd7, type: 2}
+  - State: Attack2
+    Clip: {fileID: 7400000, guid: fb98cd3543b24e5478f32b42e8566967, type: 2}
+  - State: Gather
+    Clip: {fileID: 7400000, guid: 3d488457eb947ac4f90afa98ef80bd2f, type: 2}
+  - State: Damaged
+    Clip: {fileID: 7400000, guid: d03366462250cb949908be318e56cd13, type: 2}
+  - State: Dead
+    Clip: {fileID: 7400000, guid: f9d1b9317861b1846b3ec3a9637c7cde, type: 2}
+  SwingEffect: {fileID: 0}
+  HitEffect: {fileID: 0}
+  EffectOffset: {x: 0, y: 1, z: 0}
+  SwingCue: 0.2
+  AttackImpactNormalized: 0.45

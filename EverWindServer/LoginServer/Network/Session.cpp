@@ -1,14 +1,13 @@
-﻿#include "Session.h"
+#include "Session.h"
 #include "IOCPServer.h"
 #include "Packet.h"
-#include "../Logic/PacketMethod.h"
+#include "../Gameplay/Protocol.h"
 #include "../DB/Queries.h"
-#include "MapDataManager.h"
-#include "MapData.h"
 #include "SessionManager.h"
 #include <iostream>
 #include <cstring>
 #include <sstream>
+#include <cmath>
 
 using namespace NetPackets;
 
@@ -16,6 +15,8 @@ namespace
 {
     const char* GetPacketName(PacketId packetId)
     {
+        if (static_cast<uint16_t>(packetId) == EverWind::Gameplay::RequestPacket) return "C2S_GAMEPLAY_REQUEST";
+        if (static_cast<uint16_t>(packetId) == EverWind::Gameplay::EventPacket) return "S2C_GAMEPLAY_EVENT";
         switch (packetId)
         {
         case PacketId::C2S_LOGIN_REQ: return "C2S_LOGIN_REQ";
@@ -87,6 +88,8 @@ namespace
 
     void LogPacketEvent(const Session& session, const char* direction, const PacketHeader& header)
     {
+        // State snapshots arrive continuously; keep packet diagnostics useful without synchronous console floods.
+        if(header.Id==EverWind::Gameplay::EventPacket)return;
         const PacketId packetId = static_cast<PacketId>(header.Id);
         if (!ShouldLogPacket(packetId))
         {
@@ -100,15 +103,6 @@ namespace
             << ", " << header.Length << " bytes)"
             << std::endl;
     }
-}
-
-
-Session::IOContext::IOContext(std::shared_ptr<Session> o, IOOperation op)
-    : operation(op), owner(std::move(o)), expectedBytes(0)
-{
-    memset(&overlapped, 0, sizeof(overlapped));
-    wsaBuf.buf = buffer;
-    wsaBuf.len = static_cast<ULONG>(MAX_IO_BUFFER);
 }
 
 Session::Session(IOCPServer* server, SOCKET socket)
@@ -128,7 +122,7 @@ bool Session::PostRecv()
     {
         return false;
     }
- 
+
     auto* context = new IOContext(shared_from_this(), IOOperation::Recv);
     DWORD flags = 0;
     DWORD bytes = 0;
@@ -223,63 +217,57 @@ void Session::OnRecvCompleted(IOContext* context, size_t bytesTransferred)
     }
 }
 
-void Session::OnSendCompleted(IOContext* context, size_t /*bytesTransferred*/)
+void Session::OnSendCompleted(IOContext* context, size_t bytesTransferred)
 {
-    if (context == nullptr)
-    {
-        return;
-    }
-
-    delete context;
+    std::unique_ptr<IOContext> completed(context);
+    if (!completed) return;
 
     std::lock_guard<std::mutex> guard(sendMutex_);
-    if (sendQueue_.empty())
+    if (IsClosed()) { sending_ = false; return; }
+    if (bytesTransferred == 0 || bytesTransferred > completed->expectedBytes)
+    {
+        sending_ = false;
+        Close();
+        return;
+    }
+    if (bytesTransferred == completed->expectedBytes && sendQueue_.empty())
     {
         sending_ = false;
         return;
     }
 
-    auto* newContext = new IOContext(shared_from_this(), IOOperation::Send);
-    auto nextPacket = std::move(sendQueue_.front());
-    std::memcpy(newContext->buffer, nextPacket.data(), nextPacket.size());
-    newContext->wsaBuf.len = static_cast<ULONG>(nextPacket.size());
-    newContext->expectedBytes = nextPacket.size();
-    sendQueue_.pop();
-
-    DWORD bytesSent = 0;
-    if (WSASend(socket_, &newContext->wsaBuf, 1, &bytesSent, 0, &newContext->overlapped, nullptr) == SOCKET_ERROR)
+    auto next = std::make_unique<IOContext>(shared_from_this(), IOOperation::Send);
+    if (bytesTransferred < completed->expectedBytes)
     {
-        if (WSAGetLastError() != WSA_IO_PENDING)
-        {
-            delete newContext;
-            sending_ = false;
-            Close();
-            return;
-        }
+        // TCP may complete only part of a frame. Finish it before the next packet.
+        next->expectedBytes = completed->expectedBytes - bytesTransferred;
+        std::memcpy(next->buffer, completed->wsaBuf.buf + bytesTransferred, next->expectedBytes);
     }
+    else
+    {
+        auto packet = std::move(sendQueue_.front());
+        sendQueue_.pop();
+        next->expectedBytes = packet.size();
+        std::memcpy(next->buffer, packet.data(), packet.size());
+    }
+    next->wsaBuf.len = static_cast<ULONG>(next->expectedBytes);
+    DWORD sent = 0;
+    if (WSASend(socket_, &next->wsaBuf, 1, &sent, 0, &next->overlapped, nullptr) == SOCKET_ERROR &&
+        WSAGetLastError() != WSA_IO_PENDING)
+    {
+        sending_ = false;
+        Close();
+        return;
+    }
+    next.release(); // IOCP completion owns the outstanding context.
 }
-
 void Session::Close()
 {
     bool expected = false;
     if (closed_.compare_exchange_strong(expected, true))
     {
-        if (!userId.empty()) {
-
-            // 1. 맵에서 나를 제거 (추가됨)
-            auto mapMgr = server_->GetSessionManager()->GetMapDataManager();
-            if (auto currMap = mapMgr->findMapData(this->mapId)) {
-                currMap->RemoveSession(shared_from_this());
-            }
-            server_->GetPacketMethod()->SendPlayerLogOut(this, serverUserId);
-            
-
-            // 3. 세션 매니저 제거 및 DB 저장
-            server_->GetSessionManager()->RemoveSession(serverUserId);
-            server_->GetPacketMethod()->getQuery()->UpdateUserPosition(userId, mapId, position.x, position.y, position.z);
-            
-        }
-
+        // The game worker owns world removal and canonical-state persistence.
+        server_->GetSessionManager()->RemoveSession(serverUserId);
         if (socket_ != INVALID_SOCKET) {
             shutdown(socket_, SD_BOTH);
             closesocket(socket_);
@@ -287,7 +275,6 @@ void Session::Close()
         }
     }
 }
-
 
 bool Session::HandlePackets()
 {
@@ -328,8 +315,80 @@ bool Session::HandlePackets()
 
 bool Session::ProcessPacket(const PacketHeader& header, const char* payload, size_t payloadSize)
 {
-    LogPacketEvent(*this, "Recv", header);
+    // Move validity is only known after gameplay validation. Log rejections there.
+    EverWind::Gameplay::RequestKind kind{};
+    bool move = false;
+    if (header.Id == EverWind::Gameplay::RequestPacket && payload &&
+        payloadSize >= offsetof(EverWind::Gameplay::Request, kind) + sizeof kind)
+    {
+        std::memcpy(&kind, payload + offsetof(EverWind::Gameplay::Request, kind), sizeof kind);
+        move = kind == EverWind::Gameplay::RequestKind::Move;
+    }
+    if (!move) LogPacketEvent(*this, "Recv", header);
     return server_->OnPacketReceived(this, header, payload, payloadSize);
 }
 
+SOCKET Session::GetSocket() const
+{ return socket_; }
 
+bool Session::IsClosed() const
+{ return closed_.load(); }
+
+void Session::SetMapId(int assigned_mapId)
+{ mapId = assigned_mapId; return; }
+
+void Session::SetPosition(float x, float y, float z)
+{
+        std::lock_guard<std::mutex> lock(positionMutex_);
+        position.x = x;
+        position.y = y;
+        position.z = z;
+        return;
+    }
+
+GameStruct::Vector3 Session::GetPostion()
+{
+        std::lock_guard<std::mutex> lock(positionMutex_);
+        return position;
+    }
+
+IOCPServer* Session::GetServer() const
+{
+        return server_;
+    }
+
+int Session::GetMapId() const
+{
+        return mapId;
+    }
+
+void Session::SetUserId(const std::string& id)
+{
+        userId = id;
+    }
+
+const std::string& Session::GetUserId() const
+{
+        return userId;
+    }
+
+void Session::SetServerUserId(const int& id)
+{
+        serverUserId = id;
+    }
+
+const int& Session::GetServerUserId() const
+{
+        return serverUserId;
+    }
+
+void Session::SetGameplayMoveSpeed(float speed)
+{
+    if (std::isfinite(speed) && speed > 0)
+        gameplayMoveSpeed_.store(speed);
+}
+
+float Session::GetGameplayMoveSpeed() const
+{
+    return gameplayMoveSpeed_.load();
+}
