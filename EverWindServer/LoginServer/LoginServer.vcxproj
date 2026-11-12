@@ -209,8 +209,11 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <Target Name="CopyGameplayRuntime" AfterTargets="Build">
-    <ItemGroup><GameplayRuntime Include="$(ProjectDir)..\..\Shared\*.rules;$(ProjectDir)..\..\Shared\*.heights" /></ItemGroup>
+    <ItemGroup><GameplayRuntime Include="$(ProjectDir)Shared\*.heights" /></ItemGroup>
     <Copy SourceFiles="@(GameplayRuntime)" DestinationFolder="$(OutDir)Shared" SkipUnchangedFiles="true" />
+    <ItemGroup><ServerMaps Include="$(ProjectDir)Shared\Maps\*.txt" /></ItemGroup>
+    <Copy SourceFiles="@(ServerMaps)" DestinationFolder="$(OutDir)Shared\Maps" SkipUnchangedFiles="true" />
+    <Delete Files="$(OutDir)Shared\Gameplay.rules" />
     <Copy SourceFiles="C:\Bitnami\wampstack-8.1.2-0\mariadb\lib\libmariadb.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="Exists('C:\Bitnami\wampstack-8.1.2-0\mariadb\lib\libmariadb.dll')" />
   </Target>
 </Project>

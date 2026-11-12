@@ -16,12 +16,13 @@ class Service
 {
   public:
     Service();
-    void InitializeGame(const std::string &path);
-    void InitializeMaps(const std::vector<MapInitialInfo> &maps = {});
+    void InitializeGame(GameRules definitions);
+    void InitializeMaps(const std::string &directory);
     void InitializeWorldObjects();
     void Start();
     const GameRules &Rules() const;
     bool HasMap(int id) const;
+    std::vector<int> MapIds() const;
     ~Service();
     void Submit(int connectionId, Request request, Send send, std::function<bool()> alive,
                 float moveSpeed = 5.0f, std::shared_ptr<const AccountState> account = {},

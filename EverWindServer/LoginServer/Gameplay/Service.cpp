@@ -5,13 +5,13 @@
 namespace EverWind::Gameplay
 {
 Service::Service() = default;
-void Service::InitializeGame(const std::string &path)
+void Service::InitializeGame(GameRules definitions)
 {
-    runtime.InitializeGame(path);
+    runtime.InitializeGame(std::move(definitions));
 }
-void Service::InitializeMaps(const std::vector<MapInitialInfo> &maps)
+void Service::InitializeMaps(const std::string &directory)
 {
-    runtime.InitializeMaps(maps);
+    runtime.InitializeMaps(directory);
 }
 void Service::InitializeWorldObjects()
 {
@@ -24,6 +24,10 @@ const GameRules &Service::Rules() const
 bool Service::HasMap(int id) const
 {
     return runtime.HasMap(id);
+}
+std::vector<int> Service::MapIds() const
+{
+    return runtime.MapIds();
 }
 void Service::Start()
 {

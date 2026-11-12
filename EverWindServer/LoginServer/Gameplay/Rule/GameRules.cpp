@@ -1,98 +1,39 @@
 #include "GameRules.h"
-#include <fstream>
-#include <sstream>
+#include <cmath>
 #include <stdexcept>
 namespace EverWind::Gameplay
 {
-void GameRules::Initialize(const std::string &path)
+void GameRules::Validate() const
 {
-    if (initialized)
-        throw std::logic_error("Game rules already initialized");
-    std::ifstream input(path);
-    if (!input)
-        throw std::runtime_error("Gameplay rules missing: " + path);
-    sourcePath = path;
-    std::string line;
-    while (std::getline(input, line))
+    if (skills.empty() || items.empty())
+        throw std::runtime_error("Missing DB game definitions");
+    for (const auto &[id, s] : skills)
+        if (!std::isfinite(s.duration) || !std::isfinite(s.hit) || !std::isfinite(s.reach) ||
+            !std::isfinite(s.cooldown) || s.duration < 0 || s.hit < 0 || s.hit > s.duration || s.reach < 0 ||
+            s.cooldown < 0)
+            throw std::runtime_error("Invalid DB skill " + std::to_string(id));
+    for (const auto &[id, r] : recipes)
     {
-        std::istringstream s(line);
-        std::string type;
-        if (!(s >> type) || type[0] == '#')
-            continue;
-        int id;
-        if (type == "map" || type == "spawn" || type == "surface")
-            mapRows.push_back(line);
-        else if (type == "monster" || type == "resource" || type == "resourcecfg" || type == "box" ||
-                 type == "zone")
-            objectRows.push_back(line);
-        else if (type == "skill")
-        {
-            Skill value{};
-            s >> id >> value.duration >> value.hit >> value.reach >> value.damage >> value.cooldown >>
-                value.push;
-            skills.emplace(id, value);
-        }
-        else if (type == "recipe")
-        {
-            Recipe value{};
-            int count = 0;
-            s >> id >> value.duration >> value.output >> value.count >> count;
-            for (int i = 0; i < count; ++i)
-            {
-                int key = 0, amount = 0;
-                s >> key >> amount;
-                value.inputs.emplace_back(key, amount);
-            }
-            recipes.emplace(id, std::move(value));
-        }
-        else if (type == "item")
-        {
-            s >> id;
-            s >> items[id].key;
-        }
-        else if (type == "itemdef")
-        {
-            s >> id;
-            auto &v = items[id];
-            s >> v.kind >> v.slot >> v.power >> v.heal >> v.gatherKey >> v.craftKey;
-        }
-        else if (type == "skillmeta")
-        {
-            s >> id;
-            s >> skills.at(id).ratio >> skills.at(id).area;
-        }
-        else if (type == "policy")
-        {
-            production = true;
-            s >> reviveDelay >> monsterRefill;
-        }
-        else if (type == "tutorialmove")
-        {
-            s >> tutorialMove.x >> tutorialMove.y >> tutorialMove.z >> tutorialMoveRadius;
-        }
-        else if (type == "questcondition")
-        {
-            s >> id;
-            auto &q = quests[id];
-            q.id = id;
-            QuestCondition c;
-            s >> c.kind >> c.target >> c.required;
-            q.conditions.push_back(c);
-        }
-        else if (type == "questreward")
-        {
-            int item = 0, amount = 0;
-            s >> id >> item >> amount;
-            quests[id].id = id;
-            quests[id].rewards.emplace_back(item, amount);
-        }
-        else
-            throw std::runtime_error("Unknown rules row: " + type);
-        if (s.fail())
-            throw std::runtime_error("Malformed rules row: " + line);
+        if (!items.count(r.output) || r.count <= 0 || r.duration < 0)
+            throw std::runtime_error("Invalid DB recipe");
+        for (const auto &[item, count] : r.inputs)
+            if (!items.count(item) || count <= 0)
+                throw std::runtime_error("Invalid DB recipe ingredient");
     }
-    if (skills.empty() || mapRows.empty())
-        throw std::runtime_error("Incomplete gameplay rules");
-    initialized = true;
+    for (const auto &[id, q] : quests)
+    {
+        for (const auto &[item, count] : q.rewards)
+            if (!items.count(item) || count <= 0)
+                throw std::runtime_error("Invalid DB quest reward");
+        for (const auto &c : q.conditions)
+            if (c.required <= 0)
+                throw std::runtime_error("Invalid DB quest condition");
+    }
+    if (tutorialEnabled && !tutorials.count(0))
+        throw std::runtime_error("Missing DB tutorial definitions");
+    for (const auto &[id, t] : tutorials)
+        if (id < 0 || id >= 32 || (t.next != -1 && !tutorials.count(t.next)) || t.minimumSeconds < 0 ||
+            t.radius < 0)
+            throw std::runtime_error("Invalid DB tutorial definition");
 }
 } // namespace EverWind::Gameplay

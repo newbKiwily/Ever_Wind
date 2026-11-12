@@ -5,19 +5,20 @@ namespace EverWind::Gameplay
 ServerRuntime::ServerRuntime() : world(rules), refill(world), steps(world, refill)
 {
 }
-void ServerRuntime::InitializeGame(const std::string &path)
+void ServerRuntime::InitializeGame(GameRules definitions)
 {
     if (phase != GamePhase::Created)
         throw std::logic_error("Game initialization out of order");
-    rules.Initialize(path);
+    definitions.Validate();
+    rules = std::move(definitions);
     ConnectSteps();
     phase = GamePhase::Rules;
 }
-void ServerRuntime::InitializeMaps(const std::vector<MapInitialInfo> &maps)
+void ServerRuntime::InitializeMaps(const std::string &directory)
 {
     if (phase != GamePhase::Rules)
         throw std::logic_error("Map initialization out of order");
-    world.InitializeMaps(maps);
+    world.InitializeMaps(directory);
     phase = GamePhase::Maps;
 }
 void ServerRuntime::InitializeWorldObjects()
@@ -38,6 +39,13 @@ bool ServerRuntime::Ready() const
 bool ServerRuntime::HasMap(int id) const
 {
     return world.maps.count(id) != 0;
+}
+std::vector<int> ServerRuntime::MapIds() const
+{
+    std::vector<int> ids;
+    for (const auto &[id, map] : world.maps)
+        ids.push_back(id);
+    return ids;
 }
 ServerRuntime::~ServerRuntime()
 {

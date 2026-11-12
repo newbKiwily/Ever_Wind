@@ -34,8 +34,8 @@ bool RefillSystem::RefillResource(Resource &resource) const
 }
 std::optional<Vec3> RefillSystem::MonsterPosition(Map &map, const Actor &monster)
 {
-    if (monster.hp > 0 || world.rules.monsterRefill <= 0 ||
-        world.now - monster.diedAt < world.rules.monsterRefill)
+    if (monster.hp > 0 || monster.respawnSeconds <= 0 ||
+        world.now - monster.diedAt < monster.respawnSeconds)
         return std::nullopt;
     return map.monsterRadius > 0 ? world.MonsterSpawn(map, monster.radius)
                                  : std::optional<Vec3>{monster.home};

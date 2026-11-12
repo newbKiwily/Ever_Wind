@@ -13,15 +13,6 @@ struct InventoryItem
 };
 } // namespace GameStruct
 
-struct MapInitialInfo
-{
-    int mapId;
-    float enemySpawnX, enemySpawnY, enemySpawnZ, radius;
-    float playerSpawnX, playerSpawnY, playerSpawnZ;
-    int maxEnemyCount;
-    std::vector<int> enemyIdList;
-};
-
 struct QuestSaveData
 {
     int questId = 0;

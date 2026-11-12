@@ -1,6 +1,7 @@
 #pragma once
 class Queries;
 #include "DBManager.h"
+#include "../Gameplay/Rule/GameRules.h"
 
 #include <string>
 #include <vector>
@@ -10,30 +11,33 @@ class Queries;
 
 class Queries
 {
-public:
-    explicit Queries(DBManager& db);
+  public:
+    explicit Queries(DBManager &db);
 
-    bool FetchUser(const std::string& userId, std::string& outUserId, int& outMapId,
-        float& outPosX, float& outPosY, float& outPosZ, int& outTutorialStep, bool& outFound);
+    EverWind::Gameplay::GameRules LoadGameDefinitions();
+    bool EnsureMapIds(const std::vector<int> &ids);
 
-    bool InsertUser(const std::string& userId, const std::string& password, bool& duplicated);
+    bool FetchUser(const std::string &userId, std::string &outUserId, int &outMapId, float &outPosX,
+                   float &outPosY, float &outPosZ, int &outTutorialStep, bool &outFound,
+                   bool *outHasPosition = nullptr);
 
-    bool VerifyPassword(const std::string& userId, const std::string& password, bool& matches);
+    bool InsertUser(const std::string &userId, const std::string &password, bool &duplicated);
 
-    bool UpdateUserPosition(const std::string& userId, int mapId, float x, float y, float z);
+    bool VerifyPassword(const std::string &userId, const std::string &password, bool &matches);
 
-    bool FetchInventory(const std::string& userId, std::vector<GameStruct::InventoryItem>& outItems);
-    bool FetchUserQuests(const std::string& userId, std::vector<QuestSaveData>& outQuests);
+    bool UpdateUserPosition(const std::string &userId, int mapId, float x, float y, float z);
 
-    bool FetchUserStat(const std::string& userId, int& attack, int& defence, float& speed, float& hp, float& max_hp);
-    bool FetchMapdata(const std::string& userId, int& outMapId,float& outSpawnEnemyX, float& outSpawnEnemyY, float& outSpawnEnemyZ,float& outSpawnRadius, int& outMaxEnemyCount,std::vector<int>& outMonsterIds);
-    bool FetchAllMapData(std::vector<MapInitialInfo>& outMaps);
+    bool FetchInventory(const std::string &userId, std::vector<GameStruct::InventoryItem> &outItems);
+    bool FetchUserQuests(const std::string &userId, std::vector<QuestSaveData> &outQuests);
 
-    bool UpdateInventory(const std::string& userId, const NetPackets::PKT_INVENTORY_ITEM& item);
-    bool UpdateUserStat(const std::string& userId, const NetPackets::PKT_USERSTAT& stat);
-    bool ResetUserQuests(const std::string& userId);
-    bool UpdateUserQuest(const std::string& userId, const NetPackets::PKT_QUEST_DATA& quest);
+    bool FetchUserStat(const std::string &userId, int &attack, int &defence, float &speed, float &hp,
+                       float &max_hp);
 
-private:
-    DBManager& db_;
+    bool UpdateInventory(const std::string &userId, const NetPackets::PKT_INVENTORY_ITEM &item);
+    bool UpdateUserStat(const std::string &userId, const NetPackets::PKT_USERSTAT &stat);
+    bool ResetUserQuests(const std::string &userId);
+    bool UpdateUserQuest(const std::string &userId, const NetPackets::PKT_QUEST_DATA &quest);
+
+  private:
+    DBManager &db_;
 };

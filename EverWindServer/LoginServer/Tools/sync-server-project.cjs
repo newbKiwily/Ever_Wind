@@ -1,6 +1,7 @@
+process.chdir(require('path').resolve(__dirname, '../../..'));
 const fs=require('fs'),path=require('path'),crypto=require('crypto');
 const base='EverWindServer/LoginServer';
-function files(dir,ext){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?files(dir+'/'+e.name,ext):e.name.endsWith(ext)?[dir+'/'+e.name]:[]).sort();}
+function files(dir,ext){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?(['bin','obj'].includes(e.name)?[]:files(dir+'/'+e.name,ext)):e.name.endsWith(ext)?[dir+'/'+e.name]:[]).sort();}
 function win(s){return s.replaceAll('/','\\');}
 function xml(s){return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');}
 function save(file,s){fs.writeFileSync(file,s.replace(/\r\n/g,'\n').replace(/\n/g,'\r\n'));}

@@ -33,10 +33,9 @@ AccountState GameplayPersistence::Load(const std::string &user)
     std::string id;
     bool found = false;
     if (!query.FetchUser(user, id, state.map, state.position.x, state.position.y,
-                         state.position.z, state.tutorial, found) ||
+                         state.position.z, state.tutorial, found, &state.hasPosition) ||
         !found)
         return state;
-    state.hasPosition = true;
     if (!query.FetchUserStat(user, state.attack, state.defence, state.speed, state.hp, state.maxHp))
         return state;
     std::vector<GameStruct::InventoryItem> inventory;

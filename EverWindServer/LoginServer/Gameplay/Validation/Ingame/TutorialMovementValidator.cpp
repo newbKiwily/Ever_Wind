@@ -8,6 +8,7 @@ TutorialMovementValidator::TutorialMovementValidator(WorldState &state)
 }
 Error TutorialMovementValidator::Validate(const Context &c) const
 {
-    return world.rules.production && c.player.tutorial == 0 ? Error::Restricted : Error::None;
+    auto step = world.rules.tutorials.find(c.player.tutorial);
+    return world.rules.tutorialEnabled && step != world.rules.tutorials.end() && !step->second.allowMove ? Error::Restricted : Error::None;
 }
 } // namespace EverWind::Gameplay

@@ -33,6 +33,12 @@ struct QuestDefinition {
 } // namespace EverWind::Gameplay
 
 namespace EverWind::Gameplay {
+struct TutorialDefinition {
+  int id = 0, next = -1, eventKind = -1, target = -1;
+  float minimumSeconds = 0, radius = 2;
+  Vec3 position{};
+  bool allowMove = true, allowAttack = true;
+};
 struct QuestProgress {
   std::vector<int> counts;
   bool complete = false, claimed = false;
@@ -77,6 +83,7 @@ struct Actor {
   double pushEnd = 0;
   uint64_t pushId = 0;
   double diedAt = 0;
+  float respawnSeconds = 10;
 };
 } // namespace EverWind::Gameplay
 
@@ -118,7 +125,8 @@ struct HeightField {
 
 namespace EverWind::Gameplay {
 struct Map {
-  int id = 0;
+  int id = 0, version = 1;
+  float defaultMonsterRespawnSeconds = 10;
   float radius = 24;
   std::vector<Box> boxes;
   std::vector<Zone> zones;

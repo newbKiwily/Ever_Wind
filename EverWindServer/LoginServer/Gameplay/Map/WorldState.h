@@ -1,5 +1,4 @@
 #pragma once
-#include "../../Structs.h"
 #include "../Rule/GameRules.h"
 #include <optional>
 #include <random>
@@ -10,7 +9,7 @@ class WorldState
 {
   public:
     explicit WorldState(const GameRules &definitions);
-    void InitializeMaps(const std::vector<MapInitialInfo> &config = {});
+    void InitializeMaps(const std::string &directory);
     void InitializeWorldObjects();
     const GameRules &rules;
     std::unordered_map<int, std::shared_ptr<Player>> players;
@@ -24,10 +23,10 @@ class WorldState
     bool InRange(const Actor &a, const Actor &b, float reach) const;
 
   private:
-    void ConfigureMaps(const std::vector<MapInitialInfo> &config);
     void ParseMapRow(const std::string &line);
     bool ParseMapFeature(const std::string &type, std::istringstream &stream);
-    std::vector<MapInitialInfo> initialMaps;
+    std::vector<std::string> objectRows;
+    std::string sourcePath;
     bool mapsInitialized = false, objectsInitialized = false;
 };
 } // namespace EverWind::Gameplay

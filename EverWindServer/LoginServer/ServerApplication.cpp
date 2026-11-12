@@ -55,37 +55,36 @@ void ServerApplication::InitializeDatabase()
     phase = StartupPhase::Database;
     std::cout << "[Initialize] Database connected\n";
 }
-std::string ServerApplication::ResolveRulesPath() const
+std::string ServerApplication::ResolveMapsPath() const
 {
-    if (!config.rulesPath.empty())
-        return config.rulesPath;
+    if (!config.mapsPath.empty())
+        return config.mapsPath;
     char configured[32768]{};
-    DWORD length = GetEnvironmentVariableA("EVERWIND_GAMEPLAY_RULES", configured, sizeof configured);
+    DWORD length = GetEnvironmentVariableA("EVERWIND_MAP_DIRECTORY", configured, sizeof configured);
     if (length > 0 && length < sizeof configured)
         return configured;
     wchar_t executable[32768]{};
     GetModuleFileNameW(nullptr, executable, 32768);
-    auto bundled = std::filesystem::path(executable).parent_path() / "Shared" / "Gameplay.rules";
+    auto bundled = std::filesystem::path(executable).parent_path() / "Shared" / "Maps";
     if (std::filesystem::exists(bundled))
         return bundled.string();
-    return (std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "Shared" /
-            "Gameplay.rules")
+    return (std::filesystem::path(__FILE__).parent_path() / "Shared" / "Maps")
         .string();
 }
 void ServerApplication::InitializeGame()
 {
     ingame.service = std::make_unique<EverWind::Gameplay::Service>();
-    ingame.service->InitializeGame(ResolveRulesPath());
+    ingame.service->InitializeGame(db.queries->LoadGameDefinitions());
     db.persistence->Initialize(ingame.service->Rules().items);
     phase = StartupPhase::Game;
     std::cout << "[Initialize] Game rules and pipeline prepared\n";
 }
 void ServerApplication::InitializeMaps()
 {
-    std::vector<MapInitialInfo> maps;
-    if (!db.queries->FetchAllMapData(maps))
-        throw std::runtime_error("Map configuration query failed");
-    ingame.service->InitializeMaps(maps);
+    ingame.service->InitializeMaps(ResolveMapsPath());
+    // Only identities are registered in DB for the player's MapId foreign key; spatial data stays in files.
+    if (!db.queries->EnsureMapIds(ingame.service->MapIds()))
+        throw std::runtime_error("Map identity registration failed");
     phase = StartupPhase::Maps;
     std::cout << "[Initialize] Maps, terrain and spawn regions prepared\n";
 }

@@ -14,12 +14,13 @@ class ServerRuntime
 {
   public:
     ServerRuntime();
-    void InitializeGame(const std::string &path);
-    void InitializeMaps(const std::vector<MapInitialInfo> &maps = {});
+    void InitializeGame(GameRules definitions);
+    void InitializeMaps(const std::string &directory);
     void InitializeWorldObjects();
     const GameRules &Rules() const;
     bool Ready() const;
     bool HasMap(int id) const;
+    std::vector<int> MapIds() const;
     ~ServerRuntime();
     ServerRuntime(const ServerRuntime &) = delete;
     ServerRuntime &operator=(const ServerRuntime &) = delete;

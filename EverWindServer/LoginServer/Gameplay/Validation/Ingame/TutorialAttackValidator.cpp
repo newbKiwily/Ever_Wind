@@ -8,7 +8,7 @@ TutorialAttackValidator::TutorialAttackValidator(WorldState &state)
 }
 Error TutorialAttackValidator::Validate(const Context &c) const
 {
-    return world.rules.production && c.player.tutorial >= 0 && c.player.tutorial < 2 ? Error::Restricted
-                                                                               : Error::None;
+    auto step = world.rules.tutorials.find(c.player.tutorial);
+    return world.rules.tutorialEnabled && step != world.rules.tutorials.end() && !step->second.allowAttack ? Error::Restricted : Error::None;
 }
 } // namespace EverWind::Gameplay

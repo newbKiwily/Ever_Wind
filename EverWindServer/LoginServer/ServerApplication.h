@@ -16,7 +16,7 @@ struct ServerConfig
     std::string dbSchema = "GameServer";
     uint16_t port = 4000;
     size_t workers = 0;
-    std::string rulesPath;
+    std::string mapsPath;
 };
 struct DatabaseComponents
 {
@@ -65,7 +65,7 @@ class ServerApplication
     void InitializeMaps();
     void InitializeWorldObjects();
     void ConnectCallbacks();
-    std::string ResolveRulesPath() const;
+    std::string ResolveMapsPath() const;
     ServerConfig config;
     DatabaseComponents db;
     NetworkComponents network;
