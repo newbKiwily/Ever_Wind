@@ -1,7 +1,5 @@
 #include "DBManager.h"
-
 #include <stdexcept>
-
 DBManager::DBManager()
     : connection_(nullptr)
 {
@@ -12,11 +10,12 @@ DBManager::~DBManager()
     Disconnect();
 }
 
-bool DBManager::Connect(const std::string& host, unsigned int port, const std::string& user, const std::string& password, const std::string& schema, const std::string& charset)
+bool DBManager::Connect(const std::string &host, unsigned int port, const std::string &user, const std::string &password, const std::string &schema, const std::string &charset)
 {
     if (!connection_)
     {
         connection_ = mysql_init(nullptr);
+
         if (!connection_)
         {
             return false;
@@ -38,12 +37,17 @@ void DBManager::Disconnect()
     if (connection_)
     {
         mysql_close(connection_);
+
         connection_ = nullptr;
     }
 }
 
-MYSQL* DBManager::GetConnection() const
-{ return connection_; }
+MYSQL *DBManager::GetConnection() const
+{
+    return connection_;
+}
 
-std::mutex& DBManager::GetMutex()
-{ return mutex_; }
+std::mutex &DBManager::GetMutex()
+{
+    return mutex_;
+}

@@ -63,54 +63,78 @@ A-5. 이동 충돌 정책
 플레이어·몬스터·채집물은 서로 이동을 막지 않는다. 벽·지형·원형 맵 경계 등 기존의 나머지 이동 제한은 유지한다.
 클라이언트 MovementMotor는 BoxCastAll 결과에서 세 종류의 엔티티를 제외하고 나머지 충돌 중 가장 가까운 제한 거리를 사용한다. 통과 가능한 채집물이 뒤의 벽 검사를 가리지 않도록 모든 hit를 확인한다.
 타겟 선택·채집에 쓰는 콜라이더는 제거하지 않는다. 물리 레이어 전체를 전역 무시하는 수정도 하지 않았다.
-서버의 이동 Geometry 검사는 채집물을 제외한다. 기존 비이동 가시성·설치 검사 등에 필요한 채집물 차단은 명시적인 검사 인자로 유지한다.
+서버 Geometry는 Map.actors의 Actor::istrigger로 통과/차단을 판단한다. 기본 true이고 StaticLevel만 생성 시 false다. 별도의 채집물 차단 옵션과 종류별 이동 차단 인터페이스는 제거했다. 자기 자신과 타격 대상은 명시적으로 제외할 수 있으며 지형/맵 경계 제한은 유지한다. 가시성·설치 검사도 같은 속성을 사용한다.
 실제 지형은 높이 샘플과 XZ 충돌 발자국을 사용하는 범위이며, Unity MeshCollider 전체를 C++ 물리 엔진으로 복제한 구현은 아니다.
 
 A-6. 서버 구성과 초기화
-[현행 합의/구현]
-ServerApplication이 DatabaseComponents, NetworkComponents, IngameComponents를 소유한다.
-초기화 순서: IOCP 자원 준비 -> DB 연결 -> 게임 기준 데이터/계층 준비 -> 맵 지형/경계 -> 몬스터/채집물/벽/트리거 -> 외부 콜백 연결.
-모두 성공한 뒤 Start에서 게임 루프 및 IOCP 접속 수락/작업 스레드를 시작한다. IOCP를 준비하는 단계에서 플레이어 접속을 받아 처리하지 않는다.
-실행 순서: TCP 수신/프레임 조립 -> ReceiveStep 큐 -> GameplayValidation -> GameplayProcessor -> SendStep/GameplaySender -> Session.PostSend -> IOCP 송신 완료.
-원시 패킷 검사·파싱은 게임 스레드에서 계정 로딩 전에 수행하고, 최초 연결 상태 구성 후 요청/인게임 검증과 실행을 연속 처리한다.
-Service는 게임 작업 스레드를, ServerRuntime은 GameRules/WorldState/RefillSystem/ServerSteps를 관리한다.
-각 단계의 처리 함수는 다음 단계가 정의하고, 초기화 코드가 람다로 연결한다. IOCPServer가 DB나 게임 계층을 직접 생성하는 중간 조립자가 되지 않는다.
-네 계층을 공통 추상 Step 부모로 억지로 묶지 않는다. ServerSteps 구조체는 서로 다른 입력 계약을 가진 구체 구성요소를 모아 보여준다.
-종료는 접속 수락 중지, 게임 루프 중지/저장, 세션과 비동기 IO 정리, IOCP 스레드 종료, 게임/네트워크/DB 객체 해제로 진행한다.
+[현행 합의/구현 — 2026-11-16 개편]
+ServerApplication이 DBManager/Queries, SessionManager/IOCPServer, MapManager/PacketMethod를 직접 소유한다. DatabaseComponents/NetworkComponents/IngameComponents 그룹 구조체는 제거했다.
+초기화 순서: IOCP 자원 준비 -> DB 연결 -> DB 기준 GameDataHub 및 게임 파이프라인 준비 -> 맵 지형/경계 -> 몬스터/채집물/정적 충돌/트리거 -> 콜백 연결. 이후 MapManager 게임 스레드와 IOCP 접속 수락/작업 스레드를 시작한다.
+실행 흐름: Session TCP 수신/프레임 조립 -> IOCP의 단일 등록 콜백 -> PacketMethod의 공통 Validation 패킷 검사/파싱 -> 로그인·가입 또는 게임 RequestKind별 명시적 Handle...Packet 분배. 게임 요청은 MapManager가 직접 보유한 작업 큐로 전달한다. IOCPServer 내부의 인증/게임 분기와 Step 타입은 제거했다.
+원시 패킷 크기/ID/인증은 PacketMethod에서 안전한 파싱 전에 검사한다. 해석된 요청 계약은 큐 실행 시에도 계정 로드 전에 검사한다. 게임 스레드에서 최초 계정 상태 로드/맵 등록 -> GameplayProcessor 공통 요청 절차 -> 기능별 처리 함수에서 Validation 체인 조립/실행 -> 결과 생성 -> Session.SendGameplayEvent/Session.PostSend로 처리한다. 검증은 Error를 반환하고 다음 처리를 호출자가 직접 진행한다.
+Service, ServerRuntime, WorldState와 ReceiveStep/SendStep/ServerSteps는 제거했다. MapManager가 게임 스레드/큐/mutex/condition_variable/갱신/접속 수명과 vector<unique_ptr<Map>>를 관리하며 GameplayProcessor를 unique_ptr로 직접 소유한다. 기능 실행은 Processor, 리필 알고리즘은 RefillSystem, 실제 직렬화·소켓 송신은 Session이 맡는다.
+MapId는 vector 인덱스와 무관하며 ID로 검색한다. 전역 영구 Player 목록은 없다. Map의 vector<shared_ptr<Actor>>가 실체를 소유하고 종류별 포인터 인덱스는 비소유 조회 수단이다. Players()는 맵에서 모은 일시적 순회용 스냅샷이다.
+Session이 생성/보관한 Player를 게임 스레드에서 Map에 등록하여 같은 shared_ptr<Player> 객체를 공동 소유한다. 네트워크 스레드는 Player의 게임 상태를 변경하지 않는다. 역방향 Session 강한 참조는 만들지 않고, 세션 해제 연결은 weak_ptr<Session>을 캡처한 바인딩 콜백을 사용한다.
+맵 전환은 같은 Player 객체를 대상 맵에 등록하고 이전 맵에서 제거한 뒤 위치/세대를 갱신한다. 이전 맵 세대의 늦은 요청은 기존 validator가 거절한다.
+종료는 접속 수락 중지 -> 게임 스레드의 진행 행동/채집 예약 취소·저장·맵 탈퇴 -> Session의 Player 소유 해제 -> IOCP 종료/드레인 -> 게임/네트워크/DB 객체 해제로 진행한다.
+Actor는 ID/맵/위치/반경/istrigger와 기존에 공유하던 속도/HP/행동/넉백 상태를 보관한다. 최종 클래스 Player, Monster, StaticLevel, Resource가 Actor를 직접 상속한다. CombatActor는 제거했다. 몬스터 전용 home/respawn/cooldowns는 Monster에 둔다.
+엔티티 행동 인터페이스는 IDamageable 하나만 남겼고 Player와 Monster만 직접 구현한다. 공격 가능 여부/채집 점유·완료/충돌 발자국은 일반 멤버로 처리한다. Resource와 StaticLevel은 IDamageable을 구현하지 않으며 공통 기반에 HP 저장 필드가 있어도 피해 적용 대상이 되지 않는다.
 
 A-7. Validator
-[현행 합의/구현]
-추상 Validator가 next 소유권, Check, Then, InsertBefore를 담당한다.
-PacketValidator는 바로 생성 가능한 구체 패킷 검사기다. IngameValidator는 기능별 검증기의 추상 기반이다.
-공통 체인과 기능별 체인은 초기화 시 한 번 구성하고 보관한다. 각 구체 검사기는 실제 검사 본문을 가진다.
-첫 실패에서 중단하고 실행/응답 생성은 처리 계층에 맡긴다. 검증 중 재료 차감이나 보상 지급을 하지 않는다.
-시작 검증과 타격/완료 재확인은 다르다. 시작한 공격을 완료 시점에 초기 쿨다운 검사로 다시 거절하지 않는다.
+[현행 합의/구현 — 호출 시점 조립]
+Validation::Chain()은 호출별 독립 컨테이너를 만들고 Then<TValidator>(필요한 의존 객체)로 unique_ptr next 체인을 연결한다. Check(ValidationContext) 시점에만 검사하고 첫 실패를 반환한다. 전역 가변 next나 요청 상태를 공유하지 않는다.
+기존 PacketValidation/GameplayValidation 조정자와 IngameValidator 중간 기반은 제거했다. PacketValidator와 구체 인게임 검사기는 Validator를 직접 상속하며 모든 검사기는 단일 ValidationContext 입력 계약을 사용한다. Context는 읽기 전용 Player/Map/Request 참조와 시각을 묶는 데이터로만 사용한다.
+기존 검사 본문은 재사용하고, 각 기능의 실제 실행 함수에서 필요한 체인을 구성한다. 세계/리필 의존 검사기는 생성할 때 MapManager/RefillSystem 참조를 명시적으로 전달한다. 컨테이너는 해당 호출의 검사기 수명만 소유한다.
+게임 요청 공통 세대/생존/강제 이동 검사는 Processor의 공통 처리 구간에서 조립하며 이동/공격/채집 등의 특수 검사는 각 Handle...Request에서 추가로 조립한다. 인게임 검사는 큐 대기 후의 최신 상태를 사용한다.
+공격 타격, 채집 완료, 제작 완료 시에도 같은 컨테이너를 사용해 해당 시점에 필요한 조건을 재검증한다. 시작 쿨다운/Busy 검사로 진행 중인 공격 타격을 재거절하지 않는다.
+검증 중 재료 차감/보상 지급/송신을 하지 않는다. 빈 체인이나 필수 컨텍스트가 없는 검사는 BadRequest로 거절한다. 체인 이동 후 원본의 tail도 초기화해 컨테이너 간 링크가 섞이지 않도록 했다.
 
 A-8. 데이터 저장 위치
 [현행 합의/구현]
-서버: EverWindServer/LoginServer/Shared/Maps/Map0.txt, Map1.txt 및 Shared/Map0.heights, Map1.heights.
+서버: 맵별 TXT와 바이너리 높이 파일.
 맵 파일은 ID/버전/경계/스폰/높이 참조/몬스터 영역과 개체/채집물/충돌/트리거를 보관한다.
 DB: ItemDefinition, SkillDefinition, Recipe, RecipeIngredient, QuestDefinition, QuestCondition, QuestReward, TutorialDefinition, GameSetting의 9개 기준 테이블.
 기존 UserAccount/UserInfo/Inventory/UserQuest/UserQuestProgress는 계정·플레이 저장 데이터로 사용한다.
-GameRules는 DB 조회 결과를 보관·검증하는 객체로 바뀌었다. 기존 Gameplay.rules 파일과 서버의 해당 파일 파서는 삭제했다.
+GameDataHub는 DB 조회 결과를 보관·검증하는 객체로 바뀌었다. 기존 Gameplay.rules 파일과 서버의 해당 파일 파서는 삭제했다.
 기존 DB Monster 테이블과 MapInfo의 공간/스폰 컬럼은 맵 파일로 이관했다. MapInfo는 플레이어 외래키용 MapId만 보존하고 파일에서 읽은 신규 맵 ID를 등록한다.
 이관 기준 규모는 아이템 12개, 제작법 8개, 스킬 3개, 퀘스트 3개, 튜토리얼 6단계, 맵 2개, 몬스터 10개, 채집물 36개, 충돌 영역 289개이다.
-플레이어 부활은 GameRules::PlayerReviveDelaySeconds = 10초 상수다.
+플레이어 부활은 GameDataHub::PlayerReviveDelaySeconds = 10초 상수다.
 몬스터 재생성은 개별 monster 설정 -> 맵 기본값 -> 10초 순서다. 0은 비활성화, 음수는 오류다.
 채집물은 클라이언트 타이머가 요청하고 서버가 시간/세대/점유를 검증해 리필한다. 맵에 요청할 클라이언트가 없으면 서버가 스스로 채집물을 리필하는 구현은 아니다.
+
+플레이어는 skills/quests/tutorials vector에 const 기준 정의 포인터와 개인 쿨다운·퀘스트 진행·튜토리얼 증거/시각을 따로 보관한다. GameDataHub는 초기화 후 읽기 전용이며 모든 맵/Player 참조보다 오래 유지한다. 실행 중 hot reload는 구현하지 않았다.
+현재 스킬 소유/해금 DB 관계가 없으므로 기존처럼 정의된 스킬의 사용 가능 범위를 유지했다. 새 해금 정책이나 임의 스킬 지급 규칙/테이블은 추가하지 않았다.
+저장 시 개인 vector 진행을 기존 AccountState의 DB 전송 구조로 변환하여 Queries의 LoadGameplayState/SaveGameplayState를 재사용한다. DB 스키마는 이번 개편으로 변경하지 않았다.
+
+[현행 맵 로딩 상세]
+현재 서버 로더는 맵 폴더의 .txt와 surface 줄이 참조하는 바이너리 .heights를 읽는다. JSON 로더는 구현되어 있지 않다. 서버 시작 시 모든 TXT를 정렬해 읽고 맵 공간을 먼저 구성한 뒤 보관한 개체 줄을 처리한다. 실행 중 파일 감지/hot reload/입장 시 선택 로딩은 없다.
+맵 추가는 서버가 실제 읽는 폴더에 중복되지 않는 map ID의 TXT와 격자 크기에 맞는 float 높이 파일을 배치한 후 재시작하는 방식이다. 경로 우선순위는 ServerConfig.mapsPath -> EVERWIND_MAP_DIRECTORY -> EXE 옆 맵 폴더 -> 소스 맵 폴더다. 높이 파일 경로는 맵 폴더 기준 상대 경로다.
+파일명 대신 map 행의 ID로 Map을 식별한다. 서버 초기화 성공 후 EnsureMapIds가 기존 DB 맵 ID 확인/등록을 수행한다. 새 지역의 Unity 외형/프리팹 연결과 입장 경로는 별도 준비 사항이며 서버 TXT 추가만으로 클라이언트 연결이 완성되는 것은 아니다.
+Map3.txt/Map3.heights 추가 예시는 설명만 제공했다. 실제 맵 3 파일을 만들거나 실행 검증하지 않았다.
 
 A-9. 최근 보류 및 정리 사항
 [보류]
 클라이언트가 DB 기준 데이터를 서버에서 수신해 카탈로그를 구성하는 정책은 사용자가 나중에 지정한다. 서버/DB 이관 시 클라이언트는 수정·검사하지 말라는 지시를 적용했다.
 따라서 서버 데이터 이관 완료를 클라이언트 동기화 프로토콜이나 최신 전체 게임 통합 완료로 확대해서 서술하지 않는다.
 [현행 구현]
-서버 관련 데이터·도구·문서는 LoginServer 안으로 모았다. 이 누적 기록은 프로젝트 전체 기획/포트폴리오 문서이므로 루트 planning에 둔다.
+서버 관련 데이터·도구·문서는 LoginServer 안으로 모았다. 이 누적 기록은 프로젝트 전체 기획/포트폴리오 문서이므로 루트 report에 둔다(사용자가 이동한 실제 경로 반영).
 이전 테스트 소스·테스트 프로젝트/실행 산출물·임시 테스트 스크립트·로그는 사용자 요청으로 삭제했다. 과거 보고서의 테스트 명령은 현재 그대로 실행할 수 있는 명령이 아니다.
 미사용 Timer/TimerManager/TimerCompare .h/.cpp와 SHA256 .h/.cpp를 제거했다.
 사용자 지시에 따라 인증을 단순화하여 PasswordHash/Salt를 제거하고 비밀번호 직접 비교로 변경했다. 보존 계정 외의 계정 및 관련 데이터와 그때 만든 DB 백업은 후속 요청에 따라 삭제했다.
 계정 비밀번호 값과 DB 접속 비밀번호는 이 기록에 적지 않는다. 평문 비밀번호 저장은 개발 단계의 현재 제한이며 상용 보안 인증 성과로 기술하지 않는다.
 
 ======================================================================
+
+[현행 후속 수정 — phase 및 GameplaySender 제거]
+StartupPhase/GamePhase 및 조회 API를 제거했다. ServerApplication.Initialize와 MapManager.Initialize가 내부 private 초기화 함수를 고정 순서로 호출하며 오류 시 다음 단계로 진행하지 않는다. 개별 Map 초기화 함수는 외부에서 호출할 수 없다. 초기화 완료/실행/정지의 최소 bool만 수명 제어에 사용한다.
+PacketCheckPhase/ValidationContext.phase도 제거했다. PacketValidator의 Envelope/Contract라는 명시적 검사 함수를 컨테이너에서 선택한다. 요청 형식을 바꾸거나 파싱 전 기본 검사를 생략하지 않는다.
+GameplaySender.h/cpp를 삭제했다. Session.SendGameplayEvent가 기존 Event 직렬화와 PostSend를 수행하고, CreateGameSendCallback은 weak Session을 캡처한 기존 Send 계약을 제공한다.
+
+
+[현행 후속 수정 — 저장/조회 통합]
+GameplayPersistence.h/cpp를 삭제하고 아이템 ID/슬롯 변환, 플레이어 조회·조립, 트랜잭션 저장을 Queries에 통합했다. InitializeGameplayItems/LoadGameplayState/SaveGameplayState를 사용한다. ServerApplication/PacketMethod/게임 작업 콜백이 같은 shared_ptr<Queries>를 공유하며 게임 작업 중지·콜백 해제 후 DB 연결을 정리한다.
+
+
 B. 대화로 발전시킨 기획과 이론
 ======================================================================
 
@@ -7180,9 +7204,9 @@ G-1. 이후 갱신 절차
 4) 최신 합의가 바뀌면 A의 현행 항목을 갱신하고, 바뀌기 전의 내용과 변경 이유는 새 회차에 남긴다.
 5) 토큰은 같은 채팅의 고유 response_id를 중복 제거하여 집계한다. 누적 스냅샷끼리 더하지 않는다. 이전 기준 response_id 이후의 값과 신규 누적값을 구분한다. 캐시/추론 수치를 다시 총합에 더하지 않는다.
 6) 새 토큰 기록이 없거나 집계 초기화/누락으로 비교가 불가능하면 미확인으로 표기한다. 총비용/구독 잔여량을 임의로 추정하지 않는다.
-7) 코드 작업의 중요한 완료나 의미 있는 설계 변경을 이후 회차로 누적한다. 사용자가 “지금까지 내용들 txt에 기술해줘”라고 하면 마지막 기준점 이후의 대화를 빠짐없이 보충한다.
+7) 사용자가 명시적으로 기록을 요청한 때에만 갱신한다. 코드 스타일 수정과 폴더·경로 수정은 기록에서 제외한다. “지금까지 내용들 txt에 기술해줘” 요청 시 마지막 기준점 이후의 기록 대상 대화를 보충한다.
 8) 비밀번호·접속 비밀·인증 토큰·내부 추론은 기록하지 않는다. 테스트가 삭제됐거나 과거 검증이면 그 상태도 적는다.
-9) 마지막에 새 PORTFOLIO_CHECKPOINT 블록을 추가하여 다음 갱신이 같은 범위를 중복 기록하지 않도록 한다.
+9) 사용자가 요청한 기록 작업 마지막에만 새 PORTFOLIO_CHECKPOINT 블록을 추가하여 다음 갱신이 같은 범위를 중복 기록하지 않도록 한다.
 
 G-2. 이번 통합 작업 기록
 사용자 요청에 따라 루트 planning 7개와 서버 Planning 5개를 전수 읽고 원문 12개를 한 파일에 통합했다. 새 문서의 원문 섹션과 각 원본을 대조한 뒤 별도 TXT 12개를 삭제했고, 비어 있는 서버 Planning 폴더도 제거했다. 서버/클라이언트 게임 코드나 DB는 이 문서 작업으로 변경하지 않는다.
@@ -7231,3 +7255,934 @@ G-2. 이번 통합 작업 기록
   "followup_instructions": "AGENTS.md"
 }
 [[PORTFOLIO_CHECKPOINT END]]
+
+======================================================================
+H. 2026-11-16 서버 소유 관계 및 MapManager 중심 수정 계획
+======================================================================
+[사용자 변경 요구 / 구현 전 계획]
+Components 그룹 제거, 초기화 순서는 유지. 인증/게임 요청 모두 PacketMethod에서 패킷 종류에 맞게 분배.
+Service 제거 및 ServerRuntime을 MapManager로 재구성. MapManager가 vector로 Map들을 소유하고 인게임 진입·갱신·처리의 공통 창구가 됨.
+WorldState의 전역 Player 목록을 없애고 Map이 해당 맵의 Actor와 Player 상태를 관리하도록 변경.
+Actor 공통 위치를 바탕으로 Player/Monster/ResourceActor/StaticLevelActor 구체 타입을 분리.
+GameRules 기준 테이블의 정의를 Player의 vector 실행 항목에서 참조하고 개인별 스킬/퀘스트/튜토리얼 진행은 Player가 별도로 소유하는 방향.
+
+[AI 제안 — 미확정 세부 설계]
+Session과 Map이 동일한 shared_ptr<Player>를 공동 소유하는 의도로 해석. Player가 Session/Map을 강하게 소유하는 구조는 제안하지 않음.
+Player의 역방향 Session/Map 참조는 weak_ptr 또는 수명이 보장된 비소유 참조로 구성. 연결 종료는 MapManager 큐에서 저장·맵 탈퇴를 처리.
+MapManager의 vector<unique_ptr<Map>>는 MapId를 vector 인덱스로 간주하지 않고 ID로 검색.
+Map은 vector<shared_ptr<Actor>>로 엔티티를 소유하고 Session은 그중 같은 Player 인스턴스를 공유. 별도의 전역 Player 목록은 만들지 않음.
+엔티티 종류는 Actor 상속으로 표현하고, 여러 종류가 같은 기능 계약을 실제로 사용할 때만 IAttackSource/IDamageable/IGatherable/IMovementObstacle 같은 인터페이스를 구체 타입에 적용하는 혼합 방향 추천.
+Actor 자체에 공격·HP·채집·충돌 전체의 순수 가상 함수를 강제하지 않음. 플레이어/몬스터/채집물의 이동 통과와 정적 장애물 제한 정책은 유지.
+Service의 단일 게임 스레드·큐·갱신·종료 책임은 MapManager로 이동. PacketMethod의 분배 통합이 IOCP 스레드에서 게임 상태를 직접 변경한다는 뜻은 아님.
+검증/처리/송신 클래스와 next 체인은 재사용. MapManager는 공통 진입·맵 선택·수명·실행 순서를 조정하고 세부 처리를 Map 및 기존 처리기에 맡김.
+Player vector에는 const 정의 포인터와 개인 실행 상태를 묶은 SkillState/QuestState/TutorialState를 값으로 보관하는 방향. vector<T&>는 사용하지 않음.
+GameRules는 실행 중 읽기 전용으로 유지하며 모든 Player 참조보다 오래 살아야 함. hot reload는 이번 계획에 추가하지 않음.
+맵 이동은 동일 Player를 유지하고 한 게임 실행 순서 안에서 이전 맵 제거/대상 맵 등록/세대 갱신을 처리.
+
+[수정 순서 제안]
+1. Actor/Player/Map 및 기능 계약 정의와 소유 관계 확정.
+2. PacketMethod 단일 진입으로 수신 분배 통합.
+3. Service/ServerRuntime 책임을 MapManager로 이동하고 WorldState 책임 재배치.
+4. Map의 Actor 소유와 Session의 Player 공유를 연결.
+5. GameRules 정의 참조 및 Player별 vector 상태 구성, DB 로딩/저장 어댑터 연결.
+6. 기존 검증/처리/리필/스냅샷과 맵 전환 경로 이식.
+7. 초기화/종료/재접속/잘못된 대상 요청/플레이어 데이터 격리를 서버 측에서 검증하고 구형 클래스 제거.
+클라이언트는 변경·검사하지 않으며 데이터 수신 정책은 별도 보류.
+
+[현재 코드 확인 / 이번 작업 범위]
+ServerApplication에 DatabaseComponents/NetworkComponents/IngameComponents가 남아 있고 Service가 게임 스레드를, ServerRuntime이 WorldState와 ServerSteps를 소유하는 현재 헤더/구현을 읽어 계획을 작성.
+인증용 PacketMethod와 게임용 Service로 나뉜 실제 콜백 연결을 확인. 현재 Actor에는 몬스터/플레이어 공용 전투 상태가, Resource에는 독립 상태가 섞여 있음을 확인.
+서버 코드·DB를 이번 요청에서 수정하지 않음. 빌드·게임 실행 검증도 하지 않음. 계획과 미확정 제안을 누적 기록에만 추가.
+누적 기록이 planning에서 report로 이동한 것을 확인하고 AGENTS의 참조 경로만 실제 위치로 정정.
+샌드박스 초기화 문제로 첫 읽기 명령이 실패하여 승인된 읽기 경로로 재시도. 이를 서버 코드나 빌드 실패로 기록하지 않음.
+이번 회차는 최신 수정 요청에 대한 계획 기록이다. 이전 기준점 이후 전체 공개 대화의 전수 재수집은 하지 않았으며, 정식 증분 보충 요청 시 누락 여부를 다시 확인할 수 있도록 이전 기준점을 보존한다.
+
+[사용량 조회 스냅샷]
+{
+  "source": "same-thread token_usage_record",
+  "timestamp": "2026-11-16T09:10:25.710Z",
+  "response_id": "resp_006f26d3b5450425016afac81be5f487d0ac7940feaf770990",
+  "cumulative": {
+    "input_tokens": 160294974,
+    "cached_input_tokens": 157151744,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 651178,
+    "reasoning_output_tokens": 243796,
+    "total_tokens": 160946152
+  },
+  "delta_since_prior_usage_checkpoint": {
+    "input_tokens": 4296316,
+    "cached_input_tokens": 3867136,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 13497,
+    "reasoning_output_tokens": 6981,
+    "total_tokens": 4309813
+  },
+  "scope": "이전 기준점 이후 전체 처리량. 이번 설계 요청만의 사용량이 아니며 기록 작성/최종 응답 후속분은 다음 회차 반영."
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1bc13-8b09-7bf3-b2b1-fbc971e1014f",
+  "covered_user_message_id": "msg_01a1e39c-447a-72c0-8a38-dc5bdf632a48",
+  "covered_user_timestamp_utc": "2026-11-16T09:07:11.610Z",
+  "record_date": "2026-11-16",
+  "covered_user_request": "MapManager/Map/Actor/Session/Player 참조 구조 수정 계획 요청",
+  "coverage": "최신 설계 요청 기록. 중간 공개 대화의 전수 대조는 미수행",
+  "previous_checkpoint_preserved": "msg_01a1cfae-f609-7082-8a24-db8fb4134042",
+  "implementation_status": "계획만 작성, 코드·DB 미변경",
+  "usage_checkpoint_response_id": "resp_006f26d3b5450425016afac81be5f487d0ac7940feaf770990",
+  "usage_checkpoint_timestamp_utc": "2026-11-16T09:10:25.710Z",
+  "usage_checkpoint": {
+    "input_tokens": 160294974,
+    "cached_input_tokens": 157151744,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 651178,
+    "reasoning_output_tokens": 243796,
+    "total_tokens": 160946152
+  },
+  "pending": "Actor 기능 인터페이스 적용과 세부 소유 정책은 AI 제안이며 구현 전 검토 필요"
+}
+[[PORTFOLIO_CHECKPOINT END]]
+
+======================================================================
+I. 2026-11-16 승인된 MapManager/Actor 구조 구현 및 GameDataHub 개명
+======================================================================
+[사용자 요구와 역할]
+사용자는 H의 서버 소유 관계/진입점 개편 계획을 승인하고 구현을 지시했다. 추가로 GameRules를 GameDataHub로 개명하고, 데이터나 메서드 묶음에 불과한 클래스는 struct로 정리하도록 요구했다.
+사용자가 서버 진입 흐름, Map/Player 소유 관계, 개인 데이터 vector 참조 방향을 정했다. AI는 기존 코드의 의존 관계를 조사하고 구현·회귀 검증·기록을 수행했다. 클라이언트 기준 데이터 수신 정책은 계속 보류했다.
+
+[구현한 책임과 데이터 흐름]
+1) ServerApplication의 세 Components 그룹 구조체를 제거하고 기존 멤버를 직접 소유하게 했다. IOCP 준비/DB/게임 데이터/맵/개체/콜백/Start 순서와 종료 드레인을 유지했다.
+2) IOCPServer는 SetPacketInput이라는 단일 입력 콜백을 호출한다. PacketMethod가 로그인/가입/게임 요청의 분배를 담당한다. 게임 요청은 바이트를 GameWork에 복사해 MapManager 큐에 제출한다. DB Save/Load는 기존 GameplayPersistence를 캡처한 함수로 연결한다.
+3) Service와 ServerRuntime의 게임 루프/파이프라인 조정 책임, WorldState의 맵 소유/공간 파일 로딩/실행 시각/ID 생성 책임을 MapManager로 이동했다. 기존 세 클래스와 대응 h/cpp를 삭제했다. GameWork라는 이름으로 큐 자료형을 정리했다.
+4) MapManager는 vector<unique_ptr<Map>>를 보유한다. DB 로그인 중의 맵 존재 확인은 초기화 후 변경되지 않는 맵 ID 목록을 조회한다. 실제 게임 상태 변경과 Map 간 이동은 단일 게임 스레드에서 수행한다.
+5) Map은 vector<shared_ptr<Actor>>로 실체를 소유하며 players/monsters/resources/levels/placements 인덱스는 같은 실체를 가리키는 비소유 포인터다. 별도 전역 플레이어 소유 테이블은 제거했다. 종류별 새 데이터 복제본을 만들지 않았다.
+6) Actor에는 공통 공간 식별 상태를 두었다. Player/Monster는 CombatActor를 통해 공통 전투 상태를 재사용한다. 채집물은 ResourceActor, 정적 벽과 설치물은 StaticLevelActor로 구현했다. 설치물은 기존처럼 이동을 막지 않으며 실제 벽은 충돌 범위를 보관하고 차단한다.
+7) 상속은 개체 종류/공통 상태, 인터페이스는 구체 기능 계약에 사용했다. CombatActor는 공격 가능 여부/피해 적용, ResourceActor는 점유/채집 완료, StaticLevelActor는 이동 차단 여부/발자국 제공을 담당한다. 기존 GameplayProcessor가 시각·상태·보상·방송 절차를 조정하며 모든 개체에 무의미한 함수를 만들지 않았다.
+8) Session의 AcquirePlayer/SetPlayer/GetPlayer를 통해 연결 측 Player를 생성·공유한다. MapManager가 DB 상태를 구성해 같은 Player를 Map에 등록한다. 소켓과 맵이 서로 다른 Player를 만들지 않는다. weak Session 바인딩 콜백으로 순환 소유를 피하고, 게임 종료/접속 종료 시 맵 탈퇴와 세션 소유 해제를 연결했다.
+9) Map 전환 시 대상 맵 확인/등록 뒤 원본 맵에서 제거한다. Player 주소, 개인 상태, 세션 소유는 유지하고 기존 WorldEpoch/Revision/순번 보정은 그대로 사용한다.
+
+[GameDataHub와 개인 데이터]
+GameRules.h/cpp를 GameDataHub.h/cpp로 개명했고 실제 타입도 struct GameDataHub로 바꿨다. Queries::LoadGameDefinitions 반환형과 호출부를 함께 수정했다. DB 기준 테이블/쿼리 내용과 맵 TXT 형식은 바꾸지 않았다.
+GameDataHub의 정의 컨테이너는 유지한다. MapManager에서 초기화한 후 const 접근만 제공해 플레이어의 정의 포인터가 가리키는 데이터 수명을 보장한다.
+Player의 skills는 정의 ID/const Skill*/개인 쿨다운, quests는 ID/const QuestDefinition*/QuestProgress, tutorials는 ID/const TutorialDefinition*/증거/시작 시각을 갖는 vector다.
+기존에 전부 사용 가능했던 스킬을 그대로 연결했다. 아직 없는 개인 스킬 해금 정책을 추측해서 DB 테이블이나 지급 규칙을 추가하지 않았다. 새 unlock 시스템은 후속 설계 사항이다.
+퀘스트 DB 전송용 AccountState의 map 자료형은 그대로 두고 로딩 시 개인 vector로, 저장 시 기존 DB DTO로 변환했다. 모든 관련 쿨다운/퀘스트 보상/튜토리얼 검증과 진행 처리를 새 개인 상태로 연결했다.
+
+[class/struct 정리 기준]
+GameDataHub는 공개 기준 데이터와 Validate를 갖는 구조체, SendStep/GameplaySender는 메서드 중심 송신 보조 구조체, RefillSystem은 MapManager 비소유 참조를 이용하는 알고리즘 보조 구조체로 정리했다.
+실제 소유 수명/스레드/큐/DB 연결/콜백 체인 또는 다형성을 갖는 MapManager, Map, Session, IOCPServer, PacketMethod, 검증기, Actor 계층은 클래스로 유지했다. 메서드가 있다는 이유만으로 모든 타입을 무조건 변환하지 않았다.
+C++의 class/struct 차이는 기본 접근 제어이며 이 정리 자체를 성능/메모리 개선으로 주장하지 않는다. 일반 클래스는 본인 이름 h/cpp 쌍을 지키고 인터페이스/실행 항목 등의 struct는 관련 파일에 묶었다.
+
+[주요 변경 파일]
+ServerApplication.h/cpp; Network/IOCPServer.h/cpp; Gameplay/Authentication/PacketMethod.h/cpp; Network/Session.h/cpp.
+추가: Gameplay/MapManager.h/cpp; Gameplay/Map/Map.h/cpp; Gameplay/Entity/Actor, CombatActor, Player, Monster, ResourceActor, StaticLevelActor의 h/cpp; ActorCapabilities.h; Gameplay/GameplayData.h.
+개명: Gameplay/Rule/GameRules.h/cpp -> GameDataHub.h/cpp.
+이식: GameplayProcessor, GameplayValidation, ServerSteps, ReceiveStep, SendStep, RefillSystem, 기능별 Validator, WorldTypes, DB/Queries의 참조 타입.
+삭제: Service.h/cpp, ServerRuntime.h/cpp, Map/WorldState.h/cpp.
+VS 프로젝트와 filters는 관리 도구로 새 파일을 등록하고 구형 파일을 제거했다. 이전부터 수정되어 있던 AGENTS/report와 사용자 output 폴더는 작업 전 상태와 구분해 다뤘다.
+
+[실제 수행한 검증]
+- Visual Studio 2022 Debug x64 LoginServer 빌드 성공.
+- 소스 배치/프로젝트 등록 검사: 57개 일반 클래스 h/cpp 쌍, 헤더 69개, CPP 65개. 다른 클래스 선언/CPP 로컬 클래스/VS 미등록 없음.
+- 임시 네이티브 실행 검증: 초기화 순서 오류 거절, MapId 7/42처럼 연속되지 않는 맵 ID 조회, Actor 실체 소유와 종류별 인덱스, Session과 Map의 동일 Player 공유, 정의 포인터 연결과 개인 퀘스트/쿨다운 격리.
+- 이동 검증: 자원 개체 통과, 정적 벽 차단, 유효 이동 승인, 벽 통과 요청의 위치/Revision 보정, 맵 전환 후 이전 세대 패킷 거절.
+- 기능 검증: 공격 시작/타격/쿨다운, 채집 점유/완료/보상, 퀘스트 완료/보상, 빠른 리필 거절과 대기 후 클라이언트 요청 리필, 몬스터 재생성, vector 진행의 저장 DTO 변환.
+- 수명 검증: 동일 Player를 다른 Map으로 이전, 접속 종료의 저장/맵 제거/소유 해제, weak 참조 만료 확인. 실제 MapManager 스레드/큐에서 잘못된 원시 패킷이 DB 로딩 전에 거절되는지, Join 스냅샷, 접속 종료, 실행 중 채집 예약을 남긴 상태에서 Stop 시 예약 해제/저장/탈퇴를 확인.
+- 실제 LoginServer.exe를 현재 DB와 맵 파일로 구동: IOCP -> DB -> GameDataHub -> Map -> 개체 -> 콜백 초기화와 정상 시작 확인. 로컬 TCP에서 미지원 패킷, 잘못된 크기 게임 패킷, 미인증 게임 패킷을 보내 연결 거절/종료 확인. quit 후 정상 종료 및 IOCP 정리 확인.
+- 테스트용 영구 프로젝트를 추가하지 않았다. 임시 디렉터리의 소스/프로젝트/산출물은 최종 검증 통과 후 제거했다. 과거 삭제된 테스트가 다시 실행 가능해졌다고 기록하지 않는다.
+
+[실패와 수정]
+첫 셸 호출은 기존 샌드박스 환경 초기화 오류로 실행되지 않아 승인된 실행 경로로 재시도했다.
+초기 컴파일에서 남은 mapExists 식별자와 값 타입 ItemDefinition에 대한 포인터 접근 오류가 발견되어 수정했다. 멤버 숨김 경고를 정리하는 과정에서 SkillState/QuestStateEntry/TutorialStateEntry의 id 접근까지 잘못 바꾼 컴파일 오류도 수정했다. 이후 실제 빌드/네이티브 실행을 통과했다.
+기존 DB 쿼리의 size_t -> unsigned long 변환 경고는 남아 있다. 임시 검증 프로젝트에서는 TEMP 하위 출력 경로에 대한 MSBuild 경고가 있었으나 해당 프로젝트는 일회성 실행 후 제거 대상이다.
+검증 후 종료 경로가 활성 채집 예약을 해제하도록 Disconnect 절차를 재사용하게 보완하고 해당 상황을 다시 확인했다.
+
+[미확인 범위와 후속 과제]
+클라이언트 파일은 수정·실행·검사하지 않았다. 이번 완료는 서버 구조 및 서버 측 검증 범위이며 Unity 전체 통합 완료를 뜻하지 않는다.
+DB 스키마/계정 삭제/게임 데이터 이관을 다시 수행하지 않았다. 실제 서버 초기화에서는 기존 기준 데이터 조회와 기존 맵 ID 등록 확인 경로만 실행했다.
+대규모 동시접속/성능 계측, 인터넷 지연 환경, 새로운 스킬 해금 정책, 기준 데이터 hot reload, 클라이언트 데이터 수신 정책은 이번 범위에 없다.
+이 회차는 승인된 최신 구조 개편 요청과 그 구현/검증을 기록한다. H에 명시한 과거 공개 대화 전수 재수집의 미확인 구간은 이번에도 해결했다고 주장하지 않는다.
+
+[동일 채팅 실제 사용량 스냅샷]
+{
+  "source": "same-thread token_usage_record",
+  "timestamp_utc": "2026-11-16T09:41:47.987Z",
+  "response_id": "resp_006f26d3b5450425016afacfcc0bd087d0bbac56824d0f0a68",
+  "cumulative": {
+    "input_tokens": 165151133,
+    "cached_input_tokens": 161893376,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 692483,
+    "reasoning_output_tokens": 255272,
+    "total_tokens": 165843616
+  },
+  "delta_since_previous_checkpoint": {
+    "input_tokens": 4856159,
+    "cached_input_tokens": 4741632,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 41305,
+    "reasoning_output_tokens": 11476,
+    "total_tokens": 4897464
+  },
+  "scope": "이전 회차 이후 처리량. 캐시와 추론은 하위 지표이며 total에 다시 더하지 않음. 이 스냅샷 이후 검증/기록/최종 응답은 다음 회차 반영."
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1bc13-8b09-7bf3-b2b1-fbc971e1014f",
+  "covered_user_message_id": "msg_01a1e3ab-d04d-76b1-a45d-632dfc6a6bc4",
+  "covered_user_timestamp_utc": "2026-11-16T09:24:10.445Z",
+  "record_date": "2026-11-16",
+  "covered_user_request": "MapManager/Actor/Session 공동 소유 개편 구현 승인, GameDataHub 개명, 불필요 클래스 struct 정리",
+  "coverage": "최신 구현 요청 및 작업 기록. 이전 H에서 명시한 공개 대화 전수 보충 공백은 유지.",
+  "implementation_status": "서버 개편 완료, 빌드/네이티브/실제 DB 초기화 및 로컬 TCP 오류 경로 검증",
+  "usage_checkpoint_response_id": "resp_006f26d3b5450425016afacfcc0bd087d0bbac56824d0f0a68",
+  "usage_checkpoint_timestamp_utc": "2026-11-16T09:41:47.987Z",
+  "usage_checkpoint": {
+    "input_tokens": 165151133,
+    "cached_input_tokens": 161893376,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 692483,
+    "reasoning_output_tokens": 255272,
+    "total_tokens": 165843616
+  },
+  "pending": "클라이언트 수신 정책/Unity 통합은 별도 후속 지시. 기존 DB 변환 경고와 성능 검증은 별도 범위."
+}
+[[PORTFOLIO_CHECKPOINT END]]
+
+======================================================================
+J. 2026-11-16 호출 시점 Validation 조립 및 Step 제거 수정안
+======================================================================
+[사용자 요구 / 계획 단계]
+사용자는 패킷 검증/인게임 검증을 공통 Validation 컨테이너로 모으고, 검증이 필요한 코드 위치에서 필요한 Validator를 연결해 실행하도록 바꾸고자 했다. 전역/정적으로 접근할 수 있는 검증 사용 방식과 Validation 내부의 체인 연결 API를 요구했다.
+ReceiveStep/SendStep/ServerSteps 등이 구조 이해를 어렵게 하므로 Step 타입을 제거하고 실행 순서를 코드에 직접 드러내도록 요청했다.
+GameplayProcessor가 MapManager 또는 Map에 소유되도록 요구했다. PacketMethod에는 이동/공격/채집 등 기능별 Handle...Packet 함수를 두어 큐 전달 위치가 분명하게 드러나길 원했다.
+이번 요청은 수정방안 설명만이며 소스 구현 승인은 아니다.
+
+[현재 코드 확인]
+Validator는 PacketContext/Context 두 Validate 오버로드와 unique_ptr next를 갖고 있다. GameplayValidation은 초기화 시 common/specific 체인을 보관하고 PacketValidation이 기본 패킷 체인을 감싸고 있다.
+MapManager는 ServerSteps를 통해 GameplayProcessor를 간접 소유하며 ReceiveStep이 실제 큐/대기/정지 기능을 갖는다. 이 기능은 Step 삭제 후에도 보존해야 한다.
+PacketMethod::HandleGameplay는 0x500 요청을 통째로 큐에 보내고 실제 RequestKind 분배는 후단에서 수행한다.
+기존 재요청 캐시/만료 검사/보정/ACK/스냅샷 동작은 컨테이너 통합 과정에서 사라지면 안 되는 기존 책임으로 확인했다.
+
+[AI 수정안 / 아직 미구현]
+1) Validation::Chain() 같은 정적 진입 함수가 호출별 독립 Validation 컨테이너를 만들고 Then<TValidator>()로 next 체인을 조립하며 Check(context)에서 순서대로 실행하고 첫 실패를 반환하도록 제안한다. 검사기 구현은 재사용하고 전역 가변 체인의 next/요청 상태를 여러 호출이 함께 바꾸지 않는다. 기존 unique_ptr 연결 방식을 호출 단위로 재사용할 수 있다.
+2) PacketValidation/GameplayValidation 조정자를 Validation으로 통합한다. 입력은 패킷 정보/인증 여부/해석된 Request/필요 시 Player, Map, MapManager, 서버 시각을 담는 공통 읽기 컨텍스트로 정리한다. 필요한 컨텍스트가 없는 검사기는 오류로 종료하며 검사를 조용히 생략하지 않는다. 기존 PacketValidator와 구체 인게임 검사 본문은 재사용한다. IngameValidator의 중복 컨텍스트 어댑터 역할은 통일 후 제거하는 방향이다.
+3) 패킷 크기/ID/인증 기본 검사는 PacketMethod가 안전하게 RequestKind를 읽기 전에 실행한다. 파싱 후 요청 계약도 확인한다. 기존 0x500 + RequestKind 전송 형식은 유지하고 클라이언트 패킷을 바꾸지 않는다.
+4) HandleMovePacket/HandleAttackPacket/HandleGatherPacket 등 PacketMethod의 기능별 함수가 값으로 복사한 요청과 약한 세션 식별/수명 정보, 기능 작업을 MapManager 큐에 넣는다. Player/Map 참조나 수신 버퍼 포인터를 비동기 작업에 캡처하지 않는다. 함수명 분리를 위해 별도 패킷 ID를 새로 만들지 않는다.
+5) MapManager가 큐/mutex/condition_variable/게임 스레드를 직접 보유하고 unique_ptr<GameplayProcessor>를 직접 소유하도록 한다. ReceiveStep/SendStep/ServerSteps와 SetNext 단계 연결은 제거한다. GameplaySender/Session 송신 어댑터는 실제 직렬화/소켓 책임이 있으므로 유지한다. 큐 제거/IOCP 직접 게임 실행으로 바꾸는 계획은 아니다.
+6) MapManager가 현재 Player/Map을 조회한 뒤 GameplayProcessor의 기능별 처리 함수를 실행한다. 각 처리 함수는 실제 상태 변경 직전에 Validation 체인을 조립/실행하고 통과 후 상태를 바꾼다. 재요청 중복/만료/캐시/ACK 절차는 공통 처리 함수로 재사용한다.
+7) 이동은 실행 시점의 세대/생존/강제 이동/순번/행동/공간/속도 예산/튜토리얼 조건을 검사한다. 공격 시작과 타격 시점, 채집 시작과 완료 시점, 제작 시작과 소비 시점은 각각 필요한 조건만 조립한다. 이미 시작한 공격의 타격을 초기 쿨다운 검사로 다시 거절하지 않는다. 지연평가는 체인 구성 시 검사하지 않고 Check 시 실행한다는 사용 방식이며 별도 라이브러리를 추가하는 제안이 아니다.
+8) 초기화 순서, 동일 Player 공동 소유, 맵 이전, 클라이언트 결과 이동검증, 정상 이동 로그 억제, 저장/종료 수명과 기존 기능 판정은 보존한다. GameplayProcessor 세부 로직을 각 Actor로 전부 옮기는 추가 변경은 이번 수정안에 포함하지 않는다.
+
+[역할·변경·검증·한계]
+사용자가 공통 컨테이너/호출 지점 조립/명시적 기능 핸들러/Step 제거 방향을 정했다. AI는 공유 next 변경 방지, 파싱 전 검증, 게임 스레드에서 최신 상태 검증, 큐 작업 수명과 기존 재요청 계약 보존을 구현 방법으로 제안했다.
+서버 소스, 클라이언트, DB는 변경하지 않았다. 기존 헤더/함수와 누적 기록을 읽어 계획을 작성했다. 빌드/실행/게임 테스트는 이번 회차에서 하지 않았다. I의 검증 결과는 이전 구현의 당시 검증으로 유지한다.
+의미 있는 설계 논의로 이 누적 문서에만 기록을 추가했다. A는 현재 구현 기준으로 그대로 유지한다. 향후 구현 승인 후 수정 파일과 실제 검증 결과를 별도 회차로 남겨야 한다.
+
+[동일 채팅 실제 사용량 스냅샷]
+{
+  "source": "same-thread token_usage_record",
+  "timestamp_utc": "2026-11-16T10:12:23.333Z",
+  "response_id": "resp_006f26d3b5450425016afad6be3e8087d0bd6ca319b8d3f4ba",
+  "cumulative": {
+    "input_tokens": 167003974,
+    "cached_input_tokens": 163722240,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 708974,
+    "reasoning_output_tokens": 262029,
+    "total_tokens": 167712948
+  },
+  "scope": "문서 작성 전 최신 누적 스냅샷. 이 이후 기록/최종 응답은 다음 회차 반영. 캐시/추론은 total에 별도 합산하지 않는다.",
+  "delta_since_previous_checkpoint": {
+    "input_tokens": 1852841,
+    "cached_input_tokens": 1828864,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 16491,
+    "reasoning_output_tokens": 6757,
+    "total_tokens": 1869332
+  }
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1bc13-8b09-7bf3-b2b1-fbc971e1014f",
+  "covered_user_message_id": "msg_01a1e3d5-2bd0-78f0-9195-e48a9a7571f5",
+  "covered_user_timestamp_utc": "2026-11-16T10:09:20.848Z",
+  "record_date": "2026-11-16",
+  "covered_user_request": "Validation 호출 시점 체인 조립, Step 제거, Processor 직접 소유, PacketMethod 기능별 분배 수정안 요청",
+  "implementation_status": "계획만 작성. 서버/클라이언트/DB 변경 및 빌드/실행 없음",
+  "coverage": "최신 사용자 요청 및 계획. 과거 전체 대화 전수 보충의 미확인 범위는 기존 기록대로 유지",
+  "usage_checkpoint_response_id": "resp_006f26d3b5450425016afad6be3e8087d0bd6ca319b8d3f4ba",
+  "usage_checkpoint_timestamp_utc": "2026-11-16T10:12:23.333Z",
+  "usage_checkpoint": {
+    "input_tokens": 167003974,
+    "cached_input_tokens": 163722240,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 708974,
+    "reasoning_output_tokens": 262029,
+    "total_tokens": 167712948
+  },
+  "pending": "구현 승인 후 계획 적용/기존 판정 및 수명 회귀 검증. 클라이언트 데이터 정책 보류 유지"
+}
+[[PORTFOLIO_CHECKPOINT END]]
+
+======================================================================
+K. 2026-11-16 Validation 통합·호출 시점 조립·Step 제거 구현
+======================================================================
+[사용자 요구 및 역할]
+사용자가 J의 수정방안을 검토한 뒤 "코드 수정해줘"라고 구현을 승인했다. AI는 승인된 범위의 서버 코드, VS 등록, 서버 측 검증과 누적 기록을 수정했다. 사용자/AI의 역할은 공통 컨테이너·실행 지점 조립·명시적 패킷 핸들러라는 사용자 방향을 기존 기능 및 소유권과 연결하는 작업으로 구분한다.
+클라이언트 처리 정책, 패킷의 전송 형식, DB 스키마·계정 자료 변경은 이번 범위에 추가하지 않았다.
+
+[Validation 구조]
+Gameplay/Validation/Validation.h/cpp를 추가했다. 정적 Chain 함수는 빈 컨테이너를 반환하고 Then<T>(args...)는 검사기를 만들어 호출 전용 unique_ptr 체인에 연결한다. Check에서만 실제 검사를 실행한다. 다른 요청과 전역 체인이나 next를 공유하지 않는다.
+Validator는 두 종류의 Validate 오버로드 대신 Validate(const ValidationContext&) 하나를 사용하도록 바꿨다. PacketValidator와 구체 인게임 검사기는 같은 기반을 직접 상속한다. 기존 PacketValidation/GameplayValidation/IngameValidator를 제거했다.
+ValidationContext에는 패킷 검사 입력과 필요 시 읽기 전용 게임 Context/타격 대상 정보가 들어간다. Context는 const Player/Map/Request 참조와 서버 시각으로 구성해 검증 중 게임 상태를 바꾸지 않도록 했다. MapManager/RefillSystem이 필요한 검사기는 Then의 생성 인자로 의존 객체를 명시한다.
+빈 체인과 빠진 필수 컨텍스트는 승인하지 않는다. 독립적으로 호출한 사거리/재료/아이템/채집물 검사도 선행 검사 누락 때문에 잘못된 at 접근이나 null 역참조를 하지 않도록 보완했다.
+Validation은 이동 전용 컨테이너다. move 생성/대입 시 소유 노드와 tail을 옮기고 원본의 tail을 null로 정리한다. 공유하지 않는 tail 포인터는 체인 끝 조회용 비소유 참조다.
+기존 Validator의 owning next/Then/InsertBefore 기본 구현은 유지했다. 현재 기능별 조립 API는 Validation의 Then을 사용한다.
+
+[요청 분배와 직접 소유]
+PacketMethod::HandlePacket에서 Validation의 PacketValidator로 크기/ID/인증을 확인한 뒤 memcpy로 안전하게 해석한다. 게임 요청은 기존 0x500/52바이트 Request의 RequestKind로 분배하며 0x501/108바이트 Event 형식도 유지했다.
+Join/Move/Mode/Attack/Gather/Craft/Cancel/ChangeMap/Revive/Probe/UseItem/Equip/Unequip/ClaimQuest/ResourceRefill/Tutorial/Save/Logout의 18개 Handle...Packet을 만들었다. 각 함수는 대응 GameplayProcessor::Handle...Request를 지정해 MapManager::Enqueue로 보낸다.
+공통 MakeGameWork는 Request 값 복사, 약한 Session 수명 콜백, 동일 Player 공유 및 기존 Save/Load 어댑터를 구성한다. 큐 작업은 수신 버퍼/임시 Player 참조를 잡아두지 않는다. 실제 Player/Map 참조는 게임 스레드 실행 중에만 사용한다. 불필요해진 원시 payload/raw/packetId/close 등 이전 Step 입력 필드는 제거했다.
+MapManager는 GameplayProcessor를 unique_ptr로 직접 보유한다. 작업 큐, 잠금, condition_variable, 대기/정지 처리를 직접 보유하며 Run에서 순서를 읽을 수 있게 배치했다. 기존 ReceiveStep/SendStep/ServerSteps 및 SetNext/SetOutput 단계 연결을 제거했다.
+Enqueue는 종료 상태 또는 큐 용량 초과 시 false를 반환한다. 이전의 조용한 큐 누락 대신 PacketMethod 호출자가 실패를 전달할 수 있다. 기존 상한 4096은 유지했다.
+
+[실제 처리 위치와 순서]
+Run: 큐 배치 획득 -> 닫힌 기존 소유자 저장/맵 제거 -> 인증/해석된 요청 계약 검사 -> 최초 계정 로드/Player 등록 -> Processor.Process -> 닫힌 소유자 정리 -> 경과 시간에 따른 Advance.
+해석된 요청이 계약을 어기거나 실행 함수가 없으면 계정 로딩 전 RejectPacket으로 처리한다. 기존 Player가 있으면 현재 세대의 ACK를, 없으면 요청 ID와 오류를 담은 ACK를 보낸다. 올바르지 않은 크기·미인증 원시 프레임은 PacketMethod에서 거절한다.
+Processor.Process는 계약/동일 요청 재전송/충돌 중복/만료/공통 세대·생존·강제 이동 검사와 ACK·캐시를 담당한다. 기능별 Handle...Request는 해당 동작의 검사 체인을 코드 위치에서 조립하고 통과 후 기존 실행 본문을 수행한다. 기존의 큰 Execute/ExecuteFeature switch는 기능 함수들로 풀었다.
+이동 순번/행동/공간/속도 예산/튜토리얼 검사는 HandleMoveRequest에서 실행한다. 앞선 큐 이동으로 남은 예산이 달라진 경우 다음 요청은 갱신된 값으로 판단한다. 정상 이동의 로그 억제와 오류 이동의 보정/로그를 유지했다.
+공격 시작 체인과 타격 시점 체인은 다르다. AttackImpactValidator는 현재 대상 생존·사거리·가시성을 검사하며 시작 쿨다운/Busy를 재검사하지 않는다. 광역 공격의 기존 범위/가시성 계산도 보존했다.
+Gather 완료는 ResourceExists/GatherRange/GatherCompletion으로 현재 대상/거리/점유/잔량을 확인한 후 기존 Harvest/보상을 실행한다. Craft 완료는 RecipeExists/CraftIngredients로 확인 후 재료를 소비한다. 완료 시점의 실패는 기존처럼 Action을 취소한다.
+기존 GameplaySender/Session은 실제 직렬화/송신 책임이 있으므로 유지했다. 송신 Step 없이 Player.send와 연결된 기존 어댑터를 호출한다.
+
+[변경 파일]
+추가: Gameplay/Validation/Validation.h/cpp, Validation/Ingame/AttackImpactValidator.h/cpp, GatherCompletionValidator.h/cpp.
+삭제: Gameplay/ReceiveStep.h/cpp, SendStep.h/cpp, ServerSteps.h, GameplayValidation.h/cpp, PacketValidation.h/cpp, Validation/IngameValidator.h/cpp.
+수정: Gameplay/Authentication/PacketMethod.h/cpp, MapManager.h/cpp, GameplayProcessor.h/cpp, WorldTypes.h/cpp, GameplayData.h, Protocol.h, Validation/Validator 및 PacketValidator, 기존 구체 Validator h/cpp, RefillSystem 헤더의 명시적 데이터 의존성, LoginServer.vcxproj와 filters.
+기존에 사용자가 남긴 변경과 output 폴더는 보존했다. 클라이언트 코드나 DB 마이그레이션 파일을 수정하지 않았다.
+
+[실제 검증]
+1. Visual Studio 2022 Debug x64 서버 최종 빌드 성공. 기존 DB 쿼리 size_t -> unsigned long 변환 경고는 남아 있다.
+2. 소스/VS 배치 검사 통과: 일반 클래스 56개 h/cpp 쌍, 헤더 66개, CPP 63개. 외부 클래스 선언/CPP 로컬 클래스/VS 미등록 없음. 삭제 타입의 프로덕션 소스/프로젝트 참조가 없는 것과 git diff --check를 확인했다.
+3. 임시 네이티브 검증: 패킷+인게임 검사 혼합, Check 전에는 평가하지 않음, 최신 상태 반영, 첫 실패 중단, 빈 체인/컨텍스트 누락/독립 사거리 검사 거절, 이동된 컨테이너 독립성, 8개 스레드에서 각각 독립 체인 500회 생성/검사.
+4. 기능 회귀: Join/유효 이동 로그 억제/벽 보정/전투 모드/공격 명중/쿨다운 격리/타격 전 대상 이탈 시 빗나감, 채집 완료 전 거리 이탈 시 취소, 정상 채집·퀘스트 진행·보상, 시작 후 재료가 없어지는 제작 취소와 정상 제작, 리필 대기 및 리필 승인, 물약·장비·장비 해제·설치, 튜토리얼 진행·Probe·맵 이전·이전 세대 거절·저장 DTO·Logout 저장·부활 대기/승인.
+5. 공통 계약: 같은 요청의 ACK 재전송 시 실행되지 않음, 내용이 다른 중복 요청 거절, 512건 캐시 상한과 보관 범위 밖 과거 요청 Expired 처리.
+6. 실제 MapManager 게임 스레드/큐: 잘못된 계약은 Load 전에 ACK 거절, 최초 Join, 앞선 이동 후 남은 예산으로 다음 이동을 거절, 진행 중 채집 상태에서 Stop 시 예약 취소/저장/맵 탈퇴/소유 해제, 종료 후 Enqueue 실패.
+7. PacketMethod의 게임 요청 18종이 각각 명시 핸들러를 통해 큐 등록되는지 DB에 접속하지 않는 native 환경에서 확인했다. 큐 실행을 시작하지 않고 등록만 확인한 뒤 폐기했으므로 이 검사는 18종 전체의 실시간 소켓 동작을 의미하지 않는다.
+8. 로그인/가입 패킷의 96바이트 envelope 승인과 잘못된 크기의 거절은 PacketValidator만 실행하여 DB/인증 처리 없이 확인했다.
+9. 실제 LoginServer.exe와 현재 DB/맵으로 초기화/기동을 확인했다. 로그인/가입/유효 게임 명령 없이 미지원 ID, 잘못된 크기 게임 프레임, 미인증 게임 프레임을 분할 TCP 수신으로 보내 거절·연결 종료를 확인했다. quit 후 IOCP 드레인과 정상 종료를 확인했다.
+10. 검증 프로젝트는 TEMP에만 만들었다. 최종 native 재빌드/실행 통과 후 임시 소스·프로젝트·실행 산출물을 제거했다. 과거 삭제된 영구 테스트를 복원하지 않았다.
+
+[실패·수정·자동 승인 검토]
+처리 본문 추출 중 연속된 Save/Logout case의 줄바꿈을 정규식이 삼켜 스크립트가 KeyError로 중단됐다. case 뒤 수평 공백만 처리하도록 수정하고 실제 함수 분리 결과를 native 실행으로 검증했다.
+직접 소유로 바꾼 MapManager/GameplayProcessor와 RefillSystem 헤더의 포함 순서 때문에 첫 빌드에서 타입 미정의 오류가 났다. 각 헤더가 leaf 데이터 타입을 직접 포함하고 자기 이름 전방 선언을 사용하는 기존 관례에 맞춰 수정한 뒤 빌드를 통과했다.
+컨테이너 이동 후 원본 tail이 남지 않도록 보완했고 원본/이동본에 검사기를 다시 붙이는 검증을 통과했다.
+실제 DB 서버로 빈 로그인/가입 요청을 보내 라우팅을 확인하려던 셸 명령은 자동 승인 검토에서 거절됐다. 가입 요청이 계정 생성/DB 변경으로 이어질 가능성과 해당 데이터 변경의 명시 승인 부족이 사유였다. 그 명령은 실행되지 않았다.
+이후 실제 서버 검증에서는 로그인/가입 요청을 제외했다. 가입 프레임 형식만 DB를 전혀 사용하지 않는 PacketValidator 단위 실행으로 확인했다. 실제 계정 생성 동작을 다른 경로로 우회 실행하지 않았다.
+
+[미확인·후속 범위]
+클라이언트 수정·실행·검사 없음. 실제 DB의 유효 로그인/가입 및 로그인 후 전체 게임 플레이 소켓 통합은 이번 검증에서 수행하지 않았다. 모든 기능을 실제 DB 계정으로 확인했다고 주장하지 않는다.
+DB 스키마/계정/아이템 기준 데이터 변경이나 마이그레이션을 수행하지 않았다. 실제 서버 초기화에는 기존 기준 데이터 조회와 기존 맵 ID 확인 절차가 포함된다.
+대규모 동접/성능/외부 인터넷 환경, 클라이언트 기준 데이터 수신 정책, 기타 새 게임 기능은 추가하지 않았다. 현재 기능의 상당 부분은 GameplayProcessor에 남아 있으며 Actor로 전체 로직을 이동시키는 별도 개편은 하지 않았다.
+이전 문서에서 명시한 과거 대화 전수 보충의 미확인 구간은 이번 회차에서도 해결했다고 기록하지 않는다.
+
+[동일 채팅 실제 사용량 스냅샷]
+{
+  "source": "same-thread token_usage_record",
+  "timestamp_utc": "2026-11-16T11:59:33.479Z",
+  "response_id": "resp_006f26d3b5450425016afaf00e381c87d093d2be5691bdf904",
+  "cumulative": {
+    "input_tokens": 172736060,
+    "cached_input_tokens": 169230848,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 748698,
+    "reasoning_output_tokens": 278606,
+    "total_tokens": 173484758
+  },
+  "delta_since_previous_checkpoint": {
+    "input_tokens": 5732086,
+    "cached_input_tokens": 5508608,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 39724,
+    "reasoning_output_tokens": 16577,
+    "total_tokens": 5771810
+  },
+  "scope": "이전 기준점 이후 누적 처리량 차이. 캐시/추론 하위 지표는 total에 다시 더하지 않는다. 이 스냅샷 이후 검사/기록/최종 응답은 후속 회차 반영."
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1bc13-8b09-7bf3-b2b1-fbc971e1014f",
+  "covered_user_message_id": "msg_01a1e428-b9a7-7372-a1c8-1a19f501ab97",
+  "covered_user_timestamp_utc": "2026-11-16T11:40:36.648Z",
+  "record_date": "2026-11-16",
+  "covered_user_request": "코드 수정해줘 — Validation 통합/호출 시점 체인/Step 제거/기능별 패킷 분배 구현 승인",
+  "implementation_status": "서버 구현 및 최종 빌드/native 회귀/실제 초기화와 미인증 TCP 오류 검증 완료. 임시 테스트 제거.",
+  "coverage": "최신 구현 요청과 결과. 과거 전체 공개 대화 전수 보충의 미확인 구간은 유지.",
+  "usage_checkpoint_response_id": "resp_006f26d3b5450425016afaf00e381c87d093d2be5691bdf904",
+  "usage_checkpoint_timestamp_utc": "2026-11-16T11:59:33.479Z",
+  "usage_checkpoint": {
+    "input_tokens": 172736060,
+    "cached_input_tokens": 169230848,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 748698,
+    "reasoning_output_tokens": 278606,
+    "total_tokens": 173484758
+  },
+  "pending": "클라이언트 정책/통합 보류. 실제 DB 가입 요청 검증은 자동 승인 검토 거절로 미실행; DB 없는 형식 검사로 대체. 성능/전체 실제 계정 소켓 플레이는 미검증."
+}
+[[PORTFOLIO_CHECKPOINT END]]
+
+======================================================================
+L. 2026-11-16 phase 삭제와 Session 송신 통합
+======================================================================
+[사용자 요구와 정정]
+사용자는 phase가 없어도 초기화 함수를 순서대로 호출하면 보장 가능한지 질문했다. AI는 phase가 순서를 만드는 기능이 아니라 잘못된 호출을 감지하는 추가 검사임을 설명했다. 사용자는 private 초기화 함수와 단일 Initialize 경로로 보장하고 phase 관련 코드를 삭제하도록 승인했다. GameplaySender도 별도 타입 대신 적절한 클래스에 합치도록 요청했다.
+
+[구현과 선택 이유]
+ServerApplication의 StartupPhase/Phase()와 단계별 대입/조건을 제거했다. 내부 초기화 함수는 private을 유지하고 Initialize가 IOCP -> DB -> 게임/맵/개체 -> 콜백을 순서대로 실행한다. 단계 실패 시 예외가 상위로 전파되어 중단·정리된다. initialized/running/stopped는 중복 초기화/실행/정지를 제어하는 최소 수명 상태로 보존했다.
+MapManager는 Initialize(GameDataHub, directory) 하나를 공개한다. 기존 InitializeGame/InitializeMaps/InitializeWorldObjects는 private으로 옮겨 내부에서 순서대로 호출한다. GamePhase, mapsInitialized, objectsInitialized를 제거했다. Ready는 전체 초기화 성공 때만 true가 되고 Stop에서는 false로 바뀐다. 맵 파일 실패 후 게임 스레드를 시작하지 못한다.
+맵 ID의 DB 확인은 전체 MapManager 초기화 후 기존 EnsureMapIds로 수행한다. 개체 로딩은 공간 파일/기준 데이터를 사용하므로 DB 맵 ID 확인보다 먼저 수행해도 플레이어 등록 전 순서를 지킨다. 서버는 콜백 연결과 전체 초기화가 끝나야 접속 수락을 시작한다.
+PacketCheckPhase와 ValidationContext.phase도 제거했다. PacketValidator는 Envelope/Contract의 명명된 검사 함수와 함수 포인터를 사용한다. Envelope는 PacketMethod에서 명시적으로 선택하며 나머지 요청 계약 검사 호출은 Contract를 사용한다. 중복 클래스나 phase 대체 enum은 추가하지 않았다. 튜토리얼의 단순 지역 변수 phase도 의미가 분명한 stepId로 바꾸었다.
+GameplaySender.h/cpp를 삭제하고 Session에 SendGameplayEvent와 CreateGameSendCallback을 추가했다. Event->기존 0x501 패킷 직렬화->PostSend를 Session이 처리한다. 콜백은 weak_ptr<Session>만 캡처하며 닫힌 세션이나 파괴된 세션에는 전송하지 않는다. Player의 Send 함수 계약은 그대로이므로 게임 규칙 처리나 패킷 레이아웃을 변경하지 않았다.
+PacketMethod는 session.CreateGameSendCallback으로 기존 송신 콜백을 연결한다. ServerApplication의 불필요한 GameplaySender include도 제거하고 VS 프로젝트/filters에서 삭제 타입을 제거했다.
+
+[변경 파일과 검증]
+ServerApplication.h/cpp, Gameplay/MapManager.h/cpp, Protocol.h, WorldTypes.h, Validation/PacketValidator.h/cpp, Authentication/PacketMethod.cpp, TutorialProgressValidator.cpp, Network/Session.h/cpp, LoginServer.vcxproj/filters 수정. GameplaySender.h/cpp 삭제.
+최종 Debug x64 서버 빌드와 클래스 배치 검사 통과: 56 h/cpp 클래스 쌍, 헤더 65개, CPP 62개. 프로덕션 코드에서 phase/관련 enum/GameplaySender 참조가 없음을 확인했다. 수정 범위의 diff 공백 검사 통과.
+TEMP 네이티브 검사에서 개별 Map 초기화가 public이 아님을 컴파일 시 확인했다. 초기화 전 Start 거절, 단일 Initialize 성공/중복 거절, 정상 Start/Stop, 반복 Stop/Shutdown, 잘못된 맵 경로에서 Ready=false를 확인했다.
+명시적인 Envelope/Contract 체인으로 유효/잘못된 크기/잘못된 버전 패킷을 확인했다. DB에 연결하지 않는 전용 IOCP 루프백에서 Session이 생성한 콜백으로 실제 Event를 송신하고 헤더/요청 ID/값을 수신 대조했다. 연결을 닫은 뒤 송신 함수의 false 반환, 세션 파괴 후 남은 콜백의 안전한 호출과 weak 만료를 확인했다.
+실제 LoginServer.exe를 현재 DB/맵으로 구동하고 초기화 로그의 순서와 quit 정상 종료를 확인했다. 이 검증에서는 로그인/가입/게임 명령을 보내지 않았다.
+검증은 이번 변경의 초기화/패킷 검사/송신 경계에 맞췄다. 이전 회차의 전체 전투·채집 회귀를 이번에 다시 실행했다고 기록하지 않는다. 기존 DB 타입 변환 경고와 임시 MSBuild 출력 경로 경고가 있었다. 임시 검증 프로젝트/산출물은 최종 확인 후 제거했다.
+전체 diff 검사에서는 이번에 수정하지 않은 Network/Packet.h와 Structs.h의 공백 경고도 감지했다. 그 파일들은 이번 작업으로 덮어쓰지 않고 수정 대상에 한정해 확인했다.
+클라이언트는 수정·검사하지 않았으며 DB 스키마나 계정 자료 변경은 수행하지 않았다. 기존 미확인 대화 구간/클라이언트 정책/성능 검증의 보류 범위는 유지한다.
+
+[사용량 스냅샷]
+{
+  "source": "same-thread token_usage_record",
+  "response_id": "resp_006f26d3b5450425016afaf3ad418487d0aaae0a18b214ab5f",
+  "timestamp_utc": "2026-11-16T12:14:34.192Z",
+  "cumulative": {
+    "input_tokens": 177614886,
+    "cached_input_tokens": 174092928,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 764586,
+    "reasoning_output_tokens": 282716,
+    "total_tokens": 178379472
+  },
+  "delta_since_previous_checkpoint": {
+    "input_tokens": 4878826,
+    "cached_input_tokens": 4862080,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 15888,
+    "reasoning_output_tokens": 4110,
+    "total_tokens": 4894714
+  },
+  "scope": "누적 스냅샷을 합산하지 않고 직전 기준과 차이만 계산. 캐시/추론은 total에 다시 합산하지 않음. 이후 기록/최종 응답은 후속 회차 반영."
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1bc13-8b09-7bf3-b2b1-fbc971e1014f",
+  "covered_user_message_id": "msg_01a1e443-b81b-7653-bd24-167a54b09f18",
+  "covered_user_timestamp_utc": "2026-11-16T12:10:05.724Z",
+  "record_date": "2026-11-16",
+  "covered_user_request": "phase 삭제 및 GameplaySender 기능 통합 후 타입 삭제",
+  "implementation_status": "구현/빌드/초기화 및 Session 루프백 검증 완료",
+  "usage_checkpoint_response_id": "resp_006f26d3b5450425016afaf3ad418487d0aaae0a18b214ab5f",
+  "usage_checkpoint_timestamp_utc": "2026-11-16T12:14:34.192Z",
+  "usage_checkpoint": {
+    "input_tokens": 177614886,
+    "cached_input_tokens": 174092928,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 764586,
+    "reasoning_output_tokens": 282716,
+    "total_tokens": 178379472
+  },
+  "coverage": "phase 역할 질의·설명 및 최신 구현 요청 기록. 기존 전수 보충 미확인 구간 유지.",
+  "pending": "클라이언트 정책 및 성능 검증 보류. 기존 DB 변환 경고 유지."
+}
+[[PORTFOLIO_CHECKPOINT END]]
+
+======================================================================
+M. 2026-11-16 GameplayPersistence를 Queries로 통합
+======================================================================
+[사용자 결정]
+사용자는 GameplayPersistence의 역할과 Queries에서 분리한 이유를 확인하고 DBManager 위임 대안도 검토했다. 플레이어 영속성도 저장/조회 쿼리라는 관점에서 Queries에 합치도록 직접 지시했다. AI의 기존 세분화 설계를 사용자의 책임 범위 기준으로 단순화한 변경이다.
+
+[구현]
+Queries에 InitializeGameplayItems, LoadGameplayState, SaveGameplayState를 추가했다. 기존 keys_/ids_/slots_ 변환표도 옮겼다. Load는 같은 Queries의 FetchUser/FetchUserStat/FetchInventory/FetchUserQuests를 호출해 AccountState를 구성한다. 불필요한 임시 Queries 객체 생성은 제거했다.
+기존 Save의 SQL 문자열 생성, 문자열 이스케이프, 인벤토리/퀘스트 교체 저장, DB 잠금, commit/rollback/autocommit 복원 본문은 그대로 복사했다. 파일 삭제 전에 기존 Save 본문과 이관 본문을 대조해 동일함을 확인했다. 저장 정책·테이블·패킷은 바꾸지 않았다.
+ServerApplication의 별도 persistence 객체를 없애고 Queries를 shared_ptr로 생성한다. PacketMethod도 같은 shared_ptr<Queries>를 보유하며 Save/Load 콜백은 그 객체를 값으로 캡처한다. 게임 작업과 콜백이 끝날 때까지 쿼리 객체 수명이 유지되고, 기존 종료 순서에서 DB 연결은 마지막에 정리된다.
+GameplayPersistence.h/cpp 및 VS 등록을 삭제했다. Queries.h/cpp, ServerApplication.h/cpp, Authentication/PacketMethod.h/cpp, vcxproj/filters를 변경했다. DBManager는 기존 연결·잠금 역할을 유지한다.
+
+[실제 검증과 한계]
+Debug x64 서버 빌드 성공. 배치 검사 통과: 일반 클래스 55 h/cpp 쌍, 헤더 64개, CPP 61개. 삭제 타입의 프로덕션 참조가 없는지 확인했다. 기존 DB 타입 변환 경고는 남아 있다.
+TEMP 네이티브 검증에서 현재 DB의 보존 계정을 읽기만 해 LoadGameplayState 결과를 개별 FetchInventory/FetchUserQuests 결과와 비교했다. 아이템 숫자 ID/문자열 key와 착용 슬롯 변환, 퀘스트 진행·완료·보상 수령 상태의 일치를 확인했다. 개인 데이터나 접속 비밀은 출력하지 않았다.
+저장 실패와 콜백 수명은 별도의 미연결 DBManager로 확인했다. 그 객체의 Load.loaded=false, Save=false와 shared Queries 콜백 보관/해제 후 weak 만료를 확인했다. 실제 DB 연결에서는 SaveGameplayState를 호출하지 않았다. 따라서 실제 commit/rollback을 이번에 실행 검증했다고 주장하지 않는다. SQL 이관 동일성 대조와 빌드로 저장 구현 보존을 확인했다.
+실제 서버를 현재 DB/맵으로 초기화하고 quit 정상 종료를 확인했다. 로그인·가입·게임 요청은 보내지 않았다. DB 스키마/계정 자료 변경, 클라이언트 수정·검사는 수행하지 않았다. 임시 검증 소스/프로젝트/산출물은 확인 후 제거했다. 과거 전투 회귀·대규모 성능·전체 소켓 플레이 검증을 이번 회차에서 재실행하지 않았다.
+별도 실패나 미해결 빌드 오류는 없었다. 임시 검증 출력 디렉터리에 대한 MSBuild 경고는 일회성 프로젝트에 한정됐다. 기존 전수 대화 보충 공백과 클라이언트 정책 보류는 유지한다.
+
+[사용량 스냅샷]
+{
+  "source": "same-thread token_usage_record",
+  "timestamp_utc": "2026-11-16T12:27:31.796Z",
+  "response_id": "resp_006f26d3b5450425016afaf68f9dbc87d09a4b160197458b3c",
+  "cumulative": {
+    "input_tokens": 181326952,
+    "cached_input_tokens": 177793536,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 775521,
+    "reasoning_output_tokens": 284824,
+    "total_tokens": 182102473
+  },
+  "scope": "최신 단일 누적 스냅샷, 캐시/추론을 total에 중복 합산하지 않음. 이후 기록/최종 응답은 후속 회차 반영.",
+  "delta_since_previous_checkpoint": {
+    "input_tokens": 3712066,
+    "cached_input_tokens": 3700608,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 10935,
+    "reasoning_output_tokens": 2108,
+    "total_tokens": 3723001
+  }
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1bc13-8b09-7bf3-b2b1-fbc971e1014f",
+  "covered_user_message_id": "msg_01a1e450-ac07-70d3-be0d-3483d86ddf42",
+  "covered_user_timestamp_utc": "2026-11-16T12:24:14.599Z",
+  "record_date": "2026-11-16",
+  "covered_user_request": "GameplayPersistence를 Queries로 통합",
+  "implementation_status": "구현/빌드/실DB 읽기 대조/미연결 저장 실패/콜백 수명/실제 초기화와 종료 검증 완료",
+  "usage_checkpoint_response_id": "resp_006f26d3b5450425016afaf68f9dbc87d09a4b160197458b3c",
+  "usage_checkpoint_timestamp_utc": "2026-11-16T12:27:31.796Z",
+  "usage_checkpoint": {
+    "input_tokens": 181326952,
+    "cached_input_tokens": 177793536,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 775521,
+    "reasoning_output_tokens": 284824,
+    "total_tokens": 182102473
+  },
+  "coverage": "역할 질의·DBManager 위임 대안 검토와 최신 통합 구현 기록. 기존 과거 대화 전수 보충의 미확인 범위 유지.",
+  "pending": "실제 DB 저장 트랜잭션 실행은 이번 검증에 미포함. 클라이언트 정책/성능 보류 및 기존 DB 변환 경고 유지."
+}
+[[PORTFOLIO_CHECKPOINT END]]
+
+======================================================================
+N. 2026-11-16 증분 누적 정리 — 맵 파일 로딩 과정과 신규 맵 추가
+======================================================================
+[기록 범위와 사용자 목적]
+사용자는 지금까지 진행한 내용을 누적 기록에 정리하도록 요청했다. 직전 M의 PORTFOLIO_CHECKPOINT 이후부터 이번 요청까지 동일 채팅의 공개 사용자 메시지와 AI 최종 답변을 조회했다. M에 기록한 Queries 통합 구현을 다시 구현하거나 기존 보고서 원문을 재삽입하지 않았다.
+직전 구현 보고 최종 답변은 M에서 이미 정리한 결과를 전달한 경계 메시지로 확인했다. 해당 답변은 참조 정보만 남기고 원문을 반복하지 않는다. 새 맵 설명 대화와 이번 정리 요청의 원문은 아래에 수록했다.
+
+[논의와 확인 내용]
+1. 사용자는 JSON/TXT 맵을 통해 서버가 로딩하는 과정을 질문했다. AI는 현재 실제 구현이 TXT 메타/배치와 바이너리 높이 파일 조합이며 JSON은 미구현임을 구분했다. 이는 JSON 로더 추가 요청이나 구현 승인이 아니다.
+2. ServerApplication이 DB 기준 GameDataHub를 준비해 MapManager.Initialize에 넘긴다. MapManager는 기준 데이터 검사 -> InitializeMaps -> InitializeWorldObjects 순서로 처리하며 전체 성공 후 준비 완료가 된다. 실제 게임 스레드와 IOCP 접속 수락은 후속 Start에서 실행된다.
+3. InitializeMaps는 지정 폴더의 .txt 파일을 정렬해 한 줄씩 읽는다. 빈 줄/주석은 건너뛰고 map/version/spawn/surface/respawn/monsterarea를 처리한다. map 행으로 Map을 만들고 vector<unique_ptr<Map>>에 소유한다. monster/resource/resourcecfg/box/zone 행은 objectRows에 모아 개체 초기화에서 처리한다.
+4. surface는 원점/간격/열·행과 별도 높이 파일 경로를 정한다. 실제 Map1 예시 surface 1 190 -190 0.5 441 441 ../Map1.heights를 해석해 0.5 간격의 441x441 float 높이 격자임을 설명했다. 높이 데이터는 TXT 안의 전체 배열이나 JSON이 아니라 바이너리 .heights다.
+5. 개체 단계는 Monster/ResourceActor/StaticLevelActor를 생성해 Map.AddActor로 등록하고 zone 범위를 보관한다. resource.item은 GameDataHub의 DB 정의와 연결한다. 높이 샘플로 Y를 보정하며 몬스터 영역 설정이 있으면 충돌 검사를 통과한 생성 위치를 선택한다. 잘못된 파일/참조는 초기화를 실패시킬 수 있다.
+6. 서버는 공간 판정과 엔티티 상태를 보관하고 Unity 프리팹을 직접 읽지 않는다. Join 스냅샷에는 식별/외형 ID/위치/상태 등을 전달한다. 클라이언트의 기존 프리팹 표현 정책을 이번 대화로 새로 구현하거나 검사하지 않았다.
+7. 사용자는 맵 3의 TXT/height를 폴더에 추가하면 로드되는지 질문했다. 현재 로더는 시작 시 모든 TXT를 검색하므로 올바른 파일을 실제 로딩 폴더에 배치하고 재시작하면 읽는 구조임을 설명했다. 맵 ID는 파일명이 아닌 map 행의 숫자이며 중복되면 오류다. 높이 파일은 지정 격자 크기와 바이너리 float 형식을 맞춰야 한다.
+8. 경로는 명시 config/환경변수/EXE 번들/소스 기본값 우선순위다. 단순 EXE 실행에서는 EXE 옆 Shared/Maps가 우선될 수 있어 소스 폴더에만 추가하면 다른 경로를 읽을 수 있다. surface의 상대 경로 ../Map3.heights 예시는 높이 파일을 Shared에 배치하는 경우다.
+9. 서버 로딩과 DB 맵 ID 확인/등록은 초기화 경로에 있으나, 새 맵의 클라이언트 프리팹 연결과 입장 경로는 별도다. 실행 중 자동 감지/hot reload와 던전 입장 시 선택 로딩은 현재 구현이 아니다.
+
+[사용자/AI 역할 및 결정 상태]
+사용자는 자신의 파일 배치 작업이 실제 서버 로딩과 어떻게 연결되는지 확인했다. AI는 구현 범위와 예시를 구분하고 파일 파서, 높이 격자, 맵 소유, 초기화 시점과 클라이언트 연결 경계를 설명했다. 새 기술/포맷/로딩 정책을 도입하는 결정을 추가하지 않았다.
+
+[작업·검증·한계]
+이 구간의 맵 설명을 위해 읽은 코드는 MapManager.cpp, ServerApplication.cpp, Map/Map.cpp, GameplayProcessor의 Snapshot/Spawn 위치 및 Shared/Maps/Map1.txt다. 파서의 TXT 확장자 검색과 surface 파일 참조를 읽어 설명했다. 이 확인은 코드 조회이며 빌드나 게임 실행 검증이 아니다.
+이번 누적 정리에서는 단일 TXT의 최신 A 기준과 N 회차/대화 근거/사용량/기준점만 수정했다. 서버·클라이언트 코드, 맵 파일, DB는 변경하지 않았다. 별도 TXT를 만들거나 Map3를 생성하지 않았다. 이전 M 등의 빌드/실DB 읽기/실행 결과는 당시 검증으로 유지한다.
+맵 3 샘플은 기존 로더 계약을 설명하는 예시이며 해당 height 파일의 실제 존재/데이터/충돌/클라이언트 입장을 검증한 결과가 아니다. 후속 실물 맵 추가 시 이 조건을 별도로 확인해야 한다.
+공개 대화 조회·기록에서 비밀번호/DB 접속 비밀/토큰을 저장하지 않았다. 과거 H 이후에 남겨 둔 전수 대화 보충 공백은 이번 최신 증분 기록으로 해소했다고 주장하지 않는다.
+
+[공개 대화 근거 — 최신 기준점 이후]
+
+[2026-11-16T12:46:36.808Z / 사용자]
+메시지 ID: msg_01a1e465-2708-7232-85f3-4171cb258dbc
+json과 txt로 된 맵을 통해 맵 로딩하는 과정 알려줘
+
+[2026-11-16T12:47:18.464Z / AI 최종 답변]
+메시지 ID: msg_006f26d3b5450425016afafb57c36487d0909525c28306e94f
+현재 프로젝트는 **TXT 맵 파일과 바이너리 높이 파일을 읽는 방식**이야. **JSON 로더는 아직 구현되어 있지 않아.**
+
+서버 시작 시 다음 순서로 진행돼.
+
+```text
+DB에서 GameDataHub 로딩
+ → 맵 TXT 파일 검색
+ → Map 생성·공간 데이터 구성
+ → 몬스터·채집물·정적 장애물 생성
+ → 지형 높이에 맞춰 위치 보정
+ → 초기화 완료 후 게임 시작
+```
+
+1. **맵 폴더를 결정해.**
+
+   `ServerConfig.mapsPath` → `EVERWIND_MAP_DIRECTORY` 환경변수 → 실행 파일 옆 `Shared/Maps` → 소스의 `Shared/Maps` 순서로 경로를 선택해.
+
+2. **폴더 안의 `.txt` 파일을 전부 읽어.**
+
+   [MapManager.cpp](C:/Users/tlsal/GitHub/EverWind/EverWindServer/LoginServer/Gameplay/MapManager.cpp)의 `InitializeMaps()`가 파일을 정렬한 뒤 한 줄씩 해석해. 빈 줄과 `#` 주석은 건너뛰어.
+
+   | 줄의 종류 | 읽는 정보 |
+   |---|---|
+   | `map` | 맵 ID·경계 반경 |
+   | `version` | 맵 버전 |
+   | `spawn` | 플레이어 시작 위치·맵 중심 |
+   | `surface` | 높이 격자 설정·높이 파일 경로 |
+   | `respawn` | 맵 기본 몬스터 재생성 대기 |
+   | `monsterarea` | 몬스터 생성 영역 |
+
+   `map` 줄을 읽으면 `Map`을 만들고 `MapManager`의 `vector<unique_ptr<Map>>`에 등록해.
+
+3. **높이 데이터를 따로 읽어.**
+
+   예를 들어 [Map1.txt](C:/Users/tlsal/GitHub/EverWind/EverWindServer/LoginServer/Shared/Maps/Map1.txt)의 다음 줄은:
+
+   ```text
+   surface 1 190 -190 0.5 441 441 ../Map1.heights
+   ```
+
+   맵 1의 높이를 **0.5 간격의 441×441 격자**로 읽으라는 뜻이야. `.heights`에는 `float` 높이 배열이 저장되어 있고, 서버가 특정 X·Z 위치의 지형 높이를 계산할 때 사용해.
+
+4. **맵 공간이 준비되면 개체를 생성해.**
+
+   처음 읽을 때 보관해 둔 개체 줄들을 `InitializeWorldObjects()`에서 처리해.
+
+   | 줄의 종류 | 생성·설정 결과 |
+   |---|---|
+   | `monster` | `Monster` 생성 |
+   | `resource` | `ResourceActor` 생성 |
+   | `resourcecfg` | 채집 시간·리필 대기 설정 |
+   | `box` | 충돌 범위를 가진 `StaticLevelActor` 생성 |
+   | `zone` | 이벤트 범위 등록 |
+
+   생성한 Actor는 해당 `Map::AddActor()`로 등록해. 채집물의 아이템 ID는 이미 DB에서 읽은 `GameDataHub`에 존재하는지도 확인해.
+
+5. **위치를 보정하고 실행 준비를 끝내.**
+
+   몬스터·채집물의 Y 좌표를 높이 데이터에 맞춰 계산해. 몬스터 생성 영역이 지정돼 있으면 그 안에서 충돌 검사를 통과한 위치를 선택해.
+
+서버가 읽는 것은 **판정용 공간·배치 정보**야. Unity 프리팹이나 모델을 서버에 로딩하지 않아. 플레이어 입장 시 서버는 개체 ID·외형 ID·위치·상태 등을 스냅샷으로 전달해.
+
+그리고 **현재는 서버 시작 때 모든 맵을 로딩해 두는 구조**야. 던전에 입장할 때 해당 맵 파일만 읽는 방식은 아직 적용하지 않았어.
+
+[2026-11-16T12:49:08.630Z / 사용자]
+메시지 ID: msg_01a1e467-7815-7a00-93bf-aebe2e219a92
+내가 만약에 맵3의 txt와 height를 폴더에 추가하면 서버에서 로드하고있어?
+
+[2026-11-16T12:49:20.334Z / AI 최종 답변]
+메시지 ID: msg_006f26d3b5450425016afafbda523487d09cae63af3fb81e38
+응. **서버가 읽는 `Shared/Maps` 폴더에 올바른 맵 3 TXT를 추가하고 서버를 재시작하면 자동으로 로드해.** 현재는 실행 중 파일 추가를 감지하지 않아.
+
+예를 들어:
+
+```text
+Shared/
+ ├ Maps/
+ │  ├ Map0.txt
+ │  ├ Map1.txt
+ │  └ Map3.txt
+ └ Map3.heights
+```
+
+`Map3.txt`에서는 다음처럼 높이 파일을 참조하면 돼.
+
+```text
+map 3 100
+version 3 1
+spawn 3 0 0 0 0 0
+surface 3 0 0 0.5 441 441 ../Map3.heights
+```
+
+주의할 점은 다음과 같아.
+
+- 실제 맵 ID는 **파일명 대신 `map 3 ...`의 숫자**로 결정돼. 다른 맵과 중복되면 오류야.
+- 높이 파일은 지정한 격자 크기에 맞는 바이너리 `float` 데이터여야 해.
+- 서버가 사용하는 폴더에 넣어야 해. EXE 실행 시에는 기본적으로 **EXE 옆 `Shared/Maps`가 우선**이야.
+
+이렇게 추가하면 서버 로딩과 DB의 맵 ID 등록까지 처리돼. **클라이언트의 맵 프리팹 연결과 맵 3 입장 경로는 별도로 준비해야 해.**
+
+[2026-11-16T12:50:37.055Z / 사용자]
+메시지 ID: msg_01a1e468-d17f-75e1-a657-9f800146a366
+지금까지 해온거 누적기록에 정리해줘
+
+[조회/중복 제거 요약]
+{
+  "public_user_messages": 3,
+  "public_final_answers": 3,
+  "archived_message_ids": [
+    "msg_01a1e465-2708-7232-85f3-4171cb258dbc",
+    "msg_006f26d3b5450425016afafb57c36487d0909525c28306e94f",
+    "msg_01a1e467-7815-7a00-93bf-aebe2e219a92",
+    "msg_006f26d3b5450425016afafbda523487d09cae63af3fb81e38",
+    "msg_01a1e468-d17f-75e1-a657-9f800146a366"
+  ],
+  "already_summarized_boundary_answer": [
+    {
+      "timestamp": "2026-11-16T12:27:42.541Z",
+      "id": "msg_006f26d3b5450425016afaf6cbfc9087d0abd248b475a6b790",
+      "role": "assistant"
+    }
+  ],
+  "encoding": "UTF-8; replacement character absent in queried public messages"
+}
+
+[실제 토큰 사용량 — 동일 채팅 고유 response_id 집계]
+{
+  "baseline_response_id": "resp_006f26d3b5450425016afaf68f9dbc87d09a4b160197458b3c",
+  "baseline_timestamp_utc": "2026-11-16T12:27:31.796Z",
+  "unique_new_response_count": 7,
+  "per_response": [
+    {
+      "timestamp_utc": "2026-11-16T12:27:42.562Z",
+      "response_id": "resp_006f26d3b5450425016afaf6ca301c87d087cddba89e105ae8",
+      "usage": {
+        "input_tokens": 321201,
+        "cached_input_tokens": 321024,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 168,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 321369
+      }
+    },
+    {
+      "timestamp_utc": "2026-11-16T12:46:47.931Z",
+      "response_id": "resp_006f26d3b5450425016afafb3e63b487d0828aa0bb3b421756",
+      "usage": {
+        "input_tokens": 321393,
+        "cached_input_tokens": 13312,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 254,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 321647
+      }
+    },
+    {
+      "timestamp_utc": "2026-11-16T12:47:18.483Z",
+      "response_id": "resp_006f26d3b5450425016afafb4d9b9887d0ba60bf7003aa81f0",
+      "usage": {
+        "input_tokens": 326032,
+        "cached_input_tokens": 321536,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1121,
+        "reasoning_output_tokens": 244,
+        "total_tokens": 327153
+      }
+    },
+    {
+      "timestamp_utc": "2026-11-16T12:49:20.357Z",
+      "response_id": "resp_006f26d3b5450425016afafbd6b8c887d0973bd50c2198cb06",
+      "usage": {
+        "input_tokens": 327186,
+        "cached_input_tokens": 327040,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 327,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 327513
+      }
+    },
+    {
+      "timestamp_utc": "2026-11-16T12:50:43.026Z",
+      "response_id": "resp_006f26d3b5450425016afafc2e07b487d095f3d13f6d73e74b",
+      "usage": {
+        "input_tokens": 327535,
+        "cached_input_tokens": 327424,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 169,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 327704
+      }
+    },
+    {
+      "timestamp_utc": "2026-11-16T12:51:10.098Z",
+      "response_id": "resp_006f26d3b5450425016afafc38807487d0accf7d7efae68cd7",
+      "usage": {
+        "input_tokens": 330928,
+        "cached_input_tokens": 327552,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 987,
+        "reasoning_output_tokens": 348,
+        "total_tokens": 331915
+      }
+    },
+    {
+      "timestamp_utc": "2026-11-16T12:52:47.492Z",
+      "response_id": "resp_006f26d3b5450425016afafc54639487d0bb8aca9c91852e2a",
+      "usage": {
+        "input_tokens": 334324,
+        "cached_input_tokens": 331776,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 4503,
+        "reasoning_output_tokens": 1034,
+        "total_tokens": 338827
+      }
+    }
+  ],
+  "new_usage_sum": {
+    "input_tokens": 2288599,
+    "cached_input_tokens": 1969664,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 7529,
+    "reasoning_output_tokens": 1626,
+    "total_tokens": 2296128
+  },
+  "latest_cumulative": {
+    "input_tokens": 183615551,
+    "cached_input_tokens": 179763200,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 783050,
+    "reasoning_output_tokens": 286450,
+    "total_tokens": 184398601
+  },
+  "cumulative_difference": {
+    "input_tokens": 2288599,
+    "cached_input_tokens": 1969664,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 7529,
+    "reasoning_output_tokens": 1626,
+    "total_tokens": 2296128
+  },
+  "sum_matches_cumulative_difference": true,
+  "scope": "최신 기록 작성 중 확인한 시점까지의 실제 메타데이터. 누적 스냅샷은 합산하지 않고 고유 response_id의 개별 usage를 합산했다. cached_input/reasoning_output은 하위 지표이며 total에 다시 더하지 않는다. 비용/구독 잔량을 추정하지 않는다. 이 스냅샷 이후 쓰기/검증/최종 응답은 다음 회차 반영."
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1bc13-8b09-7bf3-b2b1-fbc971e1014f",
+  "covered_user_message_id": "msg_01a1e468-d17f-75e1-a657-9f800146a366",
+  "covered_user_timestamp_utc": "2026-11-16T12:50:37.055Z",
+  "record_date": "2026-11-16",
+  "covered_user_request": "지금까지 해온거 누적기록에 정리해줘",
+  "implementation_status": "문서 증분 정리만. 서버/클라이언트/맵/DB 변경 및 새 실행 검증 없음.",
+  "usage_checkpoint_response_id": "resp_006f26d3b5450425016afafc54639487d0bb8aca9c91852e2a",
+  "usage_checkpoint_timestamp_utc": "2026-11-16T12:52:47.492Z",
+  "usage_checkpoint": {
+    "input_tokens": 183615551,
+    "cached_input_tokens": 179763200,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 783050,
+    "reasoning_output_tokens": 286450,
+    "total_tokens": 184398601
+  },
+  "incremental_unique_response_count": 7,
+  "incremental_usage_sum": {
+    "input_tokens": 2288599,
+    "cached_input_tokens": 1969664,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 7529,
+    "reasoning_output_tokens": 1626,
+    "total_tokens": 2296128
+  },
+  "coverage": "직전 M 기준점 이후 공개 사용자 3건 및 AI 최종 답변 3건 대조. 경계의 Queries 최종 보고는 M과 중복 삽입하지 않고 참조. 새 대화 5건 원문 수록. 기존 과거 전수 보충 공백 유지.",
+  "pending": "실제 맵 3 추가/height 데이터 및 클라이언트 연결은 미수행. JSON/hot reload/선택 맵 로딩 미구현, 클라이언트 정책 보류."
+}
+[[PORTFOLIO_CHECKPOINT END]]
+
+======================================================================
+P. 2026-11-16 엔티티 인터페이스 축소 및 Actor 트리거 정책
+======================================================================
+[사용자 요구와 설계 정정]
+사용자는 엔티티 행동마다 인터페이스를 두는 기존 AI 설계가 프로젝트 규모에 비해 과하다고 정정했다. 최종 타입명을 Player/Monster/StaticLevel/Resource로 지정하고 IDamageable만 Player와 Monster에 구현하도록 요청했다.
+처음 요청은 읽기 확인 후 사용자가 중단·보완했다. 보완된 최종 지시는 Actor에 이름 그대로 istrigger 멤버를 두고 기본 true, StaticLevel만 false로 하여 값에 따라 통과/차단하도록 하는 것이다. 중단된 첫 확인에서는 서버 소스를 수정하지 않았고 최종 보완안을 기준으로 구현했다.
+AI는 중간 CombatActor를 Actor로 합치고 기존 공유 상태를 재사용한다는 구현 방향을 착수 전에 설명했다. 새 행동 인터페이스나 별도 상태 조합 기술을 추가하지 않았다.
+
+[구현]
+Actor를 공통 기반으로 하고 Player/Monster/StaticLevel/Resource가 직접 상속하는 네 final 클래스로 정리했다. IDamageable.h의 순수 인터페이스 하나만 남겼다. Player/Monster는 Actor와 IDamageable을 직접 상속하고 ApplyDamage를 각각 구현한다.
+IAttackSource/IGatherable/IMovementObstacle 및 ActorCapabilities.h를 제거했다. CombatActor.h/cpp도 제거하고 공유하던 속도/HP/모드/Action/넉백/사망 시각 필드를 Actor에 옮겼다. 따라서 StaticLevel/Resource에도 기반 저장 필드는 있지만 IDamageable은 없으며 Hit에서 인터페이스를 확인하므로 피해가 적용되지 않는다. CanAttack은 Player/Monster 일반 멤버다.
+ResourceActor.h/cpp를 Resource.h/cpp로, StaticLevelActor.h/cpp를 StaticLevel.h/cpp로 이름과 사용처를 모두 바꿨다. 채집 TryReserve/Harvest와 StaticLevel의 Footprint는 일반 멤버로 유지한다. 별도 blocking 멤버/BlocksMovement 함수는 제거했다.
+Actor::istrigger=true가 기본이고 StaticLevel 생성자가 false로 설정한다. Player/Monster/Resource는 기본 true를 상속한다. 기존 설치물도 StaticLevel로 생성하므로 별도의 비차단 생성자 예외 없이 기본 false를 따른다. 발자국의 XZ 크기는 기존 extent 데이터이며 새로운 프리팹 크기 추정이나 공간 데이터를 추가하지 않았다.
+Geometry는 Map.actors의 실체를 순회해 istrigger=true면 건너뛰고 false인 개체만 충돌 검사한다. StaticLevel은 기존 Box 발자국을, 나머지는 기존 반경 기반 XZ 발자국을 사용한다. 별도 blockResources 옵션은 제거했다. 가시성/설치/스폰 유효성 검사도 같은 속성을 따르므로 true인 채집물은 이 검사에서도 차단하지 않는다.
+Geometry에 제외 ID를 전달해 이동/넉백/위치 복원은 자기 자신을, 타격 가시성은 공격자와 대상을 제외한다. 생성 위치 검사도 재생성 중인 몬스터 자신을 제외할 수 있다. ID 0을 가진 정적 개체가 기본 제외값 때문에 무조건 통과되는 일이 없도록 0은 제외하지 않는 조건을 두었다.
+맵 높이/원형 경계 제한은 유지했다. 맵 파일 파서, Map의 비소유 인덱스, 리필, 검증 컨텍스트, GameplayProcessor/MapManager의 타입 참조와 스냅샷 생성을 함께 수정했다. 패킷 ID/구조체 바이트 형식은 바꾸지 않았다.
+
+[변경 범위]
+Entity/Actor.h, Player.h/cpp, Monster.h/cpp, 새 Resource.h/cpp, StaticLevel.h/cpp, IDamageable.h.
+WorldTypes.h/cpp, Map/Map.h/cpp, MapManager.h/cpp, GameplayProcessor.h/cpp, RefillSystem.h/cpp, MovementGeometryValidator/AttackImpactValidator/ItemUseValidator 및 VS 프로젝트/filters의 타입/검사 인자 수정.
+CombatActor.h/cpp와 ActorCapabilities.h, 구형 ResourceActor/StaticLevelActor 이름의 파일을 제거했다. 서버 스타일 도구를 적용했으며 클라이언트·맵 데이터 파일·DB 스키마/계정 자료는 변경하지 않았다. istrigger를 새 클라이언트 동기화 필드로 보내는 구현은 이번에 추가하지 않았다.
+
+[실제 검증]
+Debug x64 최종 서버 빌드 성공. 기존 Queries 변환 경고는 유지됐다. 클래스 배치 검사: 일반 클래스 54 h/cpp 쌍, 헤더 63개, CPP 60개. 구형 타입/인터페이스/blocking 관련 프로덕션 참조가 없음을 확인했고 diff 공백 검사 통과.
+TEMP native 검사에서 네 클래스의 final/Actor 상속, Player/Monster의 IDamageable 구현, Actor/Resource/StaticLevel의 비구현을 컴파일 시 확인했다. 각 기본 istrigger 값과 피해 감소/음수 피해 방지/사망·공격 불가도 확인했다.
+실행 검사: 기본 자원 통과, 기본 StaticLevel 차단, StaticLevel을 true로 바꾸면 통과, Resource/Monster/Player를 false로 바꾸면 차단, 자기 ID 제외 시 자기 충돌 없이 이동, ID 0인 정적 개체 차단, 설치물 인덱스에 있는 StaticLevel 차단, 맵 경계/높이 제한 유지.
+임시 맵 TXT를 실제 로더로 읽어 자원/정적 개체 기본값을 확인하고 Processor 경로에서 Join/플레이어·벽 스냅샷의 HP·크기/공격 타격 피해/채집 완료와 아이템 지급을 확인했다. 테스트는 실제 게임 DB 저장을 사용하지 않았다.
+실제 서버를 현재 DB/맵으로 구동해 초기화와 quit 정상 종료를 확인했다. 로그인/가입/유효 게임 명령을 보내지 않았다. 임시 검증 소스/프로젝트/산출물은 최종 확인 후 제거했다.
+보완 편집 중 Python의 기본 cp949 디코딩으로 한 번 읽기가 실패했다. 일부 final 표기는 그 전에 적용된 상태였고 남은 파일을 UTF-8로 명시해 처리한 뒤 최종 재빌드/native 검사를 통과했다. 게임 데이터나 문자열을 다른 인코딩으로 덮어쓰지 않았다.
+
+[한계·후속 범위]
+검증 범위는 서버 구조와 Actor 충돌 정책이다. Unity 플레이 모드/클라이언트 동적 istrigger 반영/물리 엔진 동기화를 검증하거나 변경하지 않았다. 충돌 발자국은 기존 수평면 판정이며 새 3D 물리 계산을 도입하지 않았다.
+기존 설치물의 발자국 크기는 현재 서버에 저장된 extent 값에 따른다. 맵/프리팹에서 추가 충돌 크기를 추출하는 작업은 별도다. 전체 저장/퀘스트/대규모 동접 회귀를 이번에 다시 실행한 것으로 기록하지 않는다.
+이번 변경은 사용자 주도의 과한 인터페이스 축소 사례이며 성능 수치 개선을 측정한 작업은 아니다. 기존 클라이언트 기준 데이터 정책, 과거 대화 전수 보충 공백과 성능 검증 보류는 유지한다.
+
+[사용량 스냅샷]
+{
+  "source": "same-thread token_usage_record",
+  "unique_response_count": 15,
+  "incremental_usage_sum": {
+    "input_tokens": 6380285,
+    "cached_input_tokens": 6369664,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 18411,
+    "reasoning_output_tokens": 7839,
+    "total_tokens": 6398696
+  },
+  "latest_cumulative": {
+    "input_tokens": 203733473,
+    "cached_input_tokens": 199839616,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 844700,
+    "reasoning_output_tokens": 317032,
+    "total_tokens": 204578173
+  },
+  "delta_since_previous_checkpoint": {
+    "input_tokens": 6380285,
+    "cached_input_tokens": 6369664,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 18411,
+    "reasoning_output_tokens": 7839,
+    "total_tokens": 6398696
+  },
+  "sum_matches_delta": true,
+  "timestamp_utc": "2026-11-16T13:42:44.944Z",
+  "response_id": "resp_006f26d3b5450425016afb0815da7087d080a1b806ca67cead",
+  "scope": "고유 response_id별 실제 사용량. 캐시/추론은 total에 다시 합산하지 않음. 이후 기록/정리/최종 응답은 후속 회차 반영."
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1bc13-8b09-7bf3-b2b1-fbc971e1014f",
+  "record_date": "2026-11-16",
+  "covered_user_message_id": "msg_01a1e490-f84a-7ca2-9913-36c97150238d",
+  "covered_user_timestamp_utc": "2026-11-16T13:34:28.427Z",
+  "covered_user_request": "IDamageable만 유지, 네 엔티티 이름 정리, Actor.istrigger 통과/차단 정책",
+  "implementation_status": "서버 구현/최종 빌드/native 구조·충돌·공격·채집/실제 초기화·종료 검증 완료",
+  "usage_checkpoint_response_id": "resp_006f26d3b5450425016afb0815da7087d080a1b806ca67cead",
+  "usage_checkpoint_timestamp_utc": "2026-11-16T13:42:44.944Z",
+  "usage_checkpoint": {
+    "input_tokens": 203733473,
+    "cached_input_tokens": 199839616,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 844700,
+    "reasoning_output_tokens": 317032,
+    "total_tokens": 204578173
+  },
+  "coverage": "중단된 최초 요구와 보완된 최종 요구를 구분한 구현 기록. 기존 과거 전수 보충 공백 유지.",
+  "pending": "클라이언트 동적 trigger 반영/3D 물리 동기화/추가 설치물 충돌 크기 추출은 미구현. 클라이언트 기준 데이터 정책 및 성능 보류."
+}
+[[PORTFOLIO_CHECKPOINT END]]
+

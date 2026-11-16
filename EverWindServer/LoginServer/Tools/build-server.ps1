@@ -10,10 +10,10 @@ if(Get-Process LoginServer -ErrorAction SilentlyContinue | Where-Object {$_.Path
 & $everwindMsbuild (Join-Path $everwindRoot 'EverWindServer/LoginServer/LoginServer.vcxproj') "/p:Configuration=$BuildConfiguration" '/p:Platform=x64' "/p:OutDir=$everwindOut" "/p:IntDir=$everwindObj" '/m:4' '/nologo' '/verbosity:minimal'
 if($LASTEXITCODE -ne 0){throw "Server build failed: $LASTEXITCODE"}
 
-$everwindSharedOutput=Join-Path $everwindOut 'Shared'
-New-Item -ItemType Directory -Force -Path $everwindSharedOutput | Out-Null
-Copy-Item -LiteralPath (Join-Path $everwindRoot 'EverWindServer/LoginServer/Shared/Maps') -Destination $everwindSharedOutput -Recurse -Force
-Get-ChildItem -LiteralPath (Join-Path $everwindRoot 'EverWindServer/LoginServer/Shared') -Filter '*.heights' -File | Copy-Item -Destination $everwindSharedOutput -Force
-$everwindOldRules=Join-Path $everwindSharedOutput 'Gameplay.rules'
+$everwindMapDataOutput=Join-Path $everwindOut 'MapData'
+New-Item -ItemType Directory -Force -Path $everwindMapDataOutput | Out-Null
+Copy-Item -LiteralPath (Join-Path $everwindRoot 'EverWindServer/LoginServer/MapData/Maps') -Destination $everwindMapDataOutput -Recurse -Force
+Get-ChildItem -LiteralPath (Join-Path $everwindRoot 'EverWindServer/LoginServer/MapData') -Filter '*.heights' -File | Copy-Item -Destination $everwindMapDataOutput -Force
+$everwindOldRules=Join-Path $everwindMapDataOutput 'Gameplay.rules'
 if(Test-Path -LiteralPath $everwindOldRules){Remove-Item -LiteralPath $everwindOldRules}
 

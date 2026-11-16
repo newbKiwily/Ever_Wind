@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-
 namespace GameStruct
 {
 struct InventoryItem
@@ -11,13 +10,15 @@ struct InventoryItem
     int slotIndex;
     int isEquipped;
 };
-} // namespace GameStruct
+}
 
 struct QuestSaveData
 {
     int questId = 0;
+
     bool isCompleted = false;
     bool rewardClaimed = false;
+
     std::vector<int> currentCounts;
 };
 
@@ -27,4 +28,4 @@ struct Vector3
 {
     float x, y, z;
 };
-} // namespace GameStruct
+}

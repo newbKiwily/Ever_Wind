@@ -7,11 +7,17 @@ class SessionManager;
 #include <atomic>
 #include <string>
 #include <vector>
-
 class SessionManager
 {
+  private:
+    std::atomic<int> assignedId;
+
+    std::mutex mutex_;
+
+    std::unordered_map<int, std::shared_ptr<Session>> sessions_;
   public:
     SessionManager();
+
     void CloseAll();
 
     int AddSession(std::shared_ptr<Session> session);
@@ -21,14 +27,12 @@ class SessionManager
     void RemoveSession(int serverUserId);
 
     void BroadcastAll(const char *data, size_t size);
-    void BroadcastEx(std::shared_ptr<Session> sender, const char *data, size_t size); // 발신자 제외
 
+    void BroadcastEx(std::shared_ptr<Session> sender, const char *data, size_t size);
+    // 발신자 제외
     bool IsExistSession(Session *session);
-    bool isSessionLogin(Session *session);
-    bool TryAuthenticate(Session *session, const std::string &user);
 
-  private:
-    std::atomic<int> assignedId;
-    std::mutex mutex_;
-    std::unordered_map<int, std::shared_ptr<Session>> sessions_;
+    bool isSessionLogin(Session *session);
+
+    bool TryAuthenticate(Session *session, const std::string &user);
 };

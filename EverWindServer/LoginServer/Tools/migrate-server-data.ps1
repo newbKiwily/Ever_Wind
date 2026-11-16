@@ -12,7 +12,7 @@ try {
     $everwindFiles=@()
     if($Stage -in @('Definitions','All')){$everwindFiles+='20261112_game_definitions.sql'}
     if($Stage -in @('Maps','All')){
-        foreach($everwindMap in @('EverWindServer/LoginServer/Shared/Maps/Map0.txt','EverWindServer/LoginServer/Shared/Maps/Map1.txt')){
+        foreach($everwindMap in @('EverWindServer/LoginServer/MapData/Maps/Map0.txt','EverWindServer/LoginServer/MapData/Maps/Map1.txt')){
             if(-not(Test-Path -LiteralPath (Join-Path $everwindRoot $everwindMap))){throw "Missing exported map: $everwindMap"}
         }
         $everwindFiles+='20261112_map_files.sql'

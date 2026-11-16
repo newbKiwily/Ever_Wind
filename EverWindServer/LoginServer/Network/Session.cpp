@@ -1,111 +1,155 @@
 #include "Session.h"
 #include "IOCPServer.h"
 #include "Packet.h"
-#include "../Gameplay/Protocol.h"
+#include "../Gameplay/CoreData/Protocol.h"
 #include "../DB/Queries.h"
 #include "SessionManager.h"
 #include <iostream>
 #include <cstring>
 #include <sstream>
 #include <cmath>
-
 using namespace NetPackets;
 
 namespace
 {
-    const char* GetPacketName(PacketId packetId)
+const char *GetPacketName(PacketId packetId)
+{
+    if (static_cast<uint16_t>(packetId) == EverWind::Gameplay::RequestPacket)
     {
-        if (static_cast<uint16_t>(packetId) == EverWind::Gameplay::RequestPacket) return "C2S_GAMEPLAY_REQUEST";
-        if (static_cast<uint16_t>(packetId) == EverWind::Gameplay::EventPacket) return "S2C_GAMEPLAY_EVENT";
-        switch (packetId)
-        {
-        case PacketId::C2S_LOGIN_REQ: return "C2S_LOGIN_REQ";
-        case PacketId::S2C_LOGIN_ACK: return "S2C_LOGIN_ACK";
-        case PacketId::C2S_SIGNUP_REQ: return "C2S_SIGNUP_REQ";
-        case PacketId::S2C_SIGNUP_ACK: return "S2C_SIGNUP_ACK";
-        case PacketId::C2S_MOVESYNC_REQ: return "C2S_MOVESYNC_REQ";
-        case PacketId::SC2_MOVESYNC_ACK: return "SC2_MOVESYNC_ACK";
-        case PacketId::S2C_PLAYERLIST_ACK: return "S2C_PLAYERLIST_ACK";
-        case PacketId::S2C_PLAYERLIST_RUNTIME: return "S2C_PLAYERLIST_RUNTIME";
-        case PacketId::S2C_LOGOUT_ACK: return "S2C_LOGOUT_ACK";
-        case PacketId::_INVENTORYITEM: return "_INVENTORYITEM";
-        case PacketId::_PLAYERSTAT: return "_PLAYERSTAT";
-        case PacketId::S2C_ENEMY_SPAWN: return "S2C_ENEMY_SPAWN";
-        case PacketId::C2S_ATTACK_REQ: return "C2S_ATTACK_REQ";
-        case PacketId::S2C_ENEMY_DAMAGED: return "S2C_ENEMY_DAMAGED";
-        case PacketId::C2S_ENEMY_MOVE_SYNC: return "C2S_ENEMY_MOVE_SYNC";
-        case PacketId::S2C_ENEMY_MOVE_SYNC: return "S2C_ENEMY_MOVE_SYNC";
-        case PacketId::C2S_ENEMY_ATTACK_ANIM: return "C2S_ENEMY_ATTACK_ANIM";
-        case PacketId::S2C_ENEMY_ATTACK_ANIM: return "S2C_ENEMY_ATTACK_ANIM";
-        case PacketId::_ONESHOT_ANIM_SYNC: return "_ONESHOT_ANIM_SYNC";
-        case PacketId::_INTERACT_SYNC: return "_INTERACT_SYNC";
-        case PacketId::_DEAD_SYNC: return "_DEAD_SYNC";
-        case PacketId::_COMBAT_STATE_SYNC: return "_COMBAT_STATE_SYNC";
-        case PacketId::C2S_MAP_CHANGE_REQ: return "C2S_MAP_CHANGE_REQ";
-        case PacketId::S2C_MAP_CHANGE_ACK: return "S2C_MAP_CHANGE_ACK";
-        case PacketId::C2S_ENEMY_DEAD_REQ: return "C2S_ENEMY_DEAD_REQ";
-        case PacketId::S2C_ENEMY_DEAD_ACK: return "S2C_ENEMY_DEAD_ACK";
-        case PacketId::S2C_QUEST_INFO: return "S2C_QUEST_INFO";
-        case PacketId::C2S_QUEST_RESET: return "C2S_QUEST_RESET";
-        case PacketId::C2S_QUEST_SAVE: return "C2S_QUEST_SAVE";
-        default: return "UNKNOWN_PACKET";
-        }
+        return "C2S_GAMEPLAY_REQUEST";
     }
 
-    bool ShouldLogPacket(PacketId packetId)
+    if (static_cast<uint16_t>(packetId) == EverWind::Gameplay::EventPacket)
     {
-        switch (packetId)
-        {
-        case PacketId::C2S_MOVESYNC_REQ:
-        case PacketId::SC2_MOVESYNC_ACK:
-        case PacketId::C2S_ENEMY_MOVE_SYNC:
-        case PacketId::S2C_ENEMY_MOVE_SYNC:
-            return false;
-        default:
-            return true;
-        }
+        return "S2C_GAMEPLAY_EVENT";
     }
 
-    std::string BuildSessionLabel(const Session& session)
+    switch (packetId)
     {
-        std::ostringstream oss;
-        const std::string& userId = session.GetUserId();
-
-        oss << "User ";
-        if (userId.empty())
-        {
-            oss << "'Anonymous'";
-        }
-        else
-        {
-            oss << "'" << userId << "'";
-        }
-
-        oss << " [ServerUserId: " << session.GetServerUserId()
-            << ", MapId: " << session.GetMapId() << "]";
-        return oss.str();
-    }
-
-    void LogPacketEvent(const Session& session, const char* direction, const PacketHeader& header)
-    {
-        // State snapshots arrive continuously; keep packet diagnostics useful without synchronous console floods.
-        if(header.Id==EverWind::Gameplay::EventPacket)return;
-        const PacketId packetId = static_cast<PacketId>(header.Id);
-        if (!ShouldLogPacket(packetId))
-        {
-            return;
-        }
-
-        std::cout << "[Packet " << direction << "] "
-            << BuildSessionLabel(session)
-            << " - " << GetPacketName(packetId)
-            << " (0x" << std::hex << header.Id << std::dec
-            << ", " << header.Length << " bytes)"
-            << std::endl;
+    case PacketId::C2S_LOGIN_REQ:
+        return "C2S_LOGIN_REQ";
+    case PacketId::S2C_LOGIN_ACK:
+        return "S2C_LOGIN_ACK";
+    case PacketId::C2S_SIGNUP_REQ:
+        return "C2S_SIGNUP_REQ";
+    case PacketId::S2C_SIGNUP_ACK:
+        return "S2C_SIGNUP_ACK";
+    case PacketId::C2S_MOVESYNC_REQ:
+        return "C2S_MOVESYNC_REQ";
+    case PacketId::SC2_MOVESYNC_ACK:
+        return "SC2_MOVESYNC_ACK";
+    case PacketId::S2C_PLAYERLIST_ACK:
+        return "S2C_PLAYERLIST_ACK";
+    case PacketId::S2C_PLAYERLIST_RUNTIME:
+        return "S2C_PLAYERLIST_RUNTIME";
+    case PacketId::S2C_LOGOUT_ACK:
+        return "S2C_LOGOUT_ACK";
+    case PacketId::_INVENTORYITEM:
+        return "_INVENTORYITEM";
+    case PacketId::_PLAYERSTAT:
+        return "_PLAYERSTAT";
+    case PacketId::S2C_ENEMY_SPAWN:
+        return "S2C_ENEMY_SPAWN";
+    case PacketId::C2S_ATTACK_REQ:
+        return "C2S_ATTACK_REQ";
+    case PacketId::S2C_ENEMY_DAMAGED:
+        return "S2C_ENEMY_DAMAGED";
+    case PacketId::C2S_ENEMY_MOVE_SYNC:
+        return "C2S_ENEMY_MOVE_SYNC";
+    case PacketId::S2C_ENEMY_MOVE_SYNC:
+        return "S2C_ENEMY_MOVE_SYNC";
+    case PacketId::C2S_ENEMY_ATTACK_ANIM:
+        return "C2S_ENEMY_ATTACK_ANIM";
+    case PacketId::S2C_ENEMY_ATTACK_ANIM:
+        return "S2C_ENEMY_ATTACK_ANIM";
+    case PacketId::_ONESHOT_ANIM_SYNC:
+        return "_ONESHOT_ANIM_SYNC";
+    case PacketId::_INTERACT_SYNC:
+        return "_INTERACT_SYNC";
+    case PacketId::_DEAD_SYNC:
+        return "_DEAD_SYNC";
+    case PacketId::_COMBAT_STATE_SYNC:
+        return "_COMBAT_STATE_SYNC";
+    case PacketId::C2S_MAP_CHANGE_REQ:
+        return "C2S_MAP_CHANGE_REQ";
+    case PacketId::S2C_MAP_CHANGE_ACK:
+        return "S2C_MAP_CHANGE_ACK";
+    case PacketId::C2S_ENEMY_DEAD_REQ:
+        return "C2S_ENEMY_DEAD_REQ";
+    case PacketId::S2C_ENEMY_DEAD_ACK:
+        return "S2C_ENEMY_DEAD_ACK";
+    case PacketId::S2C_QUEST_INFO:
+        return "S2C_QUEST_INFO";
+    case PacketId::C2S_QUEST_RESET:
+        return "C2S_QUEST_RESET";
+    case PacketId::C2S_QUEST_SAVE:
+        return "C2S_QUEST_SAVE";
+    default:
+        return "UNKNOWN_PACKET";
     }
 }
 
-Session::Session(IOCPServer* server, SOCKET socket)
+bool ShouldLogPacket(PacketId packetId)
+{
+    switch (packetId)
+    {
+    case PacketId::C2S_MOVESYNC_REQ:
+    case PacketId::SC2_MOVESYNC_ACK:
+    case PacketId::C2S_ENEMY_MOVE_SYNC:
+    case PacketId::S2C_ENEMY_MOVE_SYNC:
+        return false;
+    default:
+        return true;
+    }
+}
+
+std::string BuildSessionLabel(const Session &session)
+{
+    std::ostringstream oss;
+
+    const std::string &userId = session.GetUserId();
+
+    oss << "User ";
+
+    if (userId.empty())
+    {
+        oss << "'Anonymous'";
+    }
+    else
+    {
+        oss << "'" << userId << "'";
+    }
+
+    oss << " [ServerUserId: " << session.GetServerUserId()
+        << ", MapId: " << session.GetMapId() << "]";
+    return oss.str();
+}
+
+void LogPacketEvent(const Session &session, const char *direction, const PacketHeader &header)
+{
+    // 연속적으로 수신되는 상태 스냅샷의 로그를 제한하여 콘솔 출력 과부하를 방지한다.
+    if (header.Id == EverWind::Gameplay::EventPacket)
+    {
+        return;
+    }
+
+    const PacketId packetId = static_cast<PacketId>(header.Id);
+
+    if (!ShouldLogPacket(packetId))
+    {
+        return;
+    }
+
+    std::cout << "[Packet " << direction << "] "
+              << BuildSessionLabel(session)
+              << " - " << GetPacketName(packetId)
+              << " (0x" << std::hex << header.Id << std::dec
+              << ", " << header.Length << " bytes)"
+              << std::endl;
+}
+}
+
+Session::Session(IOCPServer *server, SOCKET socket)
     : userId(""), serverUserId(-1), mapId(0), position{}, server_(server), socket_(socket), closed_(false), sending_(false)
 {
     recvBuffer_.reserve(4096);
@@ -123,22 +167,27 @@ bool Session::PostRecv()
         return false;
     }
 
-    auto* context = new IOContext(shared_from_this(), IOOperation::Recv);
+    auto *context = new IOContext(shared_from_this(), IOOperation::Recv);
+
     DWORD flags = 0;
     DWORD bytes = 0;
+
     if (WSARecv(socket_, &context->wsaBuf, 1, &bytes, &flags, &context->overlapped, nullptr) == SOCKET_ERROR)
     {
         if (WSAGetLastError() != WSA_IO_PENDING)
         {
             delete context;
+
             Close();
+
             return false;
         }
     }
+
     return true;
 }
 
-bool Session::PostSend(const char* data, size_t len)
+bool Session::PostSend(const char *data, size_t len)
 {
     if (len == 0 || len > MAX_IO_BUFFER)
     {
@@ -146,18 +195,23 @@ bool Session::PostSend(const char* data, size_t len)
     }
 
     std::lock_guard<std::mutex> guard(sendMutex_);
+
     if (IsClosed())
     {
         return false;
     }
 
     std::vector<char> packet(len);
+
     std::memcpy(packet.data(), data, len);
+
     if (len >= sizeof(PacketHeader))
     {
-        const PacketHeader* header = reinterpret_cast<const PacketHeader*>(packet.data());
+        const PacketHeader *header = reinterpret_cast<const PacketHeader *>(packet.data());
+
         LogPacketEvent(*this, "Send", *header);
     }
+
     sendQueue_.push(std::move(packet));
 
     if (sending_)
@@ -165,22 +219,32 @@ bool Session::PostSend(const char* data, size_t len)
         return true;
     }
 
-    auto* context = new IOContext(shared_from_this(), IOOperation::Send);
+    auto *context = new IOContext(shared_from_this(), IOOperation::Send);
+
     auto nextPacket = std::move(sendQueue_.front());
+
     std::memcpy(context->buffer, nextPacket.data(), nextPacket.size());
+
     context->wsaBuf.len = static_cast<ULONG>(nextPacket.size());
+
     context->expectedBytes = nextPacket.size();
+
     sendQueue_.pop();
+
     sending_ = true;
 
     DWORD bytesSent = 0;
+
     if (WSASend(socket_, &context->wsaBuf, 1, &bytesSent, 0, &context->overlapped, nullptr) == SOCKET_ERROR)
     {
         if (WSAGetLastError() != WSA_IO_PENDING)
         {
             delete context;
+
             sending_ = false;
+
             Close();
+
             return false;
         }
     }
@@ -188,7 +252,7 @@ bool Session::PostSend(const char* data, size_t len)
     return true;
 }
 
-void Session::OnRecvCompleted(IOContext* context, size_t bytesTransferred)
+void Session::OnRecvCompleted(IOContext *context, size_t bytesTransferred)
 {
     if (context == nullptr)
     {
@@ -198,16 +262,20 @@ void Session::OnRecvCompleted(IOContext* context, size_t bytesTransferred)
     if (bytesTransferred == 0)
     {
         delete context;
+
         Close();
+
         return;
     }
 
     recvBuffer_.insert(recvBuffer_.end(), context->buffer, context->buffer + bytesTransferred);
+
     delete context;
 
     if (!HandlePackets())
     {
         Close();
+
         return;
     }
 
@@ -217,60 +285,91 @@ void Session::OnRecvCompleted(IOContext* context, size_t bytesTransferred)
     }
 }
 
-void Session::OnSendCompleted(IOContext* context, size_t bytesTransferred)
+void Session::OnSendCompleted(IOContext *context, size_t bytesTransferred)
 {
     std::unique_ptr<IOContext> completed(context);
-    if (!completed) return;
+
+    if (!completed)
+    {
+        return;
+    }
 
     std::lock_guard<std::mutex> guard(sendMutex_);
-    if (IsClosed()) { sending_ = false; return; }
+
+    if (IsClosed())
+    {
+        sending_ = false;
+
+        return;
+    }
+
     if (bytesTransferred == 0 || bytesTransferred > completed->expectedBytes)
     {
         sending_ = false;
+
         Close();
+
         return;
     }
+
     if (bytesTransferred == completed->expectedBytes && sendQueue_.empty())
     {
         sending_ = false;
+
         return;
     }
 
     auto next = std::make_unique<IOContext>(shared_from_this(), IOOperation::Send);
+
     if (bytesTransferred < completed->expectedBytes)
     {
-        // TCP may complete only part of a frame. Finish it before the next packet.
+        // 프레임의 일부만 송신될 수 있으므로 나머지 송신을 마친 뒤 다음 패킷을 처리한다.
         next->expectedBytes = completed->expectedBytes - bytesTransferred;
+
         std::memcpy(next->buffer, completed->wsaBuf.buf + bytesTransferred, next->expectedBytes);
     }
     else
     {
         auto packet = std::move(sendQueue_.front());
+
         sendQueue_.pop();
+
         next->expectedBytes = packet.size();
+
         std::memcpy(next->buffer, packet.data(), packet.size());
     }
+
     next->wsaBuf.len = static_cast<ULONG>(next->expectedBytes);
+
     DWORD sent = 0;
-    if (WSASend(socket_, &next->wsaBuf, 1, &sent, 0, &next->overlapped, nullptr) == SOCKET_ERROR &&
-        WSAGetLastError() != WSA_IO_PENDING)
+
+    if (WSASend(socket_, &next->wsaBuf, 1, &sent, 0, &next->overlapped, nullptr) == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING)
     {
         sending_ = false;
+
         Close();
+
         return;
     }
-    next.release(); // IOCP completion owns the outstanding context.
+
+    next.release(); // 대기 중인 입출력 문맥의 소유권은 완료 처리로 넘긴다.
 }
+
 void Session::Close()
 {
     bool expected = false;
+
     if (closed_.compare_exchange_strong(expected, true))
     {
-        // The game worker owns world removal and canonical-state persistence.
+        // 게임 스레드가 맵 소속 제거와 서버 확정 상태 저장을 담당한다.
         server_->GetSessionManager()->RemoveSession(serverUserId);
-        if (socket_ != INVALID_SOCKET) {
+
+        if (socket_ != INVALID_SOCKET)
+        {
             shutdown(socket_, SD_BOTH);
+
             closesocket(socket_);
+
             socket_ = INVALID_SOCKET;
         }
     }
@@ -279,14 +378,16 @@ void Session::Close()
 bool Session::HandlePackets()
 {
     size_t offset = 0;
+
     while (recvBuffer_.size() - offset >= sizeof(PacketHeader))
     {
-        const PacketHeader* header = reinterpret_cast<const PacketHeader*>(recvBuffer_.data() + offset);
+        const PacketHeader *header = reinterpret_cast<const PacketHeader *>(recvBuffer_.data() + offset);
+
         try
         {
             ValidatePacketLength(header->Length);
         }
-        catch (const std::exception&)
+        catch (const std::exception &)
         {
             return false;
         }
@@ -297,11 +398,14 @@ bool Session::HandlePackets()
         }
 
         size_t payloadSize = header->Length - sizeof(PacketHeader);
-        const char* payload = recvBuffer_.data() + offset + sizeof(PacketHeader);
+
+        const char *payload = recvBuffer_.data() + offset + sizeof(PacketHeader);
+
         if (!ProcessPacket(*header, payload, payloadSize))
         {
             return false;
         }
+
         offset += header->Length;
     }
 
@@ -313,82 +417,157 @@ bool Session::HandlePackets()
     return true;
 }
 
-bool Session::ProcessPacket(const PacketHeader& header, const char* payload, size_t payloadSize)
+bool Session::ProcessPacket(const PacketHeader &header, const char *payload, size_t payloadSize)
 {
-    // Move validity is only known after gameplay validation. Log rejections there.
+    // 이동 유효성은 게임 검증 후 결정되므로 거절 로그는 해당 위치에서 출력한다.
     EverWind::Gameplay::RequestKind kind{};
+
     bool move = false;
-    if (header.Id == EverWind::Gameplay::RequestPacket && payload &&
-        payloadSize >= offsetof(EverWind::Gameplay::Request, kind) + sizeof kind)
+
+    if (header.Id == EverWind::Gameplay::RequestPacket && payload && payloadSize >= offsetof(EverWind::Gameplay::Request, kind) + sizeof kind)
     {
         std::memcpy(&kind, payload + offsetof(EverWind::Gameplay::Request, kind), sizeof kind);
+
         move = kind == EverWind::Gameplay::RequestKind::Move;
     }
-    if (!move) LogPacketEvent(*this, "Recv", header);
+
+    if (!move)
+    {
+        LogPacketEvent(*this, "Recv", header);
+    }
+
     return server_->OnPacketReceived(this, header, payload, payloadSize);
 }
 
 SOCKET Session::GetSocket() const
-{ return socket_; }
+{
+    return socket_;
+}
 
 bool Session::IsClosed() const
-{ return closed_.load(); }
+{
+    return closed_.load();
+}
 
 void Session::SetMapId(int assigned_mapId)
-{ mapId = assigned_mapId; return; }
+{
+    mapId = assigned_mapId;
+
+    return;
+}
 
 void Session::SetPosition(float x, float y, float z)
 {
-        std::lock_guard<std::mutex> lock(positionMutex_);
-        position.x = x;
-        position.y = y;
-        position.z = z;
-        return;
-    }
+    std::lock_guard<std::mutex> lock(positionMutex_);
+
+    position.x = x;
+
+    position.y = y;
+
+    position.z = z;
+
+    return;
+}
 
 GameStruct::Vector3 Session::GetPostion()
 {
-        std::lock_guard<std::mutex> lock(positionMutex_);
-        return position;
-    }
+    std::lock_guard<std::mutex> lock(positionMutex_);
 
-IOCPServer* Session::GetServer() const
+    return position;
+}
+
+IOCPServer *Session::GetServer() const
 {
-        return server_;
-    }
+    return server_;
+}
 
 int Session::GetMapId() const
 {
-        return mapId;
-    }
+    return mapId;
+}
 
-void Session::SetUserId(const std::string& id)
+void Session::SetUserId(const std::string &id)
 {
-        userId = id;
-    }
+    userId = id;
+}
 
-const std::string& Session::GetUserId() const
+const std::string &Session::GetUserId() const
 {
-        return userId;
-    }
+    return userId;
+}
 
-void Session::SetServerUserId(const int& id)
+void Session::SetServerUserId(const int &id)
 {
-        serverUserId = id;
-    }
+    serverUserId = id;
+}
 
-const int& Session::GetServerUserId() const
+const int &Session::GetServerUserId() const
 {
-        return serverUserId;
-    }
+    return serverUserId;
+}
 
 void Session::SetGameplayMoveSpeed(float speed)
 {
     if (std::isfinite(speed) && speed > 0)
+    {
         gameplayMoveSpeed_.store(speed);
+    }
 }
 
 float Session::GetGameplayMoveSpeed() const
 {
     return gameplayMoveSpeed_.load();
+}
+
+void Session::SetPlayer(std::shared_ptr<EverWind::Gameplay::Player> player)
+{
+    std::lock_guard<std::mutex> lock(playerMutex_);
+
+    player_ = std::move(player);
+}
+
+std::shared_ptr<EverWind::Gameplay::Player> Session::GetPlayer() const
+{
+    std::lock_guard<std::mutex> lock(playerMutex_);
+
+    return player_;
+}
+
+std::shared_ptr<EverWind::Gameplay::Player> Session::AcquirePlayer()
+{
+    std::lock_guard<std::mutex> lock(playerMutex_);
+
+    if (!player_)
+    {
+        player_ = std::make_shared<EverWind::Gameplay::Player>();
+
+        player_->id = serverUserId;
+    }
+
+    return player_;
+}
+
+bool Session::SendGameplayEvent(const EverWind::Gameplay::Event &event)
+{
+    if (IsClosed())
+    {
+        return false;
+    }
+
+    const auto bytes = EverWind::Gameplay::Encode(EverWind::Gameplay::EventPacket, event);
+
+    return PostSend(bytes.data(), bytes.size());
+}
+
+EverWind::Gameplay::Send Session::CreateGameSendCallback()
+{
+    std::weak_ptr<Session> weak = weak_from_this();
+
+    return [weak](const EverWind::Gameplay::Event &event)
+    {
+        if (auto session = weak.lock())
+        {
+            session->SendGameplayEvent(event);
+        }
+    };
 }

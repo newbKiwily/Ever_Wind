@@ -8,7 +8,7 @@ if (-not (Test-Path -LiteralPath $everwindExecutable -PathType Leaf)) {
 $everwindPreviousMaps = $env:EVERWIND_MAP_DIRECTORY
 $everwindPreviousPath = $env:PATH
 try {
-    $env:EVERWIND_MAP_DIRECTORY = Join-Path $everwindRoot 'EverWindServer/LoginServer/Shared/Maps'
+    $env:EVERWIND_MAP_DIRECTORY = Join-Path $everwindRoot 'EverWindServer/LoginServer/MapData/Maps'
     $everwindMariaDbLib = 'C:\Bitnami\wampstack-8.1.2-0\mariadb\lib'
     if (Test-Path -LiteralPath (Join-Path $everwindMariaDbLib 'libmariadb.dll')) {
         $env:PATH = "$everwindMariaDbLib;$env:PATH"
