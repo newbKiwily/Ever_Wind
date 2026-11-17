@@ -70,14 +70,62 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 92954b4de7ab5544fb84d8ce569025f2, type: 2}
   Visuals:
   - Item: 1
-    Resource: {fileID: 384500434031412178, guid: 568c268006078d648ba554e8fde709c8, type: 3}
+    Resource: {fileID: 0}
     Placement: {fileID: 0}
+    ResourceReference:
+      m_AssetGUID: 568c268006078d648ba554e8fde709c8
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    PlacementReference:
+      m_AssetGUID: 
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
   - Item: 2
-    Resource: {fileID: 5277821625898177113, guid: a7f1200fedfa4104bb004c42c4dd6622, type: 3}
+    Resource: {fileID: 0}
     Placement: {fileID: 0}
+    ResourceReference:
+      m_AssetGUID: a7f1200fedfa4104bb004c42c4dd6622
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    PlacementReference:
+      m_AssetGUID: 
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
   - Item: 3
     Resource: {fileID: 0}
-    Placement: {fileID: 8633710027078048889, guid: ddc66d40783052548ac9af248e4f701c, type: 3}
-  - Item: 6
-    Resource: {fileID: 5157930885778283941, guid: 3d60363904d5fb04f988e635a6169838, type: 3}
     Placement: {fileID: 0}
+    ResourceReference:
+      m_AssetGUID: 
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    PlacementReference:
+      m_AssetGUID: ddc66d40783052548ac9af248e4f701c
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+  - Item: 6
+    Resource: {fileID: 0}
+    Placement: {fileID: 0}
+    ResourceReference:
+      m_AssetGUID: 3d60363904d5fb04f988e635a6169838
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    PlacementReference:
+      m_AssetGUID: 
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+[UnityEngine.DefaultExecutionOrder(-500)]
 public class SingletonManager : SingletonBase<SingletonManager>
 {
     private List<SingletonBasest> _ingameSingletonsForInit = new List<SingletonBasest>();
@@ -35,7 +36,9 @@ public class SingletonManager : SingletonBase<SingletonManager>
         if (!_singletons.ContainsKey(type))
         {
             if (manager.Priority < 0)
+            {
                 _serverSingletonsForInit.Add(manager);
+            }
             else
                 _ingameSingletonsForInit.Add(manager);
 
@@ -46,7 +49,9 @@ public class SingletonManager : SingletonBase<SingletonManager>
     public void Unregister(SingletonBasest manager)
     {
         if (ReferenceEquals(manager, null))
+        {
             return;
+        }
 
         Type type = manager.GetType();
 

@@ -23,14 +23,9 @@ Error RefillSystem::ValidateResource(const Context &c) const
         return Error::None;
     }
 
-    if (r.refillDelay <= 0 || c.request.sequence != r.generation)
+    if (auto error = r.ValidateRefill(c.request.sequence, c.now); error != Error::None)
     {
-        return Error::Stale;
-    }
-
-    if (c.now + 0.001 < r.refillAt)
-    {
-        return Error::Cooldown;
+        return error;
     }
 
     for (const auto &[id, p] : world.Players())
@@ -44,47 +39,14 @@ Error RefillSystem::ValidateResource(const Context &c) const
     return Error::None;
 }
 
-bool RefillSystem::RefillResource(Resource &resource) const
-{
-    if (resource.stock > 0)
-    {
-        return false;
-    }
-
-    resource.stock = resource.capacity;
-
-    resource.refillAt = 0;
-
-    ++resource.generation;
-
-    return true;
-}
-
 std::optional<Vec3> RefillSystem::MonsterPosition(Map &map, const Monster &monster)
 {
-    if (monster.hp > 0 || monster.respawnSeconds <= 0 || world.now - monster.diedAt < monster.respawnSeconds)
+    if (!monster.CanRespawn(world.now))
     {
         return std::nullopt;
     }
 
     return map.monsterRadius > 0 ? world.MonsterSpawn(map, monster.radius, monster.id)
                                  : std::optional<Vec3>{monster.home};
-}
-
-void RefillSystem::RefillMonster(Monster &m, Vec3 position) const
-{
-    m.hp = m.maxHp;
-
-    m.mode = Mode::NonCombat;
-
-    m.p = position;
-
-    m.home = m.p;
-
-    m.velocity = {};
-
-    m.cooldowns.clear();
-
-    m.action = {};
 }
 }

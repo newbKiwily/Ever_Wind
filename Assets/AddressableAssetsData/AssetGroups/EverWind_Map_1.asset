@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: EverWind_Map_1
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: EverWind_Map_1
+  m_GUID: f315ed76766279b4eab90be877009687
+  m_SerializeEntries:
+  - m_GUID: 8fdd2df38cecc3e4bb9b2b6cb314725e
+    m_Address: Assets/EverWindGameplay/Generated/Map1Visual.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+    m_FolderGuid: 
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: f5e3eb12700737644a67b0bff88eada7, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: bfab19a7ba8b9d24c94884ce69aca2d9, type: 2}
+    - {fileID: 11400000, guid: ef1930f9ce6806847bc0d598799a970c, type: 2}
+    m_SchemaDisplayOrder:
+    - EverWind_Map_1_BundledAssetGroupSchema
+    - EverWind_Map_1_ContentUpdateGroupSchema
+  m_IncludeInBuild: 1
+  m_IncludeInBuildMigrated: 1

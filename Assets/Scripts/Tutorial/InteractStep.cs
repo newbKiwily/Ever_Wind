@@ -4,20 +4,17 @@ public class InteractStep : ITutorialStep
 {
     private Action<int, int> _deleteAction;
 
-    public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
+    public void EnterStep(TutorialGuide step)
     {
-        _deleteAction += (_, _) => ClearEvent(step, textRenderManager);
+        _deleteAction += (_, _) => ClearEvent(step);
         PlayEvents.OnInteractionCompleted += _deleteAction;
 
-        textRenderManager.StartShow("InteractT");
-        textRenderManager.AutoShow(0, 2);
     }
 
-    public void UpdateStep(TutorialGuide step, TextRenderManager textRenderManager, InputManager inputManager)
+    public void UpdateStep(TutorialGuide step, InputManager inputManager)
     {
         if (_deleteAction != null) return;
 
-        if (!textRenderManager.IsDoneShowingText()) return;
 
         if (inputManager.AnyKeyDownExcludeMouse())
         {
@@ -33,10 +30,8 @@ public class InteractStep : ITutorialStep
         _deleteAction = null;
     }
 
-    public void ClearEvent(TutorialGuide step, TextRenderManager textRenderManager)
+    public void ClearEvent(TutorialGuide step)
     {
-        textRenderManager.AutoShow(3, 6);
-
         if (_deleteAction != null)
             PlayEvents.OnInteractionCompleted -= _deleteAction;
 

@@ -33,9 +33,7 @@ public class LoginUI : MonoBehaviour
             return;
         }
 
-        if (EverWind.Gameplay.GameplaySession.Current != null) { EverWind.Gameplay.GameplaySession.Current.Login(id,pw); return; }
-        byte[] packet = PacketMethod.BuildLoginRequest(id, pw);
-        SingletonManager.Instance.GetSingleton<NetworkClient>().Send(packet);
+        NetworkClient.Current.Login(id, pw);
     }
 
     public void OnSignupButtonClicked()
@@ -48,9 +46,7 @@ public class LoginUI : MonoBehaviour
             return;
         }
 
-        if (EverWind.Gameplay.GameplaySession.Current != null) { EverWind.Gameplay.GameplaySession.Current.Signup(id,pw); return; }
-        byte[] packet = PacketMethod.BuildSignupRequest(id, pw);
-        SingletonManager.Instance.GetSingleton<NetworkClient>().Send(packet);
+        NetworkClient.Current.Signup(id, pw);
     }
 
     public void SetResult(string msg)
@@ -58,7 +54,9 @@ public class LoginUI : MonoBehaviour
         resultLabel.text = msg;
 
         if (_messageCoroutine != null)
+        {
             StopCoroutine(_messageCoroutine);
+        }
 
         _messageCoroutine = StartCoroutine(ShowMessageBox());
     }

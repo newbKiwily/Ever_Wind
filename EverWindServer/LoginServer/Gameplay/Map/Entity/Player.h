@@ -74,6 +74,10 @@ class Player final : public Actor, public IDamageable
 
     Player();
 
+    int AttackPower(const GameDataHub &data) const;
+
+    int DefencePower(const GameDataHub &data) const;
+
     bool CanAttack() const;
 
     void ApplyDamage(float amount) override;

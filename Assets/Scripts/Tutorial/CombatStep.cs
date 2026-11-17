@@ -6,20 +6,18 @@ public class CombatStep : ITutorialStep
     private bool _readyForNext = false;
     private Action<int, int> _clearAction;
 
-    public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
+    public void EnterStep(TutorialGuide step)
     {
-        _clearAction += (_, _) => ClearEvent(step, textRenderManager);
+        _clearAction += (_, _) => ClearEvent(step);
         PlayEvents.OnCombatEnemyKilled += _clearAction;
 
-        textRenderManager.StartShow("CombatT");
-        textRenderManager.AutoShow(0, 5);
     }
 
-    public void UpdateStep(TutorialGuide step, TextRenderManager textRenderManager, InputManager inputManager)
+    public void UpdateStep(TutorialGuide step, InputManager inputManager)
     {
         if (_cleared && !_readyForNext) return;
 
-        if (_readyForNext && textRenderManager.IsDoneShowingText())
+        if (_readyForNext)
         {
             if (inputManager.AnyKeyDownExcludeMouse())
             {
@@ -40,12 +38,11 @@ public class CombatStep : ITutorialStep
         _clearAction = null;
     }
 
-    public void ClearEvent(TutorialGuide step, TextRenderManager textRenderManager)
+    public void ClearEvent(TutorialGuide step)
     {
         if (_cleared) return;
         _cleared = true;
 
-        textRenderManager.AutoShow(6, 7);
         _readyForNext = true;
 
         if (_clearAction != null)

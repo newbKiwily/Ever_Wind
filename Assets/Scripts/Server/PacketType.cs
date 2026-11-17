@@ -1,6 +1,8 @@
 using System.Runtime.InteropServices;
 public enum PacketType : ushort
 {
+    C2S_GAMEPLAY_REQUEST = 0x500,
+    S2C_GAMEPLAY_EVENT = 0x501,
     C2S_LOGIN_REQ = 0x100,
     S2C_LOGIN_ACK = 0x101,
 
@@ -36,8 +38,8 @@ public enum PacketType : ushort
     _DEAD_SYNC = 0x130,
     _COMBAT_STATE_SYNC = 0X131,
 
-    C2S_MAP_CHANGE_REQ=0X132,
-    S2C_MAP_CHANGE_ACK=0X133,
+    C2S_MAP_CHANGE_REQ = 0X132,
+    S2C_MAP_CHANGE_ACK = 0X133,
 
     C2S_ENEMY_DEAD_REQ = 0X134,
     S2C_ENEMY_DEAD_ACK = 0X135,
@@ -48,8 +50,14 @@ public enum PacketType : ushort
 
 public enum OneshotAnimKey : int
 {
-    Attack1 = 1, Attack2 = 2, Attack3 = 3, Attack4 = 4, Attack5 = 5,
-    Damaged1 = 11, Damaged2 = 12, Damaged3 = 13,
+    Attack1 = 1,
+    Attack2 = 2,
+    Attack3 = 3,
+    Attack4 = 4,
+    Attack5 = 5,
+    Damaged1 = 11,
+    Damaged2 = 12,
+    Damaged3 = 13,
     Success = 21
 }
 
@@ -247,4 +255,3 @@ public struct PKT_QUEST_RESET
 {
     public int UserDBID;
 }
-

@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: EverWind_Resource_1
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: EverWind_Resource_1
+  m_GUID: dc797501c6959cb48978c1d94ccfff65
+  m_SerializeEntries:
+  - m_GUID: 568c268006078d648ba554e8fde709c8
+    m_Address: Assets/EverWindGameplay/Generated/Resource1.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+    m_FolderGuid: 
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: f5e3eb12700737644a67b0bff88eada7, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 43ba9552f23d6a74d8b878a38baccffb, type: 2}
+    - {fileID: 11400000, guid: 3e4dd213c1ccaea4bb4e901f95b8cf29, type: 2}
+    m_SchemaDisplayOrder:
+    - EverWind_Resource_1_BundledAssetGroupSchema
+    - EverWind_Resource_1_ContentUpdateGroupSchema
+  m_IncludeInBuild: 1
+  m_IncludeInBuildMigrated: 1

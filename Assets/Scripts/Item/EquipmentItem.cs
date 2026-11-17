@@ -19,8 +19,7 @@ public class EquipmentItem : InventoryItem, IUsableItem
 
     public void Use()
     {
-
-        SingletonManager.Instance.GetSingleton<PopUpUIManager>().EquipmentUI.Equip(this);
+        EverWind.Gameplay.GameplayIntegration.Active?.Use(this);
     }
 
 }

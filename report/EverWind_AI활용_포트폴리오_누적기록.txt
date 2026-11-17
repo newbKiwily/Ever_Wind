@@ -56,7 +56,7 @@ MoveAction을 공통 이동 기반으로 사용하고 ApproachTargetAction과 Kn
 AttackAction은 이동 Action을 모르며 대상·사거리를 확인하고 공격을 요청한다. Controller가 접근 후 공격·채집 등 후속 행동을 연결한다.
 선택 대상과 이미 시작한 행동의 대상을 구분한다. 늦게 도착한 콜백은 요청 ID·행동 ID·실행 세대를 확인한다.
 피격 연출과 강제 이동/행동 중단은 구분한다. 취소된 로컬 작업을 이유로 서버 확정 피해를 버리지 않는다.
-엔티티 송수신 명칭은 ServerTransceiver/ServerTransceiverManager이다. 각 오브젝트가 개별 소켓을 만들지 않고 공통 NetworkClient를 사용한다.
+엔티티 송수신 명칭은 후속 사용자 지시에 따라 ServerTransmitter/ServerTransmitterManager로 변경했다. ServerTransmitter -> AliveServerTransmitter -> Player/OtherPlayer/Monster 송수신기 계층과 별도의 ResourceServerTransmitter를 사용한다. 각 개체가 개별 소켓을 만들지 않고 공통 NetworkClient를 사용한다. 행동별 허용 정책 State와 Animator State는 별개다.
 
 A-5. 이동 충돌 정책
 [현행 합의/구현]
@@ -72,7 +72,7 @@ ServerApplication이 DBManager/Queries, SessionManager/IOCPServer, MapManager/Pa
 초기화 순서: IOCP 자원 준비 -> DB 연결 -> DB 기준 GameDataHub 및 게임 파이프라인 준비 -> 맵 지형/경계 -> 몬스터/채집물/정적 충돌/트리거 -> 콜백 연결. 이후 MapManager 게임 스레드와 IOCP 접속 수락/작업 스레드를 시작한다.
 실행 흐름: Session TCP 수신/프레임 조립 -> IOCP의 단일 등록 콜백 -> PacketMethod의 공통 Validation 패킷 검사/파싱 -> 로그인·가입 또는 게임 RequestKind별 명시적 Handle...Packet 분배. 게임 요청은 MapManager가 직접 보유한 작업 큐로 전달한다. IOCPServer 내부의 인증/게임 분기와 Step 타입은 제거했다.
 원시 패킷 크기/ID/인증은 PacketMethod에서 안전한 파싱 전에 검사한다. 해석된 요청 계약은 큐 실행 시에도 계정 로드 전에 검사한다. 게임 스레드에서 최초 계정 상태 로드/맵 등록 -> GameplayProcessor 공통 요청 절차 -> 기능별 처리 함수에서 Validation 체인 조립/실행 -> 결과 생성 -> Session.SendGameplayEvent/Session.PostSend로 처리한다. 검증은 Error를 반환하고 다음 처리를 호출자가 직접 진행한다.
-Service, ServerRuntime, WorldState와 ReceiveStep/SendStep/ServerSteps는 제거했다. MapManager가 게임 스레드/큐/mutex/condition_variable/갱신/접속 수명과 vector<unique_ptr<Map>>를 관리하며 GameplayProcessor를 unique_ptr로 직접 소유한다. 기능 실행은 Processor, 리필 알고리즘은 RefillSystem, 실제 직렬화·소켓 송신은 Session이 맡는다.
+Service, ServerRuntime, WorldState와 ReceiveStep/SendStep/ServerSteps는 제거했다. MapManager가 게임 스레드/큐/mutex/condition_variable/갱신/접속 수명과 vector<unique_ptr<Map>>를 관리하며 GameplayProcessor를 unique_ptr로 직접 소유한다. 후속 개편에서는 Processor가 요청·갱신 순서와 공통 전투 결과를 조정하고, Monster가 AI 판단·이동·재생성 초기화, Actor가 공통 넉백 이동, Player가 장비 능력치, Resource가 채집·리필 자체 상태 변경을 맡는다. RefillSystem은 리필 위치 선택과 주변 점유 검사 등 조정을 유지한다. 실제 직렬화·소켓 송신은 Session이 맡는다.
 MapId는 vector 인덱스와 무관하며 ID로 검색한다. 전역 영구 Player 목록은 없다. Map의 vector<shared_ptr<Actor>>가 실체를 소유하고 종류별 포인터 인덱스는 비소유 조회 수단이다. Players()는 맵에서 모은 일시적 순회용 스냅샷이다.
 Session이 생성/보관한 Player를 게임 스레드에서 Map에 등록하여 같은 shared_ptr<Player> 객체를 공동 소유한다. 네트워크 스레드는 Player의 게임 상태를 변경하지 않는다. 역방향 Session 강한 참조는 만들지 않고, 세션 해제 연결은 weak_ptr<Session>을 캡처한 바인딩 콜백을 사용한다.
 맵 전환은 같은 Player 객체를 대상 맵에 등록하고 이전 맵에서 제거한 뒤 위치/세대를 갱신한다. 이전 맵 세대의 늦은 요청은 기존 validator가 거절한다.
@@ -114,7 +114,7 @@ Map3.txt/Map3.heights 추가 예시는 설명만 제공했다. 실제 맵 3 파�
 
 A-9. 최근 보류 및 정리 사항
 [보류]
-클라이언트가 DB 기준 데이터를 서버에서 수신해 카탈로그를 구성하는 정책은 사용자가 나중에 지정한다. 서버/DB 이관 시 클라이언트는 수정·검사하지 말라는 지시를 적용했다.
+클라이언트가 DB 기준 데이터를 서버에서 수신해 전체 카탈로그를 구성하는 정책은 아직 별도 후속 설계 범위다. 서버/DB 이관 당시 클라이언트를 수정·검사하지 않았다는 제한과, 이후 사용자가 명시 승인한 패킷 처리·맵 스냅샷·Addressables·송수신기·입력·표현 개편은 구분한다. 후속 승인 범위의 클라이언트 수정·검증은 수행했다.
 따라서 서버 데이터 이관 완료를 클라이언트 동기화 프로토콜이나 최신 전체 게임 통합 완료로 확대해서 서술하지 않는다.
 [현행 구현]
 서버 관련 데이터·도구·문서는 LoginServer 안으로 모았다. 이 누적 기록은 프로젝트 전체 기획/포트폴리오 문서이므로 루트 report에 둔다(사용자가 이동한 실제 경로 반영).
@@ -122,6 +122,23 @@ A-9. 최근 보류 및 정리 사항
 미사용 Timer/TimerManager/TimerCompare .h/.cpp와 SHA256 .h/.cpp를 제거했다.
 사용자 지시에 따라 인증을 단순화하여 PasswordHash/Salt를 제거하고 비밀번호 직접 비교로 변경했다. 보존 계정 외의 계정 및 관련 데이터와 그때 만든 DB 백업은 후속 요청에 따라 삭제했다.
 계정 비밀번호 값과 DB 접속 비밀번호는 이 기록에 적지 않는다. 평문 비밀번호 저장은 개발 단계의 현재 제한이며 상용 보안 인증 성과로 기술하지 않는다.
+
+
+A-10. 클라이언트 로딩·공간·표현 최신 구조 — 2026-11-18 갱신
+[현행 구현]
+LoginUI -> 전역 NetworkClient의 연결/인증 -> PacketMethod의 unsafe 복사 파싱 -> UnityMainThreadDispatcher -> ContainerInMap 스냅샷/비동기 Addressables 준비 -> WorldLoader의 InGame 전환/엔티티 생성 -> Ready 순서다. SnapshotEnd는 정보 수신 완료이며 에셋 로딩·스폰까지 완료된 Ready와 구분한다. 맵 전환마다 맵 세대와 맵별 핸들을 갱신하고, 공통 에셋은 접속 동안 재사용한다.
+GameplaySession/DataCenter/SceneLoader를 제거했다. 저장 전송용 InventoryData/QuestLoadData 구조체는 ClientSaveData.cs에 유지한다. 패킷 빌드·파싱·분배는 PacketMethod, TCP/프레임/응답 대기는 NetworkClient, 씬 전환·실제 월드 생성·생성한 런타임 Material 정리는 WorldLoader가 맡는다.
+GameplayWorldCatalog/LevelDefinition과 클라이언트 중복 높이 격자를 제거했다. ContainerInMap.Maps는 맵 ID와 외형 프리팹 Addressable 참조만 가진다. 중심/반경은 서버 Boundary 이벤트에서 받는다. 클라이언트 지면 높이는 인스턴스화한 맵의 Ground 콜라이더에 아래 방향 Raycast로 구하며 서버는 기존 높이 파일/기하 검증을 유지한다.
+GameplayInput을 InputManager에 통합했다. 입력 제한·카메라 기준 이동 방향·텍스트 입력/UI 포인터 검사를 InputManager가 제공하며 PlayerActionController가 Action을 조정한다. 원격 Alive의 최신 서버 목표 위치 보간은 AliveServerTransmitter, 로컬 예측 기록/이동 순번/보정 세대 처리는 PlayerServerTransmitter, 실제 입력 이동·충돌·지면 검사와 전송 예약은 MovementMotor가 맡는다.
+EntityPresentation 컴포넌트를 제거하고 AliveServerTransmitter가 일반 C# AlivePresentation 객체를 멤버로 소유한다. 공통 Alive.controller의 14개 상태/전이와 Player/Skeleton/Spider Override를 사용한다. Skill1~5는 일반공격을 포함하는 표현 슬롯이며 실제 5개 스킬의 DB 정의나 버프 판정을 새로 구현한 것은 아니다. Animator.Play/CrossFade 직접 구동은 활성 표현 코드에서 제거했다.
+Player 루트는 실제 위치/송수신/이동/콜라이더를 유지하고 Visual 자식은 교체 가능한 메시/뼈대/Animator를 둔다. 모델별 오프셋·회전·크기와 Avatar를 유지한다. root motion/애니메이션 이벤트는 판정 권한으로 사용하지 않는다.
+게임플레이 HUD/미니맵/데미지 숫자/타겟 표시 등은 비활성 보관하고 로그인·회원가입·로딩은 유지한다. ResourceRefillController는 ResourceServerTransmitter에 통합했다. 기록 시점 현재 표현 UI를 다시 구축한 것은 아니다.
+
+A-11. 최근 검증의 범위와 한계
+[당시 검증]
+서버 Debug x64 빌드와 몬스터·충돌·넉백·채집/리필·장비 계산의 임시 C++ 실행 검증 통과. Unity 컴파일/Addressables 빌드, 실제 로그인/맵 로딩/스폰/부활/이동 승인/로그아웃, 세 모델의 14개 Animator 상태 전이·Override, 로컬 예측 보정·원격 보간·늦은 응답 처리 검증 통과. 로그아웃 후 공통/맵 핸들은 각각 0이었다.
+[미확인/보류]
+튜토리얼 완료 전 실제 다른 맵 진입은 기존 검증기에 제한되어 맵0->맵1 성공으로 기록하지 않는다. 마지막 실제 플레이어 공격은 대상 선택이 성립하지 않아 명중/완료까지 확인하지 못했다. 다른 플레이어 실제 다중 접속, 모든 아이템/퀘스트/제작 회귀, 장시간 메모리 및 동접 성능, 서버 위치 이력 기반 스냅샷 보간, 신규 직업/새 리깅 에셋은 미검증이다. 기존 QuestManager 미사용 필드 경고 1건은 유지한다. 이번 문서 작업에서는 게임 실행 검증을 다시 하지 않았다.
 
 ======================================================================
 
@@ -8186,3 +8203,222 @@ TEMP native 검사에서 네 클래스의 final/Actor 상속, Player/Monster의 
 }
 [[PORTFOLIO_CHECKPOINT END]]
 
+
+======================================================================
+R. 2026-11-18 클라이언트 로딩 개편·엔티티 책임 분리·공통 애니메이션 증분 기록
+======================================================================
+
+R-1. 기록 구간과 근거
+[이번 사용자 요청]
+“지금까지 수정된 내용들 누적기록에 기록해줘”에 따라 직전 P 기준점 다음부터 이번 요청까지 보충했다. 공개 대화 기준 구현 기간은 한국 시간 2026-11-17부터 11-18이며 P의 인터페이스/istrigger 구현 원문은 중복 삽입하지 않는다.
+동일 채팅의 로컬 세션에서 공개 사용자 메시지와 ID/시각, 실제 token_usage_record 숫자 메타데이터를 대조했다. 현재 작업에서는 현행 소스와 기존 검증 산출물의 존재를 읽기 확인했으며 서버·Unity 실행 검증을 새로 수행하지 않았다. 아래 검증은 각 구현 당시의 도구 결과 및 공개 보고에 근거한다.
+과거 문서의 전체 대화 전수 보충 공백은 그대로 남긴다. 이번 구간은 설계 정정·구현·검증을 주제별로 정리했으며 전체 원문 대화와 전체 도구 로그를 그대로 복사한 문서는 아니다. 시스템/개발자 지시·내부 추론·인증 비밀은 수록하지 않는다.
+
+R-2. 사용자가 정한 로딩 구조와 선택 이유
+[사용자 요구]
+맵에 필요한 몬스터/채집물 종류 ID를 서버에서 받고 해당 외형 프리팹/SO만 Addressables로 준비하도록 요청했다. 패킷 처리는 기존 PacketMethod/PacketType/UnityMainThreadDispatcher를 활용하고 Protocol은 서버와 최대한 통일하도록 했다. 새 로딩 클래스는 처음 CacheInMap으로 논의했으나 사용자가 공통 유지 에셋도 포함하도록 정정하면서 ContainerInMap으로 확정했다.
+핵심 순서는 “세션 접속 -> 정보 수신 -> 수신 완료 -> 렌더링”이다. 사용자 지정 범위는 로그인 -> 맵 이동 -> 엔티티 스폰 -> 서버 권위 처리이며 이펙트/데미지 문자 재설계를 먼저 하지 않도록 했다. 맵과 무관한 아이템/스킬 등의 공통 에셋과 맵마다 필요한 외형을 구분해 유지한다.
+[구현]
+전역 Assets/Scripts/Server/NetworkClient.cs로 연결·프레임 수신·전송·요청별 콜백·응답 대기/타임아웃·서버 시각·Ready를 모았다. Runtime의 중복 NetworkClient와 GameplaySession은 제거했다. 연결 세대를 확인해 이전 연결의 늦은 콜백이 현재 접속에 적용되지 않도록 한다.
+PacketMethod가 로그인/회원가입과 게임 요청의 빌드 및 수신 핸들링을 담당한다. Protocol.cs의 패킷은 서버 배치에 맞춰 pack된 wire 구조를 사용하며 unsafe 포인터로 읽은 값을 일반 메시지에 복사한 뒤 Dispatcher 큐로 전달한다. 수신 버퍼를 가리키는 포인터를 메인 스레드 콜백에 남기지 않는다. 당시 확인한 길이는 헤더 4바이트, 게임 요청 본문 52바이트, 게임 이벤트 본문 108바이트이며 게임 요청/이벤트 ID는 0x500/0x501이었다.
+Dispatcher는 큐에서 꺼낼 때만 잠그고 콜백은 잠금 밖에서 실행하며 프레임당 처리 상한을 둔다. 초기화 순서 문제를 해결하기 위해 SingletonManager가 먼저 준비되도록 했다. 이 변경을 성능 개선 측정 성과로 해석하지 않는다.
+ContainerInMap이 첫 Join 스냅샷을 씬 로딩 전부터 버퍼링하고 SnapshotEnd 후 필요한 종류의 에셋을 비동기로 준비한다. 씬이 바뀌었다는 이유로 두 번째 Join을 보내지 않고 첫 응답을 재사용한다. WorldLoader는 씬/맵 프리팹/로컬 플레이어/초기 대기 엔티티가 준비된 뒤 Ready를 확정한다. 정보 수신 완료와 화면 준비 완료는 다른 단계다.
+WorldLoader는 로딩 중 새로 도착한 타입을 추가 준비하고 이벤트를 순서대로 재생한다. 맵 세대가 바뀌면 이전 비동기 결과는 현재 월드에 적용하지 않는다. 로그인 UI의 기존 팝업 외형을 활용한 지속 로딩 표시를 유지했고 로그인 복귀 시 표시 오브젝트가 중복되는 문제도 정리했다. 한글 텍스트에는 프로젝트 기존 NotoSansKR 폰트를 유지한다.
+공통/맵 AsyncOperationHandle을 분리해 같은 에셋 중복 로드를 피하고, 공통 에셋은 맵 재진입에 재사용한다. 맵 해제는 오브젝트 파괴와 에셋 수명이 충돌하지 않도록 지연 반납을 포함하며 아직 끝나지 않은 로드도 완료 뒤 반납한다. 로그아웃은 저장 응답을 확인한 뒤 연결과 월드/캐시를 정리하고 LogIn으로 돌아간다.
+[당시 검증]
+Unity 컴파일, 실제 TCP 로그인, 스냅샷 수신/씬 전환/에셋 준비/플레이어·몬스터 스폰, 같은 맵 재진입과 해제, 로그아웃 복귀를 확인했다. 초기 맵1 진입은 기존 TutorialMapValidator에 막혀 실제 성공을 확인하지 못했다. 합성 데이터 기반 맵1 검증과 실제 서버의 맵간 이동 성공은 구분한다.
+[주요 파일]
+Assets/Scripts/Server/NetworkClient.cs, PacketMethod.cs, PacketType.cs, UnityMainThreadDispatcher.cs.
+Assets/EverWindGameplay/Runtime/Protocol.cs, ContainerInMap.cs, ServerTransmitter.cs, ServerTransmitterManager.cs.
+Assets/Scripts/Server/Loader/WorldLoader.cs, Assets/Scripts/UI/LoginUI.cs, SingletonManager.cs 및 Addressable 그룹/프로필 참조 에셋.
+
+R-3. 엔티티 공통성과 개별 책임에 대한 사용자 정정
+[사용자/AI 역할]
+사용자가 “부모는 공통 성질만”이라고 정정한 뒤, AI가 상속 제거인지 공통 정보 축소인지 확인했다. 사용자는 상속 유지를 명시했고 이후 Player/OtherPlayer/Monster의 공통성이 크므로 AliveServerTransmitter 중간 기반을 직접 제안했다. AI는 그 합의에 따라 계층과 사용처를 수정했다.
+[현행 구현]
+ServerTransmitter에는 ID/종류/반경/공통 연결·등록기 참조와 Bind/Send/Receive/등록 해제를 남겼다. HP·Stock·플레이어 정책은 범용 기반에 두지 않는다.
+AliveServerTransmitter가 HP/MaxHp/현재 행동 ID/Mode의 공통 적용을 담당하고 PlayerServerTransmitter/OtherPlayerServerTransmitter/MonsterServerTransmitter가 상속한다. Player는 PlayerStateContext를 따로 소유하며 공통 Mode와 허용 정책을 동기화한다. ResourceServerTransmitter는 Alive를 상속하지 않고 잔량과 리필 상태를 가진다.
+동일 행동 ID의 종료·취소만 현재 ActionId를 지우게 했다. 옛 행동의 종료가 새 행동을 취소하지 않도록 한다. 로컬 플레이어만 일반 행동 요청을 보내고 몬스터 클라이언트는 AI 의도를 생성하지 않는다. 각 개체에 별도 TCP 연결을 만들지 않았다.
+[당시 검증]
+세 Alive 타입의 Spawn/Stats/Hit/Action 이벤트와 오래된 ActionEnded, 플레이어 정책 동기화, Resource의 비Alive 구분, 원격 몬스터의 일반 요청 송신 거부를 임시 Play Mode 검사로 확인했다. 실제 로그인 스폰에서도 분리된 타입이 사용되는 것을 확인했다.
+
+R-4. 불필요한 상태·중계 코드와 게임플레이 UI 정리
+[사용자 요구와 정정]
+DataCenter의 필요성을 질문한 후 삭제하도록 요청했다. 또한 게임플레이 UI를 제거하되 관련 스크립트는 보관하도록 했다. 로그인/회원가입/로딩까지 포함하는지 AI가 확인했고 사용자는 “게임플레이 UI만 제거, 로그인·로딩 유지”로 범위를 확정했다. 이어 미사용 게임플레이 스크립트 삭제, WorldLoader/SceneLoader 병합, 런타임 Material 관리 통합을 요청했다.
+[구현]
+DataCenter를 제거하고 필요한 저장 전송용 InventoryData/QuestLoadData 구조체는 ClientSaveData.cs에 유지했다. 캐릭터의 외형과 애니메이션 데이터 자체는 게임플레이 스크립트 정리와 구분해 보존했다.
+게임플레이 UI 스크립트 25개는 보관 영역에 두고, EVERWIND_UNACTIVE_ARCHIVE 조건이 없는 기본 상태에서는 EverWind.Unactive 어셈블리가 컴파일되지 않도록 했다. 기존 InGame UI 배치도 별도로 보관했다. 이는 단순 경로 정리 이력이 아니라 실행 중 게임플레이 UI 의존을 제거한 기능 변경이다.
+실제 InGame에서 HUD/인벤토리·제작·퀘스트 팝업 표시/데미지 숫자/타겟 표시/미니맵·프리뷰 및 해당 UI 관리 기능을 제거했다. GameplayIntegration의 UI 초기화·갱신 호출과 EntityPresentation의 데미지 문자/대체 표시 호출을 정리했다. 퀘스트·튜토리얼 게임 진행과 gameplay 이벤트 계약은 유지한다. 이전 아카이브 스크립트는 현재 API와 맞지 않을 수 있어 조건만 켜면 즉시 복구된다고 보장하지 않는다.
+ResourceRefillController를 삭제하고 ResourceServerTransmitter가 고갈 시각/리필 세대/재시도 시간을 관리하게 했다. 클라이언트 타이머가 외형을 복구하고 자기 자원 ID와 세대로 리필을 요청하지만 잔량을 임의로 지급하지 않는다. 서버 검증 후 도착한 상태가 실제 잔량을 확정한다.
+보고 당시 미사용 소스와 대체된 보조 도구를 포함해 39개 소스 및 대응 메타를 정리했다. 대상은 구형 States/Enemy/Skill/OtherPlayer/FieldItems, Player/PlayerStatManager/CameraMoving/구형 IDamageable, LegacyControlsSetup, SceneLoader 등이었다. 참조된 모델/컨트롤러/프리팹에서 해당 구형 컴포넌트와 종료 StateMachineBehaviour도 먼저 제거했다. 사용 중인 아이템 SO·레시피·퀘스트 데이터 타입은 유지했다.
+EquipmentItem/HPPotion/PlaceItem 사용 경로는 GameplayIntegration의 서버 요청으로 연결하고 ItemMediator는 아이템 데이터 조회를 유지했다. QuestManager의 보상은 서버 요청으로 처리하며 UI·클라이언트 직접 지급 의존을 제거했다. 튜토리얼은 표시 객체 없이 이벤트/입력 조건으로 진행한다.
+SceneLoader의 씬 전환 기능은 WorldLoader 내부로 통합했다. RuntimeMaterialOwner도 삭제하고 WorldLoader가 직접 생성한 Material만 추적·반납하게 했다. 외부 파괴된 소유 오브젝트, 개체 Despawn, ClearWorld/맵 전환/OnDestroy를 처리하며 공유 프로젝트 Material이나 Addressables 자산 Material은 파괴하지 않는다.
+[당시 검증과 한계]
+게임플레이 Canvas/텍스트/타겟 표시 제거와 로그인·로딩 유지, 활성 구형 타입 참조 및 Missing Script 여부, 빌드된 번들로 실제 로그인/스폰, 로그아웃 캐시 0을 확인했다. Material은 생성 2개 -> 외부 파괴 후 1개 -> ClearWorld 후 0개와 개별 Despawn이 다른 개체 소유분을 지우지 않는지 임시 검사했다. 이 UI 제거를 새 HUD 완성으로 기술하지 않는다.
+[관련 파일]
+ClientSaveData.cs, ResourceServerTransmitter.cs, GameplayIntegration.cs, WorldLoader.cs, InGame.unity, UI 보관 어셈블리 및 참조 프리팹/컨트롤러.
+Assets/Scripts/Item의 사용 중인 SO/ItemMediator, Quest/QuestManager, Tutorial의 단계 스크립트도 활성 의존 제거에 맞춰 수정했다.
+
+R-5. 클라이언트 중복 맵 정의 제거와 지면 처리
+[선택 과정]
+사용자는 서버에 이미 높이·중심·반경이 있는데 GameplayWorldCatalog/LevelDefinition을 클라이언트에 또 유지해야 하는지 반복해서 질문했다. AI가 클라이언트 예측용 데이터라는 기존 용도를 설명한 뒤, 사용자가 실제 맵 콜라이더에서 지면을 구하는 첫 번째 대안을 선택했다. 이에 중복 격자 데이터 제거를 구현했다.
+[구현]
+ContainerInMap.MapEntry는 Id와 AssetReferenceGameObject Prefab만 가진다. 서버 Boundary 스냅샷에서 받은 중심/반경을 저장하고 유한 좌표·양수 반경을 확인한다. 필요한 Boundary 없이 SnapshotEnd가 오면 월드 준비 성공으로 처리하지 않는다.
+WorldLoader가 인스턴스화한 맵 프리팹 내부의 Ground 레이어 콜라이더만 캐시한다. TryGetGroundHeight는 기본 위 .6/아래 1.5 범위의 하향 Ray를 각 콜라이더에 검사하고, 비활성/트리거/엔티티 소속 콜라이더를 제외한 걸을 수 있는 면에서 가장 가까운 높이를 사용한다. 지면을 찾지 못하면 이동을 적용하지 않는다. Rigidbody는 새로 요구하지 않는다.
+MovementMotor는 새 지면 조회와 서버 경계값을 사용한다. GameplayWorldCatalog/LevelDefinition 스크립트와 중복 World/Map 카탈로그 에셋·Addressable 항목을 제거했다. 맵0/맵1 실제 외형 프리팹 연결을 유지했다.
+[당시 검증]
+맵0 38개/맵1 69개 Ground MeshCollider 구성을 확인했다. 실제 서버 Boundary 중심 (300,0,-80), 반경 110을 받았다. 지면 기반 소규모 이동은 승인되었고, 지면 없는 좌표는 false였다. 엔티티에 Ground 레이어 콜라이더를 임시로 추가해도 바닥으로 잡지 않았다. 동일 맵 재진입에서도 지면 캐시가 복구됐다.
+Y를 10 높인 이동 요청은 서버가 BadRequest로 거절했다. 같은 XZ에서 서버 높이와 클라이언트 Ray 높이 차이는 당시 약 .006으로 기존 서버 허용치 .35보다 작았다. 이는 검사한 지점의 결과이며 모든 지형 경계·계단·절벽에서 오차를 보장하는 측정은 아니다. 최종 Missing Script 0과 로그아웃 핸들 0을 확인했다.
+서버 높이 파일과 기하 검사는 유지했다. 클라이언트가 서버의 최종 위치 결정권을 대체한 것이 아니며, 실제 다른 맵 입장 제한도 우회하지 않았다.
+
+R-6. 서버 몬스터 AI와 엔티티별 책임 이관
+[문제 발견]
+사용자가 몬스터는 FSM이 필요한지 물었고 AI는 서버 AI 상태, 서버 행동/검증, 클라이언트 Animator 상태를 구분했다. 기존 코드는 GameplayProcessor::Advance 내부에서 근처 플레이어 검색·배회·추적·공격을 조건문으로 판단했고 독립 AI 상태가 없었다. 사용자가 몬스터 기능을 Monster로, 유사한 자기 상태 변경도 각 클래스에 옮기도록 승인했다.
+[구현]
+Monster::UpdateAI(Map&, Skill&, now, dt)가 상태 판단과 이동을 소유한다. MonsterState는 Idle/Wander/Chase/Attack/Knockback/Dead이며 목표 ID를 보관한다. 생존/넉백/진행 행동을 먼저 확인하고 맵에서 가장 가까운 유효 플레이어를 찾는다. 감지 10, 배회 sin/cos 반경 2, 공격 재시도 1.8초 및 기존 이동 정지 기준은 재사용했다. 새 BT나 상태별 클래스 체계는 도입하지 않았다.
+공격 시작 판단은 대상 ID를 반환하고 Processor가 기존 Start/공통 타격 검증/피해 계산/결과 이벤트를 실행한다. 진행 중인 공격은 action.target을 유지한다. Idle은 생성/재생성 초기 상태이며 별도의 Return 상태나 귀환 전략은 구현하지 않았다. 현재 AI는 매 갱신 조건으로 상태를 선택하는 단순한 형태다.
+Monster::CanRespawn/Respawn으로 대기 판정과 자신의 HP/Mode/목표/속도/쿨다운/행동/넉백 초기화를 옮겼다. Map::FindNearestPlayer/InRange/TryMove는 같은 맵 유효 플레이어 검색과 기존 거리/높이/Geometry 검사 후 이동 적용을 제공한다.
+Actor::UpdateKnockback은 실제 공통 강제 이동과 종료 여부를 처리한다. Player의 보정 Revision/이동 예산 변경과 방송은 Processor가 조정한다. Player::AttackPower/DefencePower는 기존 장비 데이터 계산을 소유한다. Resource::Harvest/Release/ValidateRefill/Refill은 채집 잔량·점유·리필 기한·세대 변경을 소유한다. RefillSystem의 단순 전달 함수는 제거했고 맵별 재생성 위치 선택·주변 점유 검사는 남겼다.
+실제 실행 경로는 MapManager 게임 루프 -> GameplayProcessor::Advance의 순회/순서 조정 -> 엔티티 멤버 함수이며, Map이 별도 스레드를 갖거나 모든 게임 처리를 Monster에 몰아준 구조가 아니다. DB 조회·저장/소켓 송신/공통 피해 조정은 기존 담당에 남긴다.
+[변경 파일]
+EverWindServer/LoginServer/Gameplay/GameplayProcessor.h/cpp.
+Gameplay/Map/Map.h/cpp, MapManager.cpp, RefillSystem.h/cpp.
+Gameplay/Map/Entity/Monster.h/cpp, Player.h/cpp, Resource.h/cpp, Actor.h/cpp.
+동시에 워크스페이스에 있던 Protocol.h의 별도 수정은 이번 AI 이관 작업의 변경으로 귀속하지 않는다.
+[당시 검증]
+Debug x64 서버 빌드 성공. 임시 C++ 검증에서 배회/추적/공격 상태, 진행 공격 대상 유지, 쿨다운 중복 시작 방지, 넉백/사망/재생성, 벽·트리거·맵 경계, 채집 소유자·리필 세대/시간, 장비 공격력/방어력을 확인했다. 이때 Unity 접속 회귀는 수행하지 않았고 후속 애니메이션 작업에서 별도로 실제 서버 연결을 확인했다. 기존 DB 변환 경고는 유지했으며 새 멤버 가림 경고는 수정했다.
+
+R-7. 위치 보정과 입력 책임 정리
+[기존 설명과 사용자 선택]
+기존 로컬 플레이어는 MovementMotor가 입력 이동/예측 기록/서버 보정을 모두 처리했고 원격 몬스터·다른 플레이어는 EntityPresentation이 최신 서버 목표 위치를 Lerp했다. 사용자는 위치 보정 진입점을 AliveServerTransmitter로 모으고 표현을 해당 송수신기의 멤버로 소유하는 방향을 선택했다.
+AI는 로컬에 원격과 같은 Lerp를 무조건 적용하면 이미 예측 이동한 현재 위치를 과거 응답 쪽으로 끌어당기므로 적용 정책은 구분해야 한다고 설명했다. 사용자는 통일 애니메이션 구현과 함께 입력 보조 계층도 통합하도록 승인했다.
+[구현]
+AliveServerTransmitter가 ApplyServerPosition/ApplyPosition과 원격 LateUpdate 보간을 담당한다. 최신 목표 위치를 향해 1-exp(-18*unscaledDeltaTime) 계수로 Lerp하며 이동 방향 회전도 적용한다. 서버 시점별 위치 기록을 쌓아 지연 재생하는 스냅샷 보간이나 외삽은 아니다.
+PlayerServerTransmitter는 이동 순번/확정 순번/보정 세대와 예측 위치 딕셔너리를 소유한다. 정상 MoveResult는 응답 순번에서의 예측과 서버 위치 차이를 현재 위치에 더하고, 거절/새 보정 세대는 서버 위치로 정정한다. 오래된 세대와 이미 확정한 응답을 거르고 강제 이동/사망 시의 보정 정책을 유지한다.
+MovementMotor는 실제 Step의 BoxCast/경계/지면/회전, 전송 예약과 FlushPending을 남긴다. 예측 기록 생성은 PlayerServerTransmitter.CreateMoveRequest에 위임한다. 로컬 넉백은 기존 KnockbackAction이 Step(request:false)으로 표현하고 서버 결과로 정정한다.
+GameplayInput은 삭제했다. InputManager가 기존 키·튜토리얼/잠금 정책에 더해 카메라 기준 방향 계산, 입력 필드 포커스와 포인터 UI 검사를 제공한다. PlayerActionController와 GameplayCameraController/GameplayIntegration은 통합된 입력 경로를 사용한다. 입력 관리자가 공격 효과나 서버 확정 행동을 결정하지 않는다.
+[당시 검증]
+임시 Play Mode 검사에서 예측 x=1 요청 후 현재 x=3일 때 서버 x=1.25 응답으로 현재 x=3.25가 되는 차이 보정, 거절에 따른 즉시 정정, 낮은 Revision 응답 무시, 원격 보간/로컬 비보간을 확인했다. 카메라 Y 회전 90도에서 전진 입력이 월드 오른쪽 방향으로 변환되는 것도 확인했다.
+
+R-8. 통일 Animator 전이·Override와 멤버 표현 객체
+[사용자 요구/AI 제안 정정]
+사용자가 직업/몬스터/다른 플레이어 모두 통일된 애니메이션 상태에 클립만 바꿔 넣는 구조를 요구했다. 스킬 표현 슬롯은 5개이며 일반공격도 스킬로 취급한다. 강제 재생/강제 종료 함수 중심 설명에 대해 사용자가 “transition을 연결하고 싶다”고 정정했고 파라미터 기반 전이에 합의했다.
+게임플레이 State는 행동 허용 정책이고 Animator State는 표현이다. 입력만 들어왔다고 전투 상태/공격 성공을 확정하지 않는다. 로컬 이동은 예측 실행하지만 공격 효과와 행동 종료/취소는 서버가 확정하는 원칙을 유지한다.
+[구현]
+EntityPresentation MonoBehaviour를 제거했다. AliveServerTransmitter.ConfigureVisual이 일반 C# AlivePresentation을 만들고 멤버로 소유하며 Receive에서 상태를 갱신한 다음 표현 객체에 이벤트를 전달한다. LateUpdate가 Tick을 호출한다. Resource의 잔량에 따른 Renderer/Collider 표현은 ResourceServerTransmitter가 처리한다.
+공통 Alive.controller는 Idle/Run/CombatIdle/CombatRun, Skill1~Skill5, Gather/Craft/Hit/Knockback/Dead의 총 14개 상태다. 파라미터는 Speed, Combat, Dead, Knockback, Hit, ActionRunning, ActionSlot, ActionStart, ActionSpeed다.
+사망·넉백·피격 우선순위 조건과 행동/이동 전이를 구성했다. 스킬은 시작 Trigger로 같은 슬롯을 다시 시작할 수 있고, 재진입 조건으로 중단 표현 후 진행 중 행동을 복구한다. 정상 행동 종료는 서버 ActionEnded/ActionCancelled로 ActionRunning을 내리는 방식이며 클립 종료가 피해·보상·행동 완료를 확정하지 않는다.
+AlivePresentation은 서버 행동 ID 중복 재생 방지와 현재 ID에 맞는 종료/취소, 행동 대상 바라보기, 현재 위치 변화에 따른 이동 표현, 서버 피격/넉백 시간 표현을 관리한다. 기존 효과 호출은 재사용했지만 새 데미지 텍스트/UI를 만들지 않았다. Animator.Play/CrossFade 직접 호출은 활성 게임플레이 표현 코드에서 제거했다.
+ActionVisualProfile에 5개 Skills 클립 슬롯과 기존 클립 이름을 해석하는 ResolveClip을 제공했다. 기존 플레이어 3개/몬스터 2개 공격 클립처럼 부족한 슬롯은 기존 공격 클립을 재사용한다. SharedAliveAnimatorSetup.Build가 공통 그래프와 PlayerProfile/SkeletonProfile/SpiderProfile Override를 생성·연결한다. 새 클립 지정 후 EverWind -> Animation -> Build Shared Alive Animator 메뉴로 Override에 반영한다.
+이것은 표현 슬롯 5개의 준비이며 DB 스킬을 5개로 늘리거나 버프 효과/신규 직업/리타기팅을 구현한 것이 아니다. 서로 다른 리그의 클립 호환성을 Override가 자동 해결하지 않으며 기존 모델별 Avatar와 호환 클립을 유지한다.
+[Visual 자식에 Animator를 두는 이유 — 사용자 후속 질문]
+Player 루트는 서버 위치/이동/충돌/송수신을 담당하고 Visual은 교체 가능한 메시·뼈대·Animator와 모델별 오프셋/회전/크기를 가진다. 부모 송수신기가 소유하는 표현 객체가 자식 Animator의 파라미터를 제어하므로 게임 로직이 Visual로 이전한 것은 아니다. Animator는 반드시 하위에 있어야 하는 API 제약이 아니라 에셋 교체를 위한 배치 선택이다. root motion과 애니메이션 이벤트를 꺼서 실제 위치/게임 판정 권한과 분리했다.
+[주요 파일]
+Assets/EverWindGameplay/Runtime/AlivePresentation.cs, AliveServerTransmitter.cs, PlayerServerTransmitter.cs, ResourceServerTransmitter.cs, MovementMotor.cs, ActionVisualProfile.cs.
+PlayerActionController.cs, GameplayCameraController.cs, GameplayIntegration.cs, Assets/Scripts/InputManager.cs, Assets/Scripts/Server/Loader/WorldLoader.cs.
+Assets/EverWindGameplay/Editor/SharedAliveAnimatorSetup.cs.
+Assets/EverWindGameplay/Generated/AliveAnimation/Alive.controller, 상태별 기준 .anim 14개, PlayerProfile/SkeletonProfile/SpiderProfile.overrideController와 기존 세 Profile.asset.
+삭제: 활성 Runtime의 EntityPresentation.cs 및 GameplayInput.cs와 대응 메타. 기존 UI 아카이브의 구형 API 참조는 기본 컴파일 제외 상태로 남긴다.
+
+R-9. 구현 중 실패·수정과 실제 검증 결과
+[실패와 복구]
+Python 기본 cp949 읽기 실패가 있어 UTF-8을 명시한 뒤 이미 적용된 부분을 중복 적용하지 않고 나머지 수정을 이어갔다. 프로필 편집 중 ResolveClip이 클래스 밖에 놓이는 CS0116이 발생했으며 클래스 범위를 복구한 뒤 최종 컴파일을 통과했다.
+Unity는 연결 상태가 ready여도 메인 스레드 명령이 진행하지 않아 Addressables 빌드와 후속 명령이 타임아웃된 적이 있다. 이때 성공으로 보고하지 않았고 사용자가 정상 복구를 알려준 뒤 오류 확인/컴파일/빌드를 다시 수행했다. 최종 Addressables 직접 빌드가 built=true, 약 5.214초 결과를 반환했다. 초기 타임아웃 명령 자체를 성공 기록으로 취급하지 않는다.
+[실제 상태 전이 검증]
+Play Mode에서 프레임이 증가하고 playerLoopTicking=true인지 확인했다. 실제 PlayerVisual/SkeletonVisual/SpiderVisual에 각 Override를 연결해 Idle->Run->CombatRun->CombatIdle, Skill1~5/Gather/Craft, Hit->Knockback->Dead, 사망 해제 후 복귀를 각 상태명으로 검사했다. 모델별 Override 14개 및 Skills 길이 5를 확인했다.
+[멤버 표현/응답 검증]
+중복 ActionStarted가 표현 횟수를 늘리지 않는지, 옛 ActionEnded가 현재 행동을 지우지 않는지, 일치 ActionCancelled가 종료하는지, Skill5 파라미터와 표현 객체 소유를 확인했다. 로컬/원격 위치 검사와 카메라 기준 입력 검사도 통과했다.
+[실제 서버 연결]
+현재 서버를 정상 초기화한 뒤 기존 개발 계정으로 LoginUI 버튼 경로를 실행했다. Ready=true/Rendered=true와 로딩 오류 없음, 로컬 Player 및 몬스터 스폰, 모든 Alive의 Presentation 존재, 모델별 새 Override 사용을 확인했다.
+저장되어 있던 사망 상태는 서버에 정상 Revive 요청을 보내 승인된 뒤 소규모 MovementMotor 이동 요청을 전송했다. 예측 딕셔너리가 응답 후 비어 이동 확정을 확인했다. 서버 몬스터 Action 이벤트가 표현 횟수에 누적되는 것도 관찰했다.
+플레이어 RequestAttack(1)을 기존 Controller로 요청했으나 그 위치에서 대상 선택이 성립하지 않아 플레이어 공격 명중/완료까지 확인하지 못했다. 모델 상태 전이 검사와 실제 플레이어 공격 성공은 동일한 검증이 아니다.
+게임 화면 캡처에서 맵/캐릭터 렌더링을 확인했다. 마지막 console ground truth는 compilationFailed=false/compiling=false/consoleErrors=0이며 기존 QuestManager._isInitializing 미사용 필드 경고 1건은 남아 있다. 과거 수집 버퍼에 남은 오류 이력과 현재 오류 상태를 구분했다.
+정상 Logout 응답 후 LogIn 복귀/Ready=false/공통 핸들 0/맵 핸들 0을 확인했고 Play Mode와 임시 실행 서버를 종료했다. 서버 코드/맵 파일/DB 스키마를 이번 클라이언트 작업에서 바꾸지 않았으나 실제 부활·이동·로그아웃 검증은 정상 게임 저장을 이용했으므로 계정 상태가 불변이었다고 주장하지 않는다.
+[검증 산출물의 성격]
+임시 네이티브 실행 검증은 Library/EntityBehaviorCheck, Unity 검증은 Library/VerifySharedAnimation.cs/VerifyAlivePositionPresentation.cs, 화면은 Library/AliveUnifiedVerification.png 등에 두었다. 이들은 무시되는 로컬 임시 산출물이며 상시 실행 가능한 테스트 프로젝트나 CI를 새로 추가한 것이 아니다. 삭제된 과거 테스트와 구분하고 다음 기록에서 존재를 보장하지 않는다.
+
+R-10. 현재 한계와 후속 과제
+실제 맵0->맵1 전환 성공은 튜토리얼 제한 때문에 미확인이다. 맵3, JSON 로더, 서버 맵 hot reload, 클라이언트 전체 DB 기준 데이터 배포 정책은 이번 작업에서 추가하지 않았다.
+5개 애니메이션 슬롯이 곧 5개 완성 스킬을 의미하지 않는다. 신규 버프 판정/스킬 해금/직업별 스킬 구성과 새 생성형 모델·리깅의 호환성 검증은 후속 과제다.
+클라이언트 원격 이동은 최신 목표 추종 보간이다. 과거 서버 시점별 스냅샷 버퍼/지연 재생/외삽, 실제 다른 플레이어 다중 접속, 전투 전체 회귀/모든 퀘스트·아이템·제작/장시간 메모리/동접 성능은 아직 검증하지 않았다.
+몬스터 AI는 enum과 조건 판단을 Monster에 모은 상태이며 독립 상태 클래스/복잡한 귀환 전략/BT/새 길찾기 시스템을 만들지 않았다. 서버와 클라이언트의 지형 표현 차이에 따른 보정 가능성은 남아 있다.
+표현 UI는 제거·보관 상태이며 관찰자 이벤트 계약을 유지했다고 해서 새 HUD 구성이 완성된 것은 아니다. 아카이브 코드를 복구할 때는 최신 API 의존 검토가 필요하다.
+
+R-11. AI 활용 역량에서 구분할 사용자와 AI의 기여
+사용자는 목표 데이터 흐름, 기존 네트워크 재사용, 공통/맵 에셋 수명, 부모/Alive/자식 책임, UI 유지 범위, 서버 AI 소유 클래스, Animator 전이·Override 사용과 표현 멤버 소유를 반복해서 구체화하고 AI의 과한 중계/중복 데이터를 정정했다. 실제 에디터 명령 정체 시 사용자 환경 확인으로 작업 재개를 도왔다.
+AI는 기존 코드/참조를 읽고 선택지의 영향과 로컬 예측·원격 보간 차이를 설명한 뒤 승인된 범위를 구현했다. Unity CLI와 에디터 API로 실제 에셋/그래프를 생성하고, native 검사·Play Mode 상태 검사·실제 서버 접속 결과를 구분해 확인했다. 실패 명령·컴파일 오류·검증 미성립도 함께 남겼다.
+포트폴리오의 핵심은 AI가 제시한 구조를 그대로 받아들였다는 것이 아니라 사용자가 개념 경계를 검토·정정하고 AI가 그 합의를 코드와 검증으로 구체화한 과정이다. 최적화 수치나 전체 기능 완성도를 임의로 주장하지 않는다.
+
+R-12. 기록 시점·사용량과 다음 기준점
+이번 요청에 따라 단일 문서의 A 최신 기준과 본 증분 회차만 갱신했다. 별도 planning 문서를 만들지 않았다. 이번 기록 작업 자체에서는 게임 코드·씬·맵·DB를 변경하거나 실행 검증을 다시 수행하지 않았다.
+아래 사용량은 같은 채팅에서 직전 P 기준 응답 이후의 고유 response_id별 usage만 합산한 실제 메타데이터다. 전체 구간의 토큰에는 서술에서 제외한 작업과 기록 준비 호출도 포함된다. 사용량으로 성능 개선이나 비용을 추정하지 않는다.
+
+[실제 사용량 스냅샷]
+{
+  "source": "same-thread local token_usage_record; usage per unique response_id",
+  "previous_checkpoint_response_id": "resp_006f26d3b5450425016afb0815da7087d080a1b806ca67cead",
+  "unique_response_count": 352,
+  "incremental_usage_sum": {
+    "input_tokens": 80213775,
+    "cached_input_tokens": 77870336,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 221806,
+    "reasoning_output_tokens": 68543,
+    "total_tokens": 80435581
+  },
+  "latest_cumulative": {
+    "input_tokens": 283947248,
+    "cached_input_tokens": 277709952,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 1066506,
+    "reasoning_output_tokens": 385575,
+    "total_tokens": 285013754
+  },
+  "delta_since_previous_checkpoint": {
+    "input_tokens": 80213775,
+    "cached_input_tokens": 77870336,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 221806,
+    "reasoning_output_tokens": 68543,
+    "total_tokens": 80435581
+  },
+  "sum_matches_delta": true,
+  "timestamp_utc": "2026-11-17T15:29:39.069Z",
+  "response_id": "resp_062c5e614fa4e210016afc72c164bc87d0a4d6a08066f499ad",
+  "public_user_message_count": 48,
+  "scope": "직전 P 사용량 기준점 이후부터 이번 기록 준비 시점까지. 제외 요청된 작업 내용은 서술하지 않지만 채팅 구간 전체의 측정 사용량을 집계했다. 캐시·추론 하위 지표는 total에 다시 더하지 않는다. 이 스냅샷 이후 기록 쓰기·검증·최종 응답은 다음 회차에 반영한다. 비용 추정 없음."
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1bc13-8b09-7bf3-b2b1-fbc971e1014f",
+  "record_date": "2026-11-18",
+  "covered_user_message_id": "msg_01a1ea1e-4597-71e1-b5ad-a065e41f9d20",
+  "covered_user_timestamp_utc": "2026-11-17T15:26:54.872Z",
+  "covered_user_request": "지금까지 수정된 내용들 누적기록에 기록해줘",
+  "previous_content_checkpoint": "P. 2026-11-16 엔티티 인터페이스 축소 및 Actor 트리거 정책",
+  "implementation_status": "문서 A 현황 갱신 및 P 이후 공개 대화의 구현/당시 검증/실패·한계 증분 기록. 이번 기록 요청 중 게임 수정·새 실행 검증 없음.",
+  "usage_checkpoint_response_id": "resp_062c5e614fa4e210016afc72c164bc87d0a4d6a08066f499ad",
+  "usage_checkpoint_timestamp_utc": "2026-11-17T15:29:39.069Z",
+  "usage_checkpoint": {
+    "input_tokens": 283947248,
+    "cached_input_tokens": 277709952,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 1066506,
+    "reasoning_output_tokens": 385575,
+    "total_tokens": 285013754
+  },
+  "incremental_unique_response_count": 352,
+  "incremental_usage_sum": {
+    "input_tokens": 80213775,
+    "cached_input_tokens": 77870336,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 221806,
+    "reasoning_output_tokens": 68543,
+    "total_tokens": 80435581
+  },
+  "coverage": "동일 채팅 공개 사용자 메시지 48건과 현재 소스·구현 당시 보고/도구 결과 대조. 요청에 따라 제외한 변경 내용은 서술하지 않음. 전체 대화 원문 복제 아님. 기존 과거 전수 보충 공백 유지.",
+  "pending": "실제 다른 맵 입장/플레이어 공격 완료/다중 접속/전체 DB 카탈로그 정책/신규 스킬·버프/리타기팅/대규모 성능 등 미확인·후속. 사용량 스냅샷 이후 문서 쓰기·검증·최종 응답은 다음 회차 반영."
+}
+[[PORTFOLIO_CHECKPOINT END]]

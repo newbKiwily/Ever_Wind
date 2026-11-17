@@ -47,10 +47,6 @@ class GameplayProcessor
 
     void Progress(Player &p, int kind, int target);
 
-    int AttackPower(const Actor &a) const;
-
-    int DefencePower(const Actor &a) const;
-
     bool Save(Player &p, bool force = false);
 
     Error SaveAndReply(Player &p, const Request &r);

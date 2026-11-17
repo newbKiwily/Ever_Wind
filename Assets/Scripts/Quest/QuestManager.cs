@@ -36,7 +36,7 @@ public class QuestManager : SingletonBase<QuestManager>
         SyncQuestTable();
         LoadQuestProgress();
 
-        UIEvents.EvQuestProgressChanged();
+        
     }
 
     protected override void OnDestroy()
@@ -85,13 +85,12 @@ public class QuestManager : SingletonBase<QuestManager>
 
         _activeQuests.Add(progressData);
 
-        if (!_isInitializing)
-            UIEvents.EvQuestProgressChanged();
+        
     }
 
-    public List<DataCenter.QuestLoadData> GetSaveData()
+    public List<QuestLoadData> GetSaveData()
     {
-        List<DataCenter.QuestLoadData> saveData = new List<DataCenter.QuestLoadData>(_activeQuests.Count);
+        List<QuestLoadData> saveData = new List<QuestLoadData>(_activeQuests.Count);
 
         for (int i = 0; i < _activeQuests.Count; i++)
         {
@@ -99,7 +98,7 @@ public class QuestManager : SingletonBase<QuestManager>
             if (questProgress.Quest == null)
                 continue;
 
-            DataCenter.QuestLoadData data = new DataCenter.QuestLoadData
+            QuestLoadData data = new QuestLoadData
             {
                 QuestId = questProgress.Quest.QuestId,
                 IsCompleted = questProgress.IsCompleted,
@@ -127,39 +126,14 @@ public class QuestManager : SingletonBase<QuestManager>
 
     public bool ClaimReward(int questId)
     {
-        QuestProgressData questProgress = FindQuestProgress(questId);
-        if (questProgress == null || questProgress.Quest == null)
-            return false;
+        QuestProgressData progress = FindQuestProgress(questId);
 
-        if (!questProgress.IsCompleted || questProgress.RewardClaimed)
-            return false;
-
-        if (EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.Claim(questId); return true; }
-        ItemMediator itemMediator = SingletonManager.Instance.GetSingleton<ItemMediator>();
-        if (itemMediator == null)
-            return false;
-
-        for (int i = 0; i < questProgress.Quest.Rewards.Count; i++)
+        if (progress == null || !progress.IsCompleted || progress.RewardClaimed || EverWind.Gameplay.GameplayIntegration.Active == null)
         {
-            Quest.QuestReward reward = questProgress.Quest.Rewards[i];
-            if (string.IsNullOrWhiteSpace(reward.ItemKey) || reward.Amount <= 0)
-                continue;
-
-            InventoryItem rewardItem = itemMediator.GetItemInfo(reward.ItemKey);
-            if (rewardItem == null)
-            {
-                Debug.LogWarning($"Quest reward item not found: {reward.ItemKey}");
-                continue;
-            }
-
-            for (int j = 0; j < reward.Amount; j++)
-            {
-                itemMediator.Mediation(reward.ItemKey);
-            }
+            return false;
         }
 
-        questProgress.RewardClaimed = true;
-        UIEvents.EvQuestProgressChanged();
+        EverWind.Gameplay.GameplayIntegration.Active.Claim(questId);
         return true;
     }
 
@@ -188,41 +162,9 @@ public class QuestManager : SingletonBase<QuestManager>
         _activeQuests.Clear();
         _isInitializing = true;
 
-        DataCenter dataCenter = SingletonManager.Instance.GetSingleton<DataCenter>();
-        if (dataCenter != null && dataCenter.LoadQuests.Count > 0)
+        foreach (Quest quest in _questTable.Values)
         {
-            for (int i = 0; i < dataCenter.LoadQuests.Count; i++)
-            {
-                DataCenter.QuestLoadData loadData = dataCenter.LoadQuests[i];
-                if (!_questTable.TryGetValue(loadData.QuestId, out Quest quest) || quest == null)
-                    continue;
-
-                QuestProgressData progressData = new QuestProgressData
-                {
-                    Quest = quest,
-                    IsCompleted = loadData.IsCompleted,
-                    RewardClaimed = loadData.RewardClaimed,
-                    CurrentCounts = new List<int>()
-                };
-
-                int conditionCount = quest.Conditions.Count;
-                for (int j = 0; j < conditionCount; j++)
-                {
-                    int currentCount = j < loadData.CurrentCounts.Count ? loadData.CurrentCounts[j] : 0;
-                    progressData.CurrentCounts.Add(currentCount);
-                }
-
-                _activeQuests.Add(progressData);
-            }
-
-            dataCenter.LoadQuests.Clear();
-        }
-        else
-        {
-            foreach (Quest quest in _questTable.Values)
-            {
-                AcceptQuest(quest);
-            }
+            AcceptQuest(quest);
         }
 
         _isInitializing = false;
@@ -306,7 +248,7 @@ public class QuestManager : SingletonBase<QuestManager>
             }
         }
 
-        UIEvents.EvQuestProgressChanged();
+        
     }
 
     private QuestProgressData FindQuestProgress(int questId)
@@ -324,7 +266,7 @@ public class QuestManager : SingletonBase<QuestManager>
     {
         var progress=FindQuestProgress(questId);if(progress==null)return;
         if(condition>=0 && condition<progress.CurrentCounts.Count) progress.CurrentCounts[condition]=count;
-        progress.IsCompleted=completed;progress.RewardClaimed=claimed;UIEvents.EvQuestProgressChanged();
+        progress.IsCompleted=completed;progress.RewardClaimed=claimed;
     }
 }
 

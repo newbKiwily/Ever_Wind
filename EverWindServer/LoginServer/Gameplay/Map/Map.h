@@ -35,6 +35,12 @@ class Map
 
     std::unordered_map<int, StaticLevel *> placements;
 
+    Player *FindNearestPlayer(Vec3 position, float range) const;
+
+    bool InRange(const Actor &a, const Actor &b, float reach) const;
+
+    bool TryMove(Actor &actor, Vec3 position) const;
+
     void AddActor(std::shared_ptr<Actor> actor);
 
     void RemovePlayer(int id);

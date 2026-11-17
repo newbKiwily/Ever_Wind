@@ -1,209 +1,404 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net.Sockets;
 using System.Threading;
+using EverWind.Gameplay;
 using UnityEngine;
 
+[DefaultExecutionOrder(-400)]
 public class NetworkClient : SingletonBase<NetworkClient>
 {
-    public override bool IsPersistent => true;
+    private readonly object sendLock = new object();
+    private readonly Dictionary<ulong, Action<ServerMessage>> pending = new Dictionary<ulong, Action<ServerMessage>>();
+    private readonly Dictionary<ulong, float> deadlines = new Dictionary<ulong, float>();
+    private TcpClient client;
+    private NetworkStream stream;
+    private Thread receiver;
+    private volatile bool shuttingDown;
+    private int connectionGeneration;
+    private ulong nextId, logoutRequest;
+    private double receivedAt;
 
-    private TcpClient _client;
-    public NetworkStream Stream;
-    private Thread _recvThread;
+    public static NetworkClient Current { get; private set; }
+    public string Host = "127.0.0.1";
+    public int Port = 4000;
     public int UserDbId;
+    public uint Epoch { get; private set; }
+    public int LocalEntityId { get; private set; }
+    public bool Ready { get; private set; }
+    public string Status { get; private set; } = "Disconnected";
+    public double ServerTime { get; private set; }
+    public double EstimatedServerTime => ServerTime + (Time.realtimeSinceStartupAsDouble - receivedAt);
+    public override bool IsPersistent => true;
+    public event Action<ServerMessage> Message;
+    public event Action Disconnected;
+    public event Action<int> SignedUp;
 
     protected override void Awake()
     {
-        Application.runInBackground = true;
         Priority = -90;
         base.Awake();
-        Application.wantsToQuit += Logout;
+
+        if (Current != null && Current != this)
+        {
+            return;
+        }
+
+        Current = this;
+        Application.runInBackground = true;
+
+        if (!UnityMainThreadDispatcher.Exists)
+        {
+            gameObject.AddComponent<UnityMainThreadDispatcher>();
+        }
     }
 
-    private void Start()
+    public void Login(string user, string password)
     {
-        ConnectToServer();
+        Connect(PacketMethod.BuildLoginRequest(user, password));
     }
 
-    private void ConnectToServer()
+    public void Signup(string user, string password)
     {
+        Connect(PacketMethod.BuildSignupRequest(user, password));
+    }
+
+    private void Connect(byte[] authentication)
+    {
+        if (receiver != null)
+        {
+            return;
+        }
+
+        ContainerInMap.Current.SetLoading(true);
+        Status = "Connecting";
+        shuttingDown = false;
+
+        int generation = Interlocked.Increment(ref connectionGeneration);
+
+        receiver = new Thread(() =>
+                              {
+                                  try
+                                  {
+                                      using (TcpClient socket = new TcpClient())
+                                      {
+                                          socket.NoDelay = true;
+
+                                          lock (sendLock)
+                                          {
+                                              if (!IsCurrent(generation))
+                                              {
+                                                  return;
+                                              }
+
+                                              client = socket;
+                                          }
+
+                                          socket.Connect(Host, Port);
+
+                                          NetworkStream connectionStream = socket.GetStream();
+
+                                          lock (sendLock)
+                                          {
+                                              if (!IsCurrent(generation))
+                                              {
+                                                  return;
+                                              }
+
+                                              stream = connectionStream;
+                                          }
+
+                                          SendBytes(authentication);
+
+                                          while (IsCurrent(generation))
+                                          {
+                                              byte[] header = ReadExact(connectionStream, 4);
+
+                                              ushort length = BitConverter.ToUInt16(header, 0);
+                                              ushort id = BitConverter.ToUInt16(header, 2);
+
+                                              if (length < 4 || length > 1024)
+                                              {
+                                                  throw new InvalidDataException("TCP 프레임 크기 오류");
+                                              }
+
+                                              PacketMethod.HandlePacket(this, generation, id, ReadExact(connectionStream, length - 4));
+                                          }
+                                      }
+                                  }
+                                  catch (Exception exception)
+                                  {
+                                      string error = exception.Message;
+
+                                      UnityMainThreadDispatcher.EnqueueWork(() =>
+                                                                            {
+                                                                                if (IsCurrent(generation))
+                                                                                {
+                                                                                    Fail(error);
+                                                                                }
+                                                                            });
+                                  }
+                              }) { IsBackground = true, Name = "EverWind Receiver" };
+
+        receiver.Start();
+    }
+
+    private static byte[] ReadExact(NetworkStream input, int count)
+    {
+        byte[] buffer = new byte[count];
+
+        int offset = 0;
+
+        while (offset < count)
+        {
+            int read = input.Read(buffer, offset, count - offset);
+
+            if (read == 0)
+            {
+                throw new EndOfStreamException("서버 연결이 종료되었습니다.");
+            }
+
+            offset += read;
+        }
+
+        return buffer;
+    }
+
+    public bool IsCurrent(int generation)
+    {
+        return !shuttingDown && generation == Volatile.Read(ref connectionGeneration);
+    }
+
+    private void SendBytes(byte[] buffer)
+    {
+        lock (sendLock)
+        {
+            if (stream == null)
+            {
+                throw new IOException("서버에 연결되어 있지 않습니다.");
+            }
+
+            stream.Write(buffer, 0, buffer.Length);
+        }
+    }
+
+    // 과거 호출부의 전송도 현재 서버가 허용하는 계약만 통과시킨다.
+    public void Send(byte[] buffer)
+    {
+        ushort id = BitConverter.ToUInt16(buffer, 2);
+
+        if (id != Protocol.RequestPacket && id != (ushort)PacketType.C2S_LOGIN_REQ && id != (ushort)PacketType.C2S_SIGNUP_REQ)
+        {
+            throw new InvalidOperationException("과거 클라이언트 권위 패킷은 전송할 수 없습니다.");
+        }
+
+        SendBytes(buffer);
+    }
+
+    public ulong Send(Request request, Action<ServerMessage> callback = null)
+    {
+        if (request.RequestId == 0)
+        {
+            request.RequestId = ++nextId;
+        }
+
+        request.Epoch = Epoch;
+
+        if (callback != null)
+        {
+            pending[request.RequestId] = callback;
+            deadlines[request.RequestId] = Time.realtimeSinceStartup + 5;
+        }
+
         try
         {
-            _client = new TcpClient("127.0.0.1", 4000);
-            Stream = _client.GetStream();
-
-            _recvThread = new Thread(ReceiveLoop);
-            _recvThread.IsBackground = true;
-            _recvThread.Start();
-
-            Debug.Log("[NetworkClient] Connected to server.");
+            SendBytes(PacketMethod.BuildGameplayRequest(request));
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            Debug.LogError($"[NetworkClient] Connection failed: {ex.Message}");
+            pending.Remove(request.RequestId);
+            deadlines.Remove(request.RequestId);
+            Fail(exception.Message);
         }
+
+        return request.RequestId;
     }
 
-    private void OnApplicationQuit()
+    public void CompleteLogin(int result, int entity)
     {
-        try { _recvThread?.Abort(); } catch { }
-        try { Stream?.Close(); } catch { }
-        try { _client?.Close(); } catch { }
+        if (result != 0)
+        {
+            Fail("로그인에 실패했습니다. 계정 정보와 중복 접속을 확인해 주세요.");
+            return;
+        }
+
+        LocalEntityId = entity;
+        UserDbId = entity;
+        Status = "Loading world";
+        Send(new Request { Kind = RequestKind.Join });
     }
 
-    private void ReceiveLoop()
+    public void CompleteSignup(int result)
     {
-        try
+        SignedUp?.Invoke(result);
+        CloseConnection();
+        UnityEngine.Object.FindFirstObjectByType<LoginUI>()?.SetResult(result == 0 ? "가입되었습니다. 로그인해 주세요." : "가입에 실패했습니다.");
+    }
+
+    public bool Accept(ServerMessage message)
+    {
+        if (message.Kind == EventKind.Ack)
         {
-            while (true)
+            if (pending.TryGetValue(message.RequestId, out Action<ServerMessage> callback))
             {
-                byte[] header = new byte[4];
-                ReadExact(Stream, header, 4);
+                pending.Remove(message.RequestId);
+                deadlines.Remove(message.RequestId);
+                callback(message);
+            }
 
-                ushort totalLength = BitConverter.ToUInt16(header, 0);
-                ushort packetId = BitConverter.ToUInt16(header, 2);
+            return false;
+        }
 
-                int payloadLength = totalLength - 4;
+        if (message.Kind == EventKind.Welcome)
+        {
+            Epoch = message.Epoch;
+            Ready = false;
+        }
 
-                byte[] payload = new byte[payloadLength];
-                ReadExact(Stream, payload, payloadLength);
+        if (message.Epoch != Epoch)
+        {
+            return false;
+        }
 
-                HandlePacket((PacketType)packetId, payload);
+        ServerTime = message.ServerTime;
+        receivedAt = Time.realtimeSinceStartupAsDouble;
+
+        if (message.Kind == EventKind.Saved && message.RequestId == logoutRequest)
+        {
+            logoutRequest = 0;
+
+            if (message.Error == ResultCode.None)
+            {
+                ReturnToLogin();
+                return false;
             }
         }
-        catch (Exception ex)
-        {
-            Debug.Log("[NetworkClient] Server disconnected: " + ex.Message);
-        }
-    }
-
-    private void ReadExact(NetworkStream s, byte[] buf, int len)
-    {
-        int read = 0;
-        while (read < len)
-        {
-            int r = s.Read(buf, read, len - read);
-            if (r <= 0) throw new Exception("Disconnected");
-            read += r;
-        }
-    }
-
-    public bool Logout()
-    {
-        // No session data can be saved when the server connection was not established.
-        if (_client == null || !_client.Connected || Stream == null)
-            return true;
-
-        var itemList = SingletonManager.Instance.GetSingleton<PopUpUIManager>().Inventory.GetCurrentInventoryData();
-        var stat = SingletonManager.Instance.GetSingleton<WorldLoader>().InstancedPlayer.GetComponent<PlayerStatManager>().GetStat();
-        var questManager = SingletonManager.Instance.GetSingleton<QuestManager>();
-        var questResetPkt = PacketMethod.BuildQuestResetPkt(UserDbId);
-        Send(questResetPkt);
-
-        if (questManager != null)
-        {
-            var questList = questManager.GetSaveData();
-            for (int i = 0; i < questList.Count; i++)
-            {
-                var questPkt = PacketMethod.BuildQuestSavePkt(UserDbId, questList[i]);
-                Send(questPkt);
-            }
-        }
-
-        foreach (var item in itemList)
-        {
-            var itemPkt = PacketMethod.BuildInventoryPkt(UserDbId, item);
-            Send(itemPkt);
-        }
-
-        var statPkt = PacketMethod.BuildStatPkt(UserDbId, stat);
-        Send(statPkt);
 
         return true;
     }
 
-    private void HandlePacket(PacketType type, byte[] payload)
+    public void Publish(ServerMessage message)
     {
-        switch (type)
+        Message?.Invoke(message);
+    }
+
+    public void CompleteWorld()
+    {
+        Ready = true;
+        Status = "Connected";
+    }
+
+    public bool Logout()
+    {
+        if (!Ready)
         {
-            case PacketType.S2C_LOGIN_ACK:
-                PacketMethod.HandleLoginAck(payload);
-                break;
-            case PacketType.S2C_SIGNUP_ACK:
-                PacketMethod.HandleSignupAck(payload);
-                break;
-            case PacketType.S2C_MOVESYNC_ACK:
-                PacketMethod.HandleMoveSyncAck(payload);
-                break;
-            case PacketType.S2C_PLAYERLIST_ACK:
-                PacketMethod.HandlePlayerListAck(payload);
-                break;
-            case PacketType.S2C_LOGOUT_ACK:
-                PacketMethod.HandlePlayerLogoutAck(payload);
-                break;
-            case PacketType._INVENTORYITEM:
-                PacketMethod.HandleInventoryAck(payload);
-                break;
-            case PacketType._PLAYERSTAT:
-                PacketMethod.HandlePlayerStatAck(payload);
-                break;
-            case PacketType.S2C_PLAYERLIST_RUNTIME:
-                PacketMethod.HandlePlayerListRuntime(payload);
-                break;
-            case PacketType.S2C_ENEMY_SPAWN:
-                PacketMethod.HandleEnemyInfo(payload);
-                break;
-            case PacketType.S2C_ENEMY_DAMAGED:
-                PacketMethod.HandleEnemyDamaged(payload);
-                break;
-            case PacketType.S2C_ENEMY_MOVE_SYNC:
-                PacketMethod.HandleEnemyMoveSync(payload);
-                break;
-            case PacketType.S2C_ENEMY_DEAD_ACK:
-                PacketMethod.HandleEnemyDeadAck(payload);
-                break;
-            case PacketType.S2C_ENEMY_ATTACK_ANIM:
-                PacketMethod.HandleEnemyAttackAnim(payload);
-                break;
-            case PacketType._ONESHOT_ANIM_SYNC:
-                PacketMethod.HandleOneshotAnimSync(payload);
-                break;
-            case PacketType._INTERACT_SYNC:
-                PacketMethod.HandleInteractSync(payload);
-                break;
-            case PacketType._DEAD_SYNC:
-                PacketMethod.HandleDeadSync(payload);
-                break;
-            case PacketType._COMBAT_STATE_SYNC:
-                PacketMethod.HandleCombatStateSync(payload);
-                break;
-            case PacketType.S2C_MAP_CHANGE_ACK:
-                PacketMethod.HandleMapChangeAck(payload);
-                break;
-            case PacketType.S2C_QUEST_INFO:
-                PacketMethod.HandleQuestInfo(payload);
-                break;
-            default:
-                Debug.LogWarning("Unknown packet: " + type);
-                break;
+            ReturnToLogin();
+            return true;
+        }
+
+        logoutRequest = Send(new Request { Kind = RequestKind.Logout });
+        return true;
+    }
+
+    public void ReturnToLogin()
+    {
+        CloseConnection();
+
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != "LogIn")
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadSceneAsync("LogIn");
         }
     }
 
-    public void Send(byte[] packet)
+    public void Fail(string error)
     {
-        if (Stream == null)
-            return;
+        Status = error;
+        CloseConnection();
 
-        try
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "InGame")
         {
-            Stream.Write(packet, 0, packet.Length);
+            ReturnToLogin();
         }
-        catch (Exception ex)
+        else
         {
-            Debug.LogError($"[NetworkClient] Send failed: {ex.Message}");
+            UnityEngine.Object.FindFirstObjectByType<LoginUI>()?.SetResult(error);
         }
     }
 
-       
+    private void Update()
+    {
+        List<ulong> expired = new List<ulong>();
+
+        foreach (KeyValuePair<ulong, float> pair in deadlines)
+        {
+            if (Time.realtimeSinceStartup > pair.Value)
+            {
+                expired.Add(pair.Key);
+            }
+        }
+
+        foreach (ulong id in expired)
+        {
+            if (!pending.TryGetValue(id, out Action<ServerMessage> callback))
+            {
+                continue;
+            }
+
+            pending.Remove(id);
+            deadlines.Remove(id);
+            callback(new ServerMessage { Kind = EventKind.Ack, RequestId = id, Error = ResultCode.Expired });
+        }
+    }
+
+    public void CloseConnection()
+    {
+        shuttingDown = true;
+        Interlocked.Increment(ref connectionGeneration);
+        Ready = false;
+        Epoch = 0;
+
+        lock (sendLock)
+        {
+            stream?.Dispose();
+            client?.Close();
+            stream = null;
+            client = null;
+        }
+
+        Thread thread = receiver;
+
+        receiver = null;
+
+        if (thread != null && thread != Thread.CurrentThread)
+        {
+            thread.Join(500);
+        }
+
+        pending.Clear();
+        deadlines.Clear();
+        Disconnected?.Invoke();
+        ContainerInMap.Current?.ClearAll();
+    }
+
+    protected override void OnDestroy()
+    {
+        if (Current == this)
+        {
+            CloseConnection();
+            Current = null;
+        }
+
+        base.OnDestroy();
+    }
 }
-

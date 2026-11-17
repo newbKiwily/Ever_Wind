@@ -2,6 +2,8 @@
 #include "../../CoreData/GameplayData.h"
 namespace EverWind::Gameplay
 {
+class Map;
+
 class Actor
 {
   public:
@@ -30,6 +32,8 @@ class Actor
     uint64_t pushId = 0;
 
     double diedAt = 0;
+
+    bool UpdateKnockback(Map &map, double now, double dt);
 
     virtual ~Actor();
 };

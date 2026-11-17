@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: EverWind_Monster_1
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: EverWind_Monster_1
+  m_GUID: 4d8fecadb6083084abcd2a1b715f1e6b
+  m_SerializeEntries:
+  - m_GUID: 3f7f14b9a6f1e5b4d96e3b65d7dfd558
+    m_Address: Assets/EverWindGameplay/Generated/SkeletonVisual.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+    m_FolderGuid: 
+  - m_GUID: 74139e81da0d83440b2c68f003f08979
+    m_Address: Assets/EverWindGameplay/Generated/SkeletonProfile.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+    m_FolderGuid: 
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: f5e3eb12700737644a67b0bff88eada7, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 5dd8bb27719c2154bac9212fad437313, type: 2}
+    - {fileID: 11400000, guid: e2caf627ec5a2c24d90f37115529c313, type: 2}
+    m_SchemaDisplayOrder:
+    - EverWind_Monster_1_BundledAssetGroupSchema
+    - EverWind_Monster_1_ContentUpdateGroupSchema
+  m_IncludeInBuild: 1
+  m_IncludeInBuildMigrated: 1

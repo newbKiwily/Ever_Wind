@@ -16,9 +16,7 @@ public class TutorialGuide : MonoBehaviour
     private bool applyingServer;
     private ITutorialStep _currentStep;
     private TutorialStep _currentStepType;
-    private TextRenderManager _textRenderManager;
     private InputManager _inputManager;
-    private DataCenter _dataCenter;
     private bool _hasActiveTutorial;
     private Dictionary<TutorialStep, ITutorialStep> _stateTable = new Dictionary<TutorialStep, ITutorialStep>();
 
@@ -33,16 +31,13 @@ public class TutorialGuide : MonoBehaviour
 
         _currentStepType = targetState;
         _hasActiveTutorial = true;
-        _dataCenter.loginData.TutorialStep = (int)targetState;
         _currentStep = _stateTable[targetState];
-        _currentStep.EnterStep(this, _textRenderManager);
+        _currentStep.EnterStep(this);
     }
 
     private void Start()
     {
-        _dataCenter = SingletonManager.Instance.GetSingleton<DataCenter>();
         _inputManager = SingletonManager.Instance.GetSingleton<InputManager>();
-        _textRenderManager = SingletonManager.Instance.GetSingleton<TextRenderManager>();
 
         _stateTable.Add(TutorialStep.Camera, new CameraStep());
         _stateTable.Add(TutorialStep.Move, new MoveStep());
@@ -51,27 +46,15 @@ public class TutorialGuide : MonoBehaviour
         _stateTable.Add(TutorialStep.Craft, new CraftStep());
         _stateTable.Add(TutorialStep.Equip, new EquipStep());
 
-        if (EverWind.Gameplay.GameplayIntegration.Active != null) return;
-        int savedStep = _dataCenter.loginData.TutorialStep;
-        if (savedStep < 0)
-        {
-            CompleteTutorial();
-            return;
-        }
+        // 초깃값을 추측하지 않고 서버의 Tutorial 이벤트를 기다린다.
 
-        if (savedStep > (int)TutorialStep.Equip)
-        {
-            savedStep = (int)TutorialStep.Camera;
-        }
-
-        TransitionStep((TutorialStep)savedStep);
     }
 
     private void Update()
     {
         if (_currentStep != null)
         {
-            _currentStep.UpdateStep(this, _textRenderManager, _inputManager);
+            _currentStep.UpdateStep(this, _inputManager);
         }
     }
 
@@ -85,7 +68,6 @@ public class TutorialGuide : MonoBehaviour
 
         _currentStep = null;
         _hasActiveTutorial = false;
-        _dataCenter.loginData.TutorialStep = -1;
     }
 
     public TutorialStep GetTutorialStepType()

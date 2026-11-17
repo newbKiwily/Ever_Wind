@@ -5,22 +5,19 @@ public class MoveStep : ITutorialStep
 {
     private Action<int, int> _deleteAction;
     private GameObject _targetBox;
-    public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
+    public void EnterStep(TutorialGuide step)
     {
-        _targetBox=GameObject.Instantiate(step.moveT_taretBox, step.TargetBoxPosition, Quaternion.identity);
+        // 이동 판정은 서버의 범위 검증을 사용하며 안내 마커는 생성하지 않는다.
 
-        _deleteAction += (_, _) => ClearEvent(step, textRenderManager);
+        _deleteAction += (_, _) => ClearEvent(step);
         PlayEvents.OnMoveCompleted += _deleteAction;
 
-        textRenderManager.StartShow("MoveT");
-        textRenderManager.AutoShow(0, 1);
     }
 
-    public void UpdateStep(TutorialGuide step, TextRenderManager textRenderManager, InputManager inputManager)
+    public void UpdateStep(TutorialGuide step, InputManager inputManager)
     {
         if (_deleteAction != null) return;
 
-        if (!textRenderManager.IsDoneShowingText()) return;
 
         if (inputManager.AnyKeyDownExcludeMouse())
         {
@@ -38,10 +35,8 @@ public class MoveStep : ITutorialStep
         _deleteAction = null;
     }
 
-    public void ClearEvent(TutorialGuide step, TextRenderManager textRenderManager)
+    public void ClearEvent(TutorialGuide step)
     {
-        textRenderManager.AutoShow(2, 3);
-
         if (_deleteAction != null)
             PlayEvents.OnMoveCompleted -= _deleteAction;
 

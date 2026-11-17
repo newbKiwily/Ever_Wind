@@ -5,17 +5,15 @@ public class EquipStep : ITutorialStep
     private Action<int, int> _deleteAction;
     private bool _mapChangeRequested;
 
-    public void EnterStep(TutorialGuide step, TextRenderManager textRenderManager)
+    public void EnterStep(TutorialGuide step)
     {
         _mapChangeRequested = false;
-        _deleteAction += (_, _) => ClearEvent(step, textRenderManager);
+        _deleteAction += (_, _) => ClearEvent(step);
         PlayEvents.OnEquipCompleted += _deleteAction;
 
-        textRenderManager.StartShow("EquipT");
-        textRenderManager.AutoShow(0, 2);
     }
 
-    public void UpdateStep(TutorialGuide step, TextRenderManager textRenderManager, InputManager inputManager)
+    public void UpdateStep(TutorialGuide step, InputManager inputManager)
     {
         if (_deleteAction != null)
             return;
@@ -23,18 +21,10 @@ public class EquipStep : ITutorialStep
         if (_mapChangeRequested)
             return;
 
-        if (!textRenderManager.IsDoneShowingText())
-            return;
 
         step.CompleteTutorial();
 
-        if (EverWind.Gameplay.GameplayIntegration.Active != null) { _mapChangeRequested=true; return; }
-        var dataCenter = SingletonManager.Instance.GetSingleton<DataCenter>();
-        dataCenter.FlushQueue();
-
-        var networkClient = SingletonManager.Instance.GetSingleton<NetworkClient>();
-        var pkt = PacketMethod.BuildMapChangeReq(networkClient.UserDbId, 1);
-        networkClient.Send(pkt);
+        // 맵 전환은 서버가 튜토리얼 완료를 확정한 뒤 처리한다.
         _mapChangeRequested = true;
     }
 
@@ -47,10 +37,8 @@ public class EquipStep : ITutorialStep
         _mapChangeRequested = false;
     }
 
-    public void ClearEvent(TutorialGuide step, TextRenderManager textRenderManager)
+    public void ClearEvent(TutorialGuide step)
     {
-        textRenderManager.AutoShow(3, 5);
-
         if (_deleteAction != null)
             PlayEvents.OnEquipCompleted -= _deleteAction;
 

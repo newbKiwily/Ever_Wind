@@ -1201,6 +1201,11 @@ SkinnedMeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 3
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -1222,9 +1227,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -1426,6 +1433,11 @@ SkinnedMeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 3
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -1447,9 +1459,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -1937,6 +1951,11 @@ SkinnedMeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 3
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -1958,9 +1977,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -2186,9 +2207,7 @@ GameObject:
   - component: {fileID: 8001741627941466705}
   - component: {fileID: 8928945199437611364}
   - component: {fileID: 4570681974588868130}
-  - component: {fileID: 3912279876126773120}
   - component: {fileID: 5693990330777470152}
-  - component: {fileID: -1067811571900022754}
   m_Layer: 0
   m_Name: Skeleton
   m_TagString: Enemy
@@ -2221,7 +2240,7 @@ RectTransform:
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!95 &8928945199437611364
 Animator:
-  serializedVersion: 5
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -2235,6 +2254,7 @@ Animator:
   m_ApplyRootMotion: 1
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
@@ -2263,26 +2283,6 @@ CapsuleCollider:
   m_Height: 1.6741943
   m_Direction: 1
   m_Center: {x: 0, y: 0.83709717, z: 0}
---- !u!114 &3912279876126773120
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5942362296589766583}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59a0f909504e3af41b9cc5d6c0744a10, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  InstanceNum: 0
-  Hp: 100
-  Damaged1: {fileID: 7400000, guid: 67172a31c0d72804fa79674c557d4982, type: 2}
-  Damaged2: {fileID: 7400000, guid: cf2a9bba233ee4041ad197729f50ffe5, type: 2}
-  Damaged3: {fileID: 7400000, guid: 62b5711430a82f64787675c4c857acc5, type: 2}
-  SkeletonDamaged1: {fileID: 7400000, guid: 67172a31c0d72804fa79674c557d4982, type: 2}
-  SkeletonDamaged2: {fileID: 7400000, guid: cf2a9bba233ee4041ad197729f50ffe5, type: 2}
-  SkeletonDamaged3: {fileID: 7400000, guid: 62b5711430a82f64787675c4c857acc5, type: 2}
 --- !u!143 &5693990330777470152
 CharacterController:
   m_ObjectHideFlags: 0
@@ -2298,7 +2298,6 @@ CharacterController:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -2309,27 +2308,6 @@ CharacterController:
   m_SkinWidth: 0.01
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0.85, z: 0}
---- !u!114 &-1067811571900022754
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5942362296589766583}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 35511f6f9eaa91d428bb871f342befee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  CurrentState: 0
-  CurrentOwnerDbId: -1
-  IsAttacking: 0
-  DamagedCount: 1
-  MoveSpeed: 3
-  AttackDistance: 2
-  RotationSpeed: 10
-  PositionCorrectionSpeed: 10
-  SyncInterval: 0.1
 --- !u!1 &5970857493884979601
 GameObject:
   m_ObjectHideFlags: 0

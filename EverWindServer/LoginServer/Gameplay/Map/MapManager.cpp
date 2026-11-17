@@ -361,8 +361,7 @@ std::optional<Vec3> MapManager::MonsterSpawn(Map &map, float radius, int ignoreA
 
 bool MapManager::InRange(const Actor &a, const Actor &b, float reach) const
 {
-    return std::abs(a.p.y - b.p.y) < 2 &&
-           Distance(a.p, b.p) <= a.radius + b.radius + reach;
+    return GetMap(a.map).InRange(a, b, reach);
 }
 }
 

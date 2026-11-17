@@ -375,7 +375,7 @@ void GameplayProcessor::Cancel(Actor &a, Error reason)
 
         if (i != m.resources.end() && i->second->owner == a.id)
         {
-            i->second->owner = 0;
+            i->second->Release(a.id);
 
             ResourceState(m, *i->second);
         }
@@ -447,10 +447,11 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
         return;
     }
 
-    float damage = skill.ratio >= 0 ? AttackPower(attacker) *
-                                          (attacker.kind == EntityKind::Player ? 1 + skill.ratio / 100.0f : 1) *
-                                          100.0f / (100 + DefencePower(target))
-                                    : skill.damage;
+    int attack = attacker.kind == EntityKind::Player ? static_cast<const Player &>(attacker).AttackPower(world.Data()) : 10;
+    int defence = target.kind == EntityKind::Player ? static_cast<const Player &>(target).DefencePower(world.Data()) : 0;
+
+    float damage = skill.ratio >= 0 ? attack * (attacker.kind == EntityKind::Player ? 1 + skill.ratio / 100.0f : 1) * 100.0f / (100 + defence) : skill.damage;
+
     damageable->ApplyDamage(damage);
 
     auto e = Base(EventKind::Hit, target);
@@ -535,41 +536,15 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
 {
     auto &m = world.GetMap(a.map);
 
-    if (a.pushEnd > world.now)
+    if (a.UpdateKnockback(m, world.now, dt) && a.kind == EntityKind::Player)
     {
-        Vec3 next = Add(a.p, Scale(a.push, static_cast<float>(dt)));
+        auto &p = static_cast<Player &>(a);
 
-        next.y = m.surface.Sample(next.x, next.z);
+        ++p.revision;
 
-        if (Geometry(m, a.p, next, a.radius, a.id) == Error::None)
-        {
-            a.p = next;
+        p.budget = 0;
 
-            a.velocity = a.push;
-        }
-        else
-        {
-            a.pushEnd = world.now;
-
-            a.velocity = {};
-        }
-    }
-    else if (a.pushId)
-    {
-        a.pushId = 0;
-
-        a.velocity = {};
-
-        if (a.kind == EntityKind::Player)
-        {
-            auto &p = static_cast<Player &>(a);
-
-            ++p.revision;
-
-            p.budget = 0;
-
-            Broadcast(a.map, Base(EventKind::State, a));
-        }
+        Broadcast(a.map, Base(EventKind::State, a));
     }
 
     if (!a.action.id)
@@ -648,21 +623,12 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
 
         auto &r = *i->second;
 
-        if (!r.Harvest(p.id))
+        if (!r.Harvest(p.id, world.now))
         {
             Cancel(a);
 
             return;
         }
-
-        if (r.stock == 0 && r.refillDelay > 0)
-        {
-            r.refillAt = world.now + r.refillDelay;
-
-            ++r.generation;
-        }
-
-        r.owner = 0;
 
         ++p.inventory[r.item];
 
@@ -776,85 +742,16 @@ void GameplayProcessor::Advance(double dt)
             {
                 Broadcast(mapId, Base(EventKind::Despawn, m));
 
-                refill.RefillMonster(m, *point);
+                m.Respawn(*point);
 
                 Spawn(m);
             }
 
-            if (!m.CanAttack() || m.pushEnd > world.now)
+            const auto &skill = world.Data().skills.at(1);
+
+            if (int target = m.UpdateAI(map, skill, world.now, dt))
             {
-                continue;
-            }
-
-            Player *target = nullptr;
-
-            float nearest = 10;
-
-            for (auto &[pid, p] : world.Players())
-            {
-                if (p->epoch && p->map == mapId && p->hp > 0)
-                {
-                    float d = Distance(m.p, p->p);
-
-                    if (d < nearest)
-                    {
-                        nearest = d;
-
-                        target = p.get();
-                    }
-                }
-            }
-
-            Vec3 goal = m.home;
-
-            if (target)
-            {
-                goal = target->p;
-
-                m.mode = Mode::Combat;
-
-                auto s = world.Data().skills.at(1);
-
-                if (world.InRange(m, *target, s.reach) && m.cooldowns[1] <= world.now)
-                {
-                    m.cooldowns[1] = world.now + 1.8;
-
-                    Start(m, ActionKind::Attack, target->id, 1, s.duration, s.hit);
-
-                    continue;
-                }
-            }
-            else
-            {
-                m.mode = Mode::NonCombat;
-
-                goal = {
-                    m.home.x + std::sin(static_cast<float>(world.now * .3 + id)) * 2, 0,
-                    m.home.z + std::cos(static_cast<float>(world.now * .3 + id)) * 2};
-            }
-
-            Vec3 delta{goal.x - m.p.x, 0, goal.z - m.p.z};
-
-            float d = Distance(goal, m.p);
-
-            m.velocity = {};
-
-            if (d > .2f && (!target || !world.InRange(m, *target, 1.2f)))
-            {
-                m.velocity = Scale(delta, m.speed / d);
-
-                auto next = Add(m.p, Scale(m.velocity, static_cast<float>(dt)));
-
-                next.y = map.surface.Sample(next.x, next.z);
-
-                if (Geometry(map, m.p, next, m.radius, m.id) == Error::None)
-                {
-                    m.p = next;
-                }
-                else
-                {
-                    m.velocity = {};
-                }
+                Start(m, ActionKind::Attack, target, 1, skill.duration, skill.hit);
             }
         }
     }
@@ -885,57 +782,13 @@ void GameplayProcessor::Advance(double dt)
     }
 }
 
-int GameplayProcessor::AttackPower(const Actor &a) const
-{
-    if (a.kind != EntityKind::Player)
-    {
-        return 10;
-    }
-
-    auto &p = static_cast<const Player &>(a);
-
-    int result = p.baseAttack;
-
-    for (auto [slot, id] : p.equipment)
-    {
-        if (auto i = world.Data().items.find(id); i != world.Data().items.end() && slot == 1003)
-        {
-            result += i->second.power;
-        }
-    }
-
-    return result;
-}
-
-int GameplayProcessor::DefencePower(const Actor &a) const
-{
-    if (a.kind != EntityKind::Player)
-    {
-        return 0;
-    }
-
-    auto &p = static_cast<const Player &>(a);
-
-    int result = p.baseDefence;
-
-    for (auto [slot, id] : p.equipment)
-    {
-        if (auto i = world.Data().items.find(id); i != world.Data().items.end() && slot != 1003)
-        {
-            result += i->second.power;
-        }
-    }
-
-    return result;
-}
-
 void GameplayProcessor::Stats(Player &p)
 {
     auto e = Base(EventKind::Stats, p);
 
-    e.definition = AttackPower(p);
+    e.definition = p.AttackPower(world.Data());
 
-    e.target = DefencePower(p);
+    e.target = p.DefencePower(world.Data());
 
     e.value = p.speed;
 
@@ -1786,7 +1639,7 @@ Error GameplayProcessor::HandleResourceRefillRequest(Player &p, const Request &r
 
     auto &resource = *world.GetMap(p.map).resources.at(r.target);
 
-    if (refill.RefillResource(resource))
+    if (resource.Refill())
     {
         ResourceState(world.GetMap(p.map), resource);
     }

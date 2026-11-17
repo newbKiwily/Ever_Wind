@@ -152,4 +152,34 @@ void Player::ApplyDamage(float amount)
 {
     hp = std::max(0.0f, hp - std::max(0.0f, amount));
 }
+
+int Player::AttackPower(const GameDataHub &data) const
+{
+    int result = baseAttack;
+
+    for (auto [slot, itemId] : equipment)
+    {
+        if (auto i = data.items.find(itemId); i != data.items.end() && slot == 1003)
+        {
+            result += i->second.power;
+        }
+    }
+
+    return result;
+}
+
+int Player::DefencePower(const GameDataHub &data) const
+{
+    int result = baseDefence;
+
+    for (auto [slot, itemId] : equipment)
+    {
+        if (auto i = data.items.find(itemId); i != data.items.end() && slot != 1003)
+        {
+            result += i->second.power;
+        }
+    }
+
+    return result;
+}
 }

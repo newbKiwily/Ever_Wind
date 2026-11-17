@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: EverWind_Monster_0
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: EverWind_Monster_0
+  m_GUID: e8b5f8525cea8d5468961337e52f41f4
+  m_SerializeEntries:
+  - m_GUID: 07cb33c69ac73d846a377d54f6767c56
+    m_Address: Assets/EverWindGameplay/Generated/SpiderProfile.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+    m_FolderGuid: 
+  - m_GUID: 68dadac59572f1f49981e1b882ec378e
+    m_Address: Assets/EverWindGameplay/Generated/SpiderVisual.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+    m_FolderGuid: 
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: f5e3eb12700737644a67b0bff88eada7, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 2278a03fa45740b41be2903465653b75, type: 2}
+    - {fileID: 11400000, guid: dc3c79189709ba94bb0e86de48a1ce57, type: 2}
+    m_SchemaDisplayOrder:
+    - EverWind_Monster_0_BundledAssetGroupSchema
+    - EverWind_Monster_0_ContentUpdateGroupSchema
+  m_IncludeInBuild: 1
+  m_IncludeInBuildMigrated: 1

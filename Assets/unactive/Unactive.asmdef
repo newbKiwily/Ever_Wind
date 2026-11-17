@@ -1,0 +1,7 @@
+{
+  "name": "EverWind.Unactive",
+  "autoReferenced": false,
+  "defineConstraints": [
+    "EVERWIND_UNACTIVE_ARCHIVE"
+  ]
+}

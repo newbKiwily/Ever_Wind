@@ -18,6 +18,12 @@ class Resource final : public Actor
 
     bool TryReserve(int playerId);
 
-    bool Harvest(int playerId);
+    bool Harvest(int playerId, double now);
+
+    void Release(int playerId);
+
+    Error ValidateRefill(unsigned requestedGeneration, double now) const;
+
+    bool Refill();
 };
 }

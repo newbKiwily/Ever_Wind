@@ -24,6 +24,7 @@ public sealed class GameplayCatalog : ScriptableObject
         public float Reach;
         public float Cooldown;
     }
+
     public ItemEntry[] Items = Array.Empty<ItemEntry>();
     public RecipeEntry[] Recipes = Array.Empty<RecipeEntry>();
     public SkillEntry[] Skills = Array.Empty<SkillEntry>();
@@ -33,56 +34,79 @@ public sealed class GameplayCatalog : ScriptableObject
     {
         foreach (var entry in Items)
             if (entry.Id == id)
+            {
                 return entry.Definition;
+            }
         return null;
     }
+
     public int ItemId(InventoryItem item)
     {
         foreach (var entry in Items)
             if (entry.Definition == item)
+            {
                 return entry.Id;
+            }
         return 0;
     }
+
     public int RecipeId(CraftItemRecipe recipe)
     {
         foreach (var entry in Recipes)
             if (entry.Definition == recipe)
+            {
                 return entry.Id;
+            }
         return 0;
     }
+
     public GameObject Visual(int id, bool placement)
     {
         foreach (var entry in Visuals)
             if (entry.Item == id)
-                return placement ? entry.Placement : entry.Resource;
+            {
+                return ContainerInMap.Current != null ? ContainerInMap.Current.GetAsset<GameObject>(placement ? entry.PlacementReference : entry.ResourceReference) : null;
+            }
         return null;
     }
+
     public float Reach(int id)
     {
         foreach (var skill in Skills)
             if (skill.Id == id)
+            {
                 return skill.Reach;
+            }
         return 0;
     }
+
     public float Cooldown(int id)
     {
         foreach (var skill in Skills)
             if (skill.Id == id)
+            {
                 return skill.Cooldown;
+            }
         return 0;
     }
+
     public bool HasSkill(int id)
     {
         foreach (var skill in Skills)
             if (skill.Id == id)
+            {
                 return true;
+            }
         return false;
     }
+
     public string ItemName(int id)
     {
         foreach (var item in Items)
             if (item.Id == id && item.Definition != null)
+            {
                 return item.Definition.name;
+            }
         return id.ToString();
     }
 }

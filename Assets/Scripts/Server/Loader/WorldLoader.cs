@@ -1,256 +1,650 @@
-using UnityEngine;
+using System;
+
+using System.Collections;
+
 using System.Collections.Generic;
+
+using EverWind.Gameplay;
+
+using UnityEngine;
+
+using UnityEngine.SceneManagement;
 
 public class WorldLoader : SingletonBase<WorldLoader>
 {
-    private GameObject _currentMapInstance;
+    private GameObject worldRoot;
 
-    [SerializeField] private GameObject _playerPrefab;
-    [SerializeField] private GameObject _otherPlayerPrefab;
-    public GameObject InstancedPlayer { get; private set; }
+    private Collider[] groundColliders = Array.Empty<Collider>();
+
+    private readonly Dictionary<GameObject, List<Material>> ownedMaterials = new Dictionary<GameObject, List<Material>>();
+    private readonly Dictionary<int, List<ServerMessage>> waiting = new Dictionary<int, List<ServerMessage>>();
+
+    public ContainerInMap Container;
+
+    public ServerTransmitterManager Registry;
+
+    public Canvas LoadingCanvas;
+
+    public TMPro.TMP_Text LoadingLabel;
+
+    public GameObject InstancedPlayer => Registry != null && Registry.LocalActor != null ? Registry.LocalActor.gameObject : null;
+
     public override bool IsPersistent => true;
+
+    private NetworkClient Transport => Container.Transport;
+
+    private GameplayCatalog Catalog => Container.Catalog;
+
+    private bool DebugGeometry => Registry != null && Registry.DebugGeometry;
+
+    private Transform SpawnParent => worldRoot.transform;
 
     protected override void Awake()
     {
         Priority = -60;
+
         base.Awake();
-    }
 
-    public void InitializeWorld(int mapId, Vector3 spawnPos, Queue<int> otherPlayers, Queue<DataCenter.EnemyInfo> enemies)
-    {
-        ClearWorld();
-
-        SpawnMap(mapId);
-
-        SpawnLocalPlayer(spawnPos);
-
-        SpawnOtherPlayers(otherPlayers);
-
-        SpawnEnemies(enemies);
-    }
-
-    public void ChangeWorld(int mapId, Vector3 spawnPos, Queue<int> otherPlayers, Queue<DataCenter.EnemyInfo> enemies)
-    {
-        if (InstancedPlayer != null)
+        if (LoadingCanvas != null)
         {
-            var player = InstancedPlayer.GetComponent<Player>();
-            if (player != null)
-            {
-                var combatManager = player.GetCombatManager();
-                if (combatManager != null)
-                {
-                    combatManager.ResetCombatStateForMapChange();
-                }
-
-                player.StopMoveto();
-            }
-        }
-
-        var enemyHpUiManager = FindFirstObjectByType<EnemyHpUIManager>();
-        if (enemyHpUiManager != null)
-        {
-            enemyHpUiManager.ClearForMapChange();
-        }
-
-        if (_currentMapInstance != null)
-            Destroy(_currentMapInstance);
-     
-        var otherPlayerList = SingletonManager.Instance.GetSingleton<OtherPlayerManager>();
-        otherPlayerList.FlushOtherPlayer();
-        var enemyList = SingletonManager.Instance.GetSingleton<EnemySpawner>();
-        enemyList.FlushEnemy();
-
-        SpawnMap(mapId);
-
-        SpawnOtherPlayers(otherPlayers);
-
-        SpawnEnemies(enemies);
-
-        MoveLocalPlayerToSpawn(spawnPos);
-
-    }
-
-    private void SpawnMap(int mapId)
-    {
-        if (DataCenter.Instance.MapTable.TryGetValue(mapId, out MapData mapData))
-        {
-            if (mapData == null)
-            {
-                return;
-            }
-
-            if (mapData.MapPrefab == null)
-            {
-                return;
-            }
-
-            _currentMapInstance = Instantiate(mapData.MapPrefab, Vector3.zero, Quaternion.identity);
-            _currentMapInstance.name = $"Map_{mapId}";
-            UIEvents.EvMinimapImageChanged(mapData.MinimapImage, mapData.Position, mapData.Rotation, mapData.Scale);
-        }
-        else
-        {
+            DontDestroyOnLoad(LoadingCanvas.gameObject);
         }
     }
 
-    private void SpawnLocalPlayer(Vector3 spawnPos)
+    public void SetLoading(bool loading)
     {
-        if (_playerPrefab != null)
+        if (LoadingCanvas != null)
         {
-            InstancedPlayer = Instantiate(_playerPrefab, spawnPos, Quaternion.identity);
-            Player player = InstancedPlayer.GetComponent<Player>();
-            player.Init();
-            SetupCamera(InstancedPlayer.transform);
-            MoveLocalPlayerToSpawn(spawnPos);
-            UIEvents.EvLocalPlayerSpawned(player);
+            LoadingCanvas.gameObject.SetActive(loading);
+        }
+
+        if (LoadingLabel != null)
+        {
+            LoadingLabel.text = "로딩중…";
         }
     }
 
-    private void MoveLocalPlayerToSpawn(Vector3 spawnPos)
+    private static IEnumerator EnsureGameScene()
     {
-        if (InstancedPlayer == null)
+        if (SceneManager.GetActiveScene().name == "InGame")
+        {
+            yield break;
+        }
+
+        AsyncOperation operation = SceneManager.LoadSceneAsync("InGame");
+
+        yield return operation;
+    }
+
+    public void BeginWorld(ContainerInMap container, int version)
+    {
+        Container = container;
+
+        StartCoroutine(LoadWorld(version));
+    }
+
+    private IEnumerator LoadWorld(int version)
+    {
+        yield return Container.PrepareAssets(version);
+
+        if (!Container.IsCurrent(version))
+        {
+            yield break;
+        }
+
+        if (!Container.AssetsReady)
+        {
+            Transport.Fail(Container.LoadError ?? "맵 에셋 준비에 실패했습니다.");
+
+            yield break;
+        }
+
+        yield return EnsureGameScene();
+
+        if (!Container.IsCurrent(version))
+        {
+            yield break;
+        }
+
+        Registry = UnityEngine.Object.FindFirstObjectByType<ServerTransmitterManager>();
+
+        if (Registry == null)
+        {
+            Transport.Fail("월드 개체 등록기가 없습니다.");
+
+            yield break;
+        }
+        // 씬 초기화가 완료된 뒤 수신 데이터를 재생한다.
+        yield return null;
+
+        if (!Container.IsCurrent(version))
+        {
+            yield break;
+        }
+        // 씬 전환 중 새로 등장한 종류까지 준비한 뒤 생성한다.
+        yield return Container.PrepareAssets(version);
+
+        if (!Container.IsCurrent(version))
+        {
+            yield break;
+        }
+
+        if (!Container.AssetsReady)
+        {
+            Transport.Fail(Container.LoadError ?? "맵 에셋 준비에 실패했습니다.");
+
+            yield break;
+        }
+
+        worldRoot = new GameObject("World_" + Container.MapId);
+
+        SceneManager.MoveGameObjectToScene(worldRoot, SceneManager.GetActiveScene());
+
+        GameObject mapPrefab = Container.MapPrefab;
+
+        if (mapPrefab == null)
+        {
+            Transport.Fail("맵 외형을 찾을 수 없습니다.");
+
+            yield break;
+        }
+
+        GameObject map = Instantiate(mapPrefab, worldRoot.transform);
+
+        groundColliders = map.GetComponentsInChildren<Collider>(true);
+
+        Physics.SyncTransforms();
+
+        Container.PublishBuffered(version);
+
+        if (!Container.IsCurrent(version))
+        {
+            yield break;
+        }
+
+        if (Registry.LocalActor == null || waiting.Count != 0)
+        {
+            Transport.Fail("월드 초기 개체 준비가 완료되지 않았습니다.");
+
+            yield break;
+        }
+
+        Transport.CompleteWorld();
+
+        SetLoading(false);
+    }
+
+    public void ReceiveSpawn(ServerMessage message)
+    {
+        if (Registry.TryGet(message.Entity, out _) || waiting.ContainsKey(message.Entity))
         {
             return;
         }
 
-        var controller = InstancedPlayer.GetComponent<CharacterController>();
-        if (controller == null)
+        if (Container.HasEntityAssets(message))
         {
-            InstancedPlayer.transform.position = spawnPos;
+            Spawn(message);
+
             return;
         }
 
-        bool wasEnabled = controller.enabled;
-        try
+        waiting[message.Entity] = new List<ServerMessage>();
+
+        StartCoroutine(SpawnWhenReady(message, Container.Generation));
+    }
+
+    private IEnumerator SpawnWhenReady(ServerMessage message, int version)
+    {
+        yield return Container.PrepareEntity(message, version);
+
+        if (!Container.IsCurrent(version) || !Container.Spawns.TryGetValue(message.Entity, out ServerMessage current) || !ReferenceEquals(current, message) || !waiting.TryGetValue(message.Entity, out List<ServerMessage> messages))
         {
-            if (wasEnabled)
+            yield break;
+        }
+
+        if (Container.LoadError != null)
+        {
+            Transport.Fail(Container.LoadError);
+
+            yield break;
+        }
+
+        Spawn(message);
+
+        waiting.Remove(message.Entity);
+
+        if (Registry.TryGet(message.Entity, out ServerTransmitter actor))
+        {
+            foreach (ServerMessage pending in messages)
             {
-                controller.enabled = false;
-            }
-
-            InstancedPlayer.transform.position = spawnPos;
-        }
-        finally
-        {
-            if (wasEnabled)
-            {
-                controller.enabled = true;
+                actor.Receive(pending);
             }
         }
     }
 
-    private void SpawnOtherPlayers(Queue<int> otherPlayers)
+    public void BufferEntityEvent(ServerMessage message)
     {
-        if (otherPlayers == null) return;
-        var otherPlayerManager = SingletonManager.Instance.GetSingleton<OtherPlayerManager>();
-
-        while (otherPlayers.Count > 0)
+        if (message.Kind != EventKind.Spawn && waiting.TryGetValue(message.Entity, out List<ServerMessage> messages))
         {
-            var otherPlayerId = otherPlayers.Dequeue();
-            GameObject go = Instantiate(_otherPlayerPrefab);
-            OtherPlayer otherPlayer = go.GetComponent<OtherPlayer>();
-            otherPlayerManager.RegisterPlayer(otherPlayerId, otherPlayer);
+            messages.Add(message);
         }
     }
 
-    public void SpawnOtherPlayers(int otherPlayerId)
+    public void Despawn(int id)
     {
-        var otherPlayerManager = SingletonManager.Instance.GetSingleton<OtherPlayerManager>();
-        GameObject go = Instantiate(_otherPlayerPrefab);
-        OtherPlayer otherPlayer = go.GetComponent<OtherPlayer>();
-        otherPlayerManager.RegisterPlayer(otherPlayerId, otherPlayer);
-    }
+        waiting.Remove(id);
 
-    private void SetupCamera(Transform target)
-    {
-        var camObj = Camera.main;
-        if (camObj == null) return;
-
-        CameraMoving cam = camObj.GetComponent<CameraMoving>();
-        if (cam != null)
+        if (Registry.TryGet(id, out ServerTransmitter actor))
         {
-            cam.Target = target;
-            var player = target.GetComponent<Player>();
-            if (player != null) player.CameraTransform = cam.transform;
+            Registry.Unregister(actor);
+
+            actor.gameObject.SetActive(false);
+
+            ReleaseMaterials(actor.gameObject);
+
+            Destroy(actor.gameObject);
         }
     }
 
     public void ClearWorld()
     {
-        if (_currentMapInstance != null)
-            Destroy(_currentMapInstance);
-        if (InstancedPlayer != null)
+        StopAllCoroutines();
+
+        waiting.Clear();
+
+        groundColliders = Array.Empty<Collider>();
+
+        Registry?.Clear();
+
+        if (worldRoot != null)
         {
-            
-            Destroy(InstancedPlayer);
-            InstancedPlayer = null;
+            worldRoot.SetActive(false);
+
+            Destroy(worldRoot);
+
+            worldRoot = null;
         }
-        var otherPlayerList = SingletonManager.Instance.GetSingleton<OtherPlayerManager>();
-        otherPlayerList.FlushOtherPlayer();
-        var enemyList = SingletonManager.Instance.GetSingleton<EnemySpawner>();
-        enemyList.FlushEnemy();
-        
+
+        ReleaseMaterials();
     }
 
-    private void SpawnEnemies(Queue<DataCenter.EnemyInfo> enemies)
+    public bool TryGetGroundHeight(Vector3 position, float stepUp, float stepDown, out float height)
     {
-        
-        var monsterTable = SingletonManager.Instance.GetSingleton<DataCenter>().MonsterTable;
-        var enemySpawner = SingletonManager.Instance.GetSingleton<EnemySpawner>();
+        height = position.y;
 
-        int groundLayerMask = LayerMask.GetMask("Ground");
-
-        while (enemies.Count > 0)
+        if (stepUp < 0 || stepDown < 0)
         {
-            var enemyInfo = enemies.Dequeue();
-            if (!monsterTable.ContainsKey(enemyInfo.EnemyId)) continue;
+            return false;
+        }
 
-            var enemyPrefab = monsterTable[enemyInfo.EnemyId];
-            Vector3 spawnPos = enemyInfo.Position;
+        Ray ray = new Ray(position + Vector3.up * stepUp, Vector3.down);
 
-            Vector3 rayStart = spawnPos + Vector3.up;
+        float distance = stepUp + stepDown;
+        float nearest = float.PositiveInfinity;
 
-            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 1000.0f, groundLayerMask))
+        int groundLayer = LayerMask.NameToLayer("Ground");
+        // 현재 맵의 지형만 검사하므로 다른 개체와 트리거는 발판이 되지 않는다.
+        foreach (Collider collider in groundColliders)
+        {
+            if (collider == null || !collider.enabled || !collider.gameObject.activeInHierarchy || collider.isTrigger || collider.gameObject.layer != groundLayer || collider.GetComponentInParent<ServerTransmitter>() != null)
             {
-                spawnPos.y = hit.point.y;
+                continue;
             }
 
-            var go = Instantiate(enemyPrefab, spawnPos, Quaternion.identity).GetComponent<Enemy>();
-            go.Init(enemyInfo.InstanceId, enemyInfo.EnemyId);
-            enemySpawner.RegisterEnemy(go.InstanceNum, go);
+            if (collider.Raycast(ray, out RaycastHit hit, distance) && hit.normal.y >= .5f && hit.distance < nearest)
+            {
+                nearest = hit.distance;
+
+                height = hit.point.y;
+            }
+        }
+
+        return nearest < float.PositiveInfinity;
+    }
+
+    private ServerTransmitter AttachTransmitter(GameObject root, EntityKind kind, int entity)
+    {
+        if (kind == EntityKind.Player)
+        {
+            return entity == Transport.LocalEntityId ? root.AddComponent<PlayerServerTransmitter>() : root.AddComponent<OtherPlayerServerTransmitter>();
+        }
+
+        if (kind == EntityKind.Monster)
+        {
+            return root.AddComponent<MonsterServerTransmitter>();
+        }
+
+        if (kind == EntityKind.Resource)
+        {
+            return root.AddComponent<ResourceServerTransmitter>();
+        }
+
+        return root.AddComponent<ServerTransmitter>();
+    }
+
+    private void Spawn(ServerMessage m)
+    {
+        if (Registry.TryGet(m.Entity, out _))
+        {
+            return;
+        }
+
+        var kind = (EntityKind)m.Code;
+
+        if (kind == EntityKind.Boundary)
+        {
+            if (!DebugGeometry)
+            {
+                return;
+            }
+
+            var boundary = new GameObject($"Boundary_{m.Entity}");
+
+            boundary.transform.SetParent(SpawnParent, false);
+
+            DrawRing(boundary, m.Radius, new Color(1, .5f, .1f));
+
+            boundary.AddComponent<ServerTransmitter>().Bind(Registry, m);
+
+            return;
+        }
+
+        var root = new GameObject($"{kind}_{m.Entity}");
+
+        root.transform.SetParent(SpawnParent, false);
+
+        root.transform.position = m.Position;
+
+        var actor = AttachTransmitter(root, kind, m.Entity);
+
+        GameObject visual = null;
+
+        ActionVisualProfile profile = null;
+
+        if (kind == EntityKind.Player)
+        {
+            visual = Container.GetAsset<GameObject>(Container.PlayerVisual);
+            profile = Container.GetAsset<ActionVisualProfile>(Container.PlayerProfile);
+        }
+        else if (kind == EntityKind.Monster)
+        {
+            int i = m.Definition;
+
+            if (i >= 0 && i < Container.MonsterVisuals.Length)
+            {
+                visual = Container.GetAsset<GameObject>(Container.MonsterVisuals[i]);
+            }
+
+            if (i >= 0 && i < Container.MonsterProfiles.Length)
+            {
+                profile = Container.GetAsset<ActionVisualProfile>(Container.MonsterProfiles[i]);
+            }
+        }
+        else if (kind == EntityKind.Resource)
+            visual = Catalog != null && Catalog.Visual(m.Definition, false) != null
+                         ? Catalog.Visual(m.Definition, false)
+                         : null;
+        else if (kind == EntityKind.Wall)
+            visual = null;
+        else if (kind == EntityKind.Placement)
+            visual = Catalog != null ? Catalog.Visual(m.Definition, true) : null;
+        if (visual != null)
+        {
+            var child = Instantiate(visual, root.transform);
+
+            foreach (var animator in child.GetComponentsInChildren<Animator>(true))
+            {
+                animator.applyRootMotion = false;
+
+                animator.fireEvents = false;
+            }
+
+            child.transform.localPosition = profile != null ? profile.VisualOffset : Vector3.zero;
+
+            child.transform.localRotation =
+                Quaternion.Euler(profile != null ? profile.VisualEuler : Vector3.zero);
+            if (profile != null)
+            {
+                child.transform.localScale *= profile.VisualScale;
+            }
+
+            if (kind == EntityKind.Wall)
+            {
+                child.transform.localPosition = Vector3.up * m.Velocity.y;
+
+                child.transform.localScale = Vector3.Scale(child.transform.localScale, m.Velocity * 2);
+            }
+            else if (kind == EntityKind.Resource && (Catalog == null || Catalog.Visual(m.Definition, false) == null))
+            {
+                child.transform.localPosition = Vector3.up;
+
+                child.transform.localScale =
+                    Vector3.Scale(child.transform.localScale, new Vector3(m.Radius * 2, 2, m.Radius * 2));
+            }
+        }
+
+        if (kind == EntityKind.Wall)
+        {
+            root.layer = 9;
+
+            var box = root.AddComponent<BoxCollider>();
+
+            box.size = new Vector3(m.Velocity.x * 2, m.Velocity.y * 2, m.Velocity.z * 2);
+
+            box.center = Vector3.up * m.Velocity.y;
+
+            if (visual == null && DebugGeometry)
+            {
+                CreateShape(root, PrimitiveType.Cube, box.center, box.size, new Color(.35f, .4f, .48f));
+            }
+        }
+        else if (kind == EntityKind.Zone)
+        {
+            var sphere = root.AddComponent<SphereCollider>();
+
+            sphere.radius = m.Radius;
+
+            sphere.isTrigger = true;
+
+            if (DebugGeometry)
+            {
+                DrawRing(root, m.Radius, Color.cyan);
+            }
+        }
+        else if (kind != EntityKind.Placement)
+        {
+            if (kind == EntityKind.Resource)
+            {
+                var box = root.AddComponent<BoxCollider>();
+
+                box.size = new Vector3(m.Radius * 2, 2, m.Radius * 2);
+
+                box.center = Vector3.up;
+            }
+            else
+            {
+                var capsule = root.AddComponent<CapsuleCollider>();
+
+                capsule.radius = m.Radius;
+
+                capsule.height = 2;
+
+                capsule.center = Vector3.up;
+
+                capsule.isTrigger = true;
+            }
+
+            root.layer = kind == EntityKind.Resource ? 9 : 10;
+
+            if (visual == null)
+                CreateShape(root, PrimitiveType.Capsule, Vector3.up, new Vector3(m.Radius * 2, 1, m.Radius * 2), kind == EntityKind.Player ? Color.blue : Color.red);
+        }
+
+        if (kind == EntityKind.Player || kind == EntityKind.Monster || kind == EntityKind.Resource)
+        {
+            if (actor is AliveServerTransmitter alive)
+            {
+                alive.ConfigureVisual(profile, root.GetComponentInChildren<Animator>());
+            }
+
+            if (kind == EntityKind.Player && m.Entity == Transport.LocalEntityId)
+            {
+                var motor = root.AddComponent<MovementMotor>();
+
+                motor.Actor = (PlayerServerTransmitter)actor;
+
+                motor.Radius = m.Radius;
+
+                motor.MoveSpeed = m.Duration > 0 ? m.Duration : 5;
+
+                motor.BlockingMask = 1 << 9;
+
+                var control = root.AddComponent<PlayerActionController>();
+
+                control.Actor = (PlayerServerTransmitter)actor;
+
+                control.Motor = motor;
+            }
+        }
+
+        actor.Bind(Registry, m);
+
+        if (kind == EntityKind.Placement)
+        {
+            root.transform.rotation = Quaternion.Euler(0, m.Velocity.y, 0);
         }
     }
 
-    public void SpawnEnemy(DataCenter.EnemyInfo enemyInfo)
+    private void CreateShape(GameObject root, PrimitiveType type, Vector3 position, Vector3 scale, Color color)
     {
-        if (InstancedPlayer == null)
+        var child = GameObject.CreatePrimitive(type);
+
+        child.transform.SetParent(root.transform, false);
+
+        child.transform.localPosition = position;
+
+        child.transform.localScale = scale;
+
+        Destroy(child.GetComponent<Collider>());
+
+        var material = new Material(Shader.Find("Standard"));
+
+        material.color = color;
+
+        child.GetComponent<Renderer>().sharedMaterial = material;
+
+        TrackMaterial(child, material);
+    }
+
+    private void DrawRing(GameObject root, float radius, Color color)
+    {
+        var line = root.AddComponent<LineRenderer>();
+
+        line.useWorldSpace = false;
+
+        line.loop = true;
+
+        line.positionCount = 96;
+
+        line.widthMultiplier = .08f;
+
+        line.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+
+        TrackMaterial(root, line.sharedMaterial);
+
+        line.startColor = line.endColor = color;
+
+        for (int i = 0; i < 96; i++)
         {
-            SingletonManager.Instance.GetSingleton<DataCenter>().LoadEnemies.Enqueue(enemyInfo);
+            float angle = i * Mathf.PI * 2 / 96;
+
+            line.SetPosition(i, new Vector3(Mathf.Cos(angle) * radius, .05f, Mathf.Sin(angle) * radius));
+        }
+    }
+
+    private void TrackMaterial(GameObject owner, Material material)
+    {
+        if (!ownedMaterials.TryGetValue(owner, out List<Material> materials))
+        {
+            materials = new List<Material>();
+
+            ownedMaterials.Add(owner, materials);
+        }
+
+        materials.Add(material);
+    }
+
+    private void ReleaseMaterials(GameObject owner = null)
+    {
+        List<GameObject> released = new List<GameObject>();
+
+        foreach (KeyValuePair<GameObject, List<Material>> entry in ownedMaterials)
+        {
+            if (owner != null && entry.Key != null && entry.Key != owner && !entry.Key.transform.IsChildOf(owner.transform))
+            {
+                continue;
+            }
+
+            foreach (Material material in entry.Value)
+            {
+                if (material != null)
+                {
+                    Destroy(material);
+                }
+            }
+
+            released.Add(entry.Key);
+        }
+
+        foreach (GameObject key in released)
+        {
+            ownedMaterials.Remove(key);
+        }
+    }
+
+    private void LateUpdate()
+    {
+        // 외부에서 개별 도형을 제거한 경우에도 소유 머티리얼을 반환한다.
+        List<GameObject> destroyed = null;
+
+        foreach (KeyValuePair<GameObject, List<Material>> entry in ownedMaterials)
+        {
+            if (entry.Key != null)
+            {
+                continue;
+            }
+
+            if (destroyed == null)
+            {
+                destroyed = new List<GameObject>();
+            }
+
+            destroyed.Add(entry.Key);
+        }
+
+        if (destroyed == null)
+        {
             return;
         }
 
-        var monsterTable = SingletonManager.Instance.GetSingleton<DataCenter>().MonsterTable;
-        var enemySpawner = SingletonManager.Instance.GetSingleton<EnemySpawner>();
-
-        if (enemySpawner.FindEnemy(enemyInfo.InstanceId) != null)
-            return;
-
-        if (!monsterTable.ContainsKey(enemyInfo.EnemyId))
-            return;
-
-        var enemyPrefab = monsterTable[enemyInfo.EnemyId];
-        Vector3 spawnPos = enemyInfo.Position;
-        int groundLayerMask = LayerMask.GetMask("Ground");
-        Vector3 rayStart = spawnPos + Vector3.up;
-
-        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 1000.0f, groundLayerMask))
+        foreach (GameObject key in destroyed)
         {
-            spawnPos.y = hit.point.y;
-        }
+            foreach (Material material in ownedMaterials[key])
+            {
+                if (material != null)
+                {
+                    Destroy(material);
+                }
+            }
 
-        var go = Instantiate(enemyPrefab, spawnPos, Quaternion.identity).GetComponent<Enemy>();
-        go.Init(enemyInfo.InstanceId, enemyInfo.EnemyId);
-        enemySpawner.RegisterEnemy(go.InstanceNum, go);
+            ownedMaterials.Remove(key);
+        }
+    }
+
+    protected override void OnDestroy()
+    {
+        ClearWorld();
+
+        base.OnDestroy();
     }
 }
-

@@ -1,5 +1,7 @@
 #include "Map.h"
 #include <algorithm>
+#include <cmath>
+#include "../CoreData/WorldTypes.h"
 #include <stdexcept>
 namespace EverWind::Gameplay
 {
@@ -75,5 +77,53 @@ std::shared_ptr<Player> Map::FindPlayer(int playerId) const
     }
 
     return {};
+}
+
+Player *Map::FindNearestPlayer(Vec3 position, float range) const
+{
+    Player *target = nullptr;
+
+    for (const auto &[playerId, player] : players)
+    {
+        if (!player->epoch || player->map != this->id || player->hp <= 0)
+        {
+            continue;
+        }
+
+        float distance = Distance(position, player->p);
+
+        if (distance < range)
+        {
+            range = distance;
+
+            target = player;
+        }
+    }
+
+    return target;
+}
+
+bool Map::InRange(const Actor &a, const Actor &b, float reach) const
+{
+    return std::abs(a.p.y - b.p.y) < 2 && Distance(a.p, b.p) <= a.radius + b.radius + reach;
+}
+
+bool Map::TryMove(Actor &actor, Vec3 position) const
+{
+    if (actor.map != id)
+    {
+        return false;
+    }
+
+    position.y = surface.Sample(position.x, position.z);
+
+    if (Geometry(*this, actor.p, position, actor.radius, actor.id) != Error::None)
+    {
+        return false;
+    }
+
+    actor.p = position;
+
+    return true;
 }
 }

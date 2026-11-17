@@ -1,54 +1,84 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class UnityMainThreadDispatcher : MonoBehaviour
 {
-    private static readonly Queue<Action> executionQueue = new();
+    private static readonly Queue<Action> executionQueue = new Queue<Action>();
+    private static UnityMainThreadDispatcher instance;
 
-    private static UnityMainThreadDispatcher instance = null;
     public static bool Exists => instance != null;
 
     public static UnityMainThreadDispatcher Instance()
     {
-        if (!Exists)
+        if (instance == null)
         {
-            throw new Exception("UnityMainThreadDispatcher∞° «ˆ¿Á æ¿ø° ¡∏¿Á«œ¡ˆ æ Ω¿¥œ¥Ÿ.");
+            throw new InvalidOperationException("Î©îÏù∏ Ïä§Î†àÎìú Ï†ÑÎã¨Í∏∞Í∞Ä Ï§ÄÎπÑÎêòÏßÄ ÏïäÏïòÏäµÎãàÎã§.");
         }
+
         return instance;
     }
 
-    void Awake()
+    private void Awake()
     {
-        if (instance == null)
+        if (instance != null && instance != this)
         {
-            instance = this;
-            DontDestroyOnLoad(gameObject);
+            Destroy(this);
+            return;
         }
-        else if (instance != this)
-        {
-            Destroy(gameObject);
-        }
+
+        instance = this;
+        DontDestroyOnLoad(transform.root.gameObject);
     }
 
-    void Update()
+    private void Update()
     {
-        lock (executionQueue)
+        for (int i = 0; i < 512; ++i)
         {
-            while (executionQueue.Count > 0)
+            Action action;
+
+            lock (executionQueue)
             {
-                executionQueue.Dequeue().Invoke();
+                if (executionQueue.Count == 0)
+                {
+                    break;
+                }
+
+                action = executionQueue.Dequeue();
             }
+
+            action();
         }
     }
 
     public void Enqueue(Action action)
     {
-        if (action == null) return;
+        EnqueueWork(action);
+    }
+
+    public static void EnqueueWork(Action action)
+    {
+        if (action == null)
+        {
+            return;
+        }
+
         lock (executionQueue)
         {
             executionQueue.Enqueue(action);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (instance == this)
+        {
+            instance = null;
+
+            lock (executionQueue)
+            {
+                executionQueue.Clear();
+            }
         }
     }
 }

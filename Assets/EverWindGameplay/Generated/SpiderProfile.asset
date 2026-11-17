@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2181b1ebab56ee34c938b56fb34c3ea8, type: 3}
   m_Name: SpiderProfile
   m_EditorClassIdentifier: Assembly-CSharp::EverWind.Gameplay.ActionVisualProfile
-  Controller: {fileID: 9100000, guid: fc6eeb68a4fd83e43af8394f43334445, type: 2}
+  Controller: {fileID: 22100000, guid: 3a09d55c422a4064e8057df4663bc16a, type: 2}
   VisualOffset: {x: 0, y: 0, z: 0}
   VisualEuler: {x: 0, y: 180, z: 0}
   VisualScale: 1
@@ -45,6 +45,12 @@ MonoBehaviour:
     Clip: {fileID: 7400000, guid: d03366462250cb949908be318e56cd13, type: 2}
   - State: Dead
     Clip: {fileID: 7400000, guid: f9d1b9317861b1846b3ec3a9637c7cde, type: 2}
+  Skills:
+  - {fileID: 7400000, guid: bc47871df34b46a45ac80aa326773fd7, type: 2}
+  - {fileID: 7400000, guid: fb98cd3543b24e5478f32b42e8566967, type: 2}
+  - {fileID: 7400000, guid: fb98cd3543b24e5478f32b42e8566967, type: 2}
+  - {fileID: 7400000, guid: fb98cd3543b24e5478f32b42e8566967, type: 2}
+  - {fileID: 7400000, guid: fb98cd3543b24e5478f32b42e8566967, type: 2}
   SwingEffect: {fileID: 0}
   HitEffect: {fileID: 0}
   EffectOffset: {x: 0, y: 1, z: 0}
