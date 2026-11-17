@@ -45,7 +45,7 @@ public sealed class GameplayVisualCue : MonoBehaviour
         var cue = root.AddComponent<GameplayVisualCue>();
         cue.lifetime = .8f;
         cue.text = label.GetComponent<Text>();
-        cue.text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        cue.text.font = Resources.Load<Font>("Noto_Sans_KR/static/NotoSansKR-Regular");
         cue.text.fontSize = 48;
         cue.text.alignment = TextAnchor.MiddleCenter;
         cue.text.text = amount.ToString("0");

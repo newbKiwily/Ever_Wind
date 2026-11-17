@@ -16,7 +16,7 @@ public sealed class GameplayHud : MonoBehaviour
     int recipeIndex;
     void Start()
     {
-        font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        font = Resources.Load<Font>("Noto_Sans_KR/static/NotoSansKR-Regular");
         var canvas =
             new GameObject("GameplayHUD", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvas.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;

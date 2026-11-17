@@ -9,6 +9,8 @@
 
 - 서버 C++ 작성 스타일은 `EverWindServer/LoginServer/AGENTS.md`와 해당 폴더의 `.clang-format`을 따른다.
 
+- 클라이언트 TMP·일반 Text 작성 시 프로젝트의 NotoSansKR 폰트를 사용한다. TMP는 기존 NotoSansKR-Regular SDF와 한글 fallback·Multi Atlas 설정을 유지하고, 일반 Text는 NotoSansKR-Regular.ttf를 연결한다. 한글 문자열을 포함한 텍스트 파일은 UTF-8로 저장한다.
+
 ## AI 활용 포트폴리오 누적 기록
 - 사용자는 이 채팅의 AI 활용 역량을 포트폴리오로 정리한다. 누적 기록은 사용자가 명시적으로 기록을 요청할 때만 갱신하며, 작업 완료만을 이유로 자동 기록하지 않는다. 코드 스타일 수정과 폴더·경로 수정은 기록 대상에서 제외한다.
 - 사용자가 **“지금까지 내용들 txt에 기술해줘”**라고 하면 해당 TXT 맨 아래의 최신 `PORTFOLIO_CHECKPOINT` 다음부터 이번 요청까지를 자세히 보충한다. 과거 문서 원문이나 이미 기록한 구간을 중복 삽입하지 않는다.
