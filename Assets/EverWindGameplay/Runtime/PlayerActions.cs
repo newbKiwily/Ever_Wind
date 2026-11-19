@@ -105,31 +105,6 @@ public abstract class PlayerAction
     {
     }
 }
-// 일반 피격은 표현만 처리하며 이동 소유권이나 서버 행동을 취소하지 않는다.
-public sealed class HitAction : PlayerAction
-{
-    float elapsed;
-    public float Duration = .25f;
-    public override void Begin(ulong id)
-    {
-        base.Begin(id);
-        elapsed = 0;
-    }
-
-    public override void Tick(float dt)
-    {
-        if (Result != ActionResult.Running)
-        {
-            return;
-        }
-        elapsed += dt;
-        if (elapsed >= Duration)
-        {
-            Finish(ActionResult.Completed);
-        }
-    }
-}
-
 public class MoveAction : PlayerAction
 {
     protected readonly MovementMotor Motor;
@@ -248,38 +223,37 @@ public sealed class KnockbackAction : MoveAction
 public sealed class AttackAction : PlayerAction
 {
     public ulong RequestId { get; private set; }
-    readonly PlayerServerTransmitter actor;
-    readonly MonsterServerTransmitter target;
-    readonly int skill;
+    public Skill Skill { get; }
     readonly float reach;
-    public AttackAction(PlayerServerTransmitter actor, ServerTransmitter target, int skill, float reach)
+    public AttackAction(PlayerServerTransmitter actor, ServerTransmitter target, int skill, float reach) : this(actor.Registry.Catalog.Skill(skill)?.Create(actor, target), reach)
     {
-        this.actor = actor;
-        this.target = target as MonsterServerTransmitter;
-        this.skill = skill;
+    }
+
+    public AttackAction(Skill skill, float reach)
+    {
+        Skill = skill;
         this.reach = reach;
     }
 
     public override void Tick(float dt)
     {
+        if (Result == ActionResult.Running) Skill?.Tick(dt);
     }
+
+    public void StartServerAction(ServerMessage message)
+    {
+        AttachServerAction(message.ActionId);
+        Skill?.OnStarted(message);
+    }
+
+    protected override void OnExit() { Skill?.End(Result != ActionResult.Completed); }
 
     public ActionResult TryRequest(Action<ServerMessage> callback)
     {
-        if (target == null || target.Hp <= 0)
-        {
-            return ActionResult.TargetLost;
-        }
-        var d = target.transform.position - actor.transform.position;
-        d.y = 0;
-        float r = actor.Radius + target.Radius + reach;
-        if (d.sqrMagnitude > r * r)
-        {
-            return ActionResult.OutOfRange;
-        }
-        RequestId = actor.Send(
-            new Request { Kind = RequestKind.Attack, Target = target.EntityId, Definition = skill },
-            callback);
+        if (Skill == null) return ActionResult.Restricted;
+        var check = Skill.CheckRange(reach);
+        if (check != ActionResult.Running) return check;
+        RequestId = Skill.RequestUse(callback);
         return ActionResult.Waiting;
     }
 }

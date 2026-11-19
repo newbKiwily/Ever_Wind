@@ -47,10 +47,23 @@ Error PacketValidator::Contract(const ValidationContext &c)
 
     const auto &r = *c.request;
 
+    if (r.targetCount > MaxAttackTargets || (r.kind != RequestKind::AttackTargets && r.targetCount != 0))
+    {
+        return Error::BadRequest;
+    }
+
+    for (uint16_t i = 0; i < r.targetCount; ++i)
+    {
+        if (r.targets[i] <= 0)
+        {
+            return Error::BadRequest;
+        }
+    }
+
     return r.version != ProtocolVersion || !r.requestId ||
                    static_cast<int>(r.kind) < 1 ||
                    static_cast<int>(r.kind) >
-                       static_cast<int>(RequestKind::Logout)
+                       static_cast<int>(RequestKind::AttackTargets)
                ? Error::BadRequest
                : Error::None;
 }

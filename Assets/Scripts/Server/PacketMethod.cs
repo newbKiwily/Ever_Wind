@@ -80,6 +80,9 @@ public static unsafe class PacketMethod
 
     public static byte[] BuildGameplayRequest(Request request)
     {
+        int count = request.Targets != null ? request.Targets.Length : 0;
+        if (count > Protocol.MaxAttackTargets || count > 0 && request.Kind != RequestKind.AttackTargets)
+            throw new InvalidDataException("공격 대상 목록 오류");
         byte[] buffer = new byte[sizeof(PacketHeader) + sizeof(RequestPacket)];
 
         fixed(byte *pointer = buffer)
@@ -91,6 +94,9 @@ public static unsafe class PacketMethod
                 Target = request.Target, Definition = request.Definition, ActionId = request.ActionId,
                 X = request.Position.x, Y = request.Position.y, Z = request.Position.z
             };
+            RequestPacket* packet = (RequestPacket*)(pointer + sizeof(PacketHeader));
+            packet->TargetCount = (ushort)count;
+            for (int i = 0; i < count; i++) packet->Targets[i] = request.Targets[i];
         }
 
         return buffer;

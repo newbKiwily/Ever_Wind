@@ -31,7 +31,16 @@ class Actor
 
     uint64_t pushId = 0;
 
+    int consecutiveHits = 0;
+
+    double hitReactionEnd = 0;
     double diedAt = 0;
+
+    HitReaction RegisterHit(double now);
+
+    void StartKnockback(Vec3 source, double now);
+
+    void ResetHitReaction();
 
     bool UpdateKnockback(Map &map, double now, double dt);
 

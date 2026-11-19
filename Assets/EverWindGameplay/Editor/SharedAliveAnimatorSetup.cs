@@ -112,6 +112,47 @@ public static class SharedAliveAnimatorSetup
             }
         }
 
+        var sharedMachine = controller.layers[0].stateMachine;
+
+        if (!System.Array.Exists(controller.parameters, p => p.name == "HitStart"))
+        {
+            controller.AddParameter("HitStart", AnimatorControllerParameterType.Trigger);
+            controller.AddParameter("HitSpeed", AnimatorControllerParameterType.Float);
+
+            foreach (var child in sharedMachine.states)
+            {
+                if (child.state.name != "Hit")
+                {
+                    continue;
+                }
+
+                child.state.speedParameter = "HitSpeed";
+
+                child.state.speedParameterActive = true;
+
+                var restart = sharedMachine.AddAnyStateTransition(child.state);
+
+                restart.hasExitTime = false;
+
+                restart.duration = 0;
+
+                restart.canTransitionToSelf = true;
+
+                Allowed(restart);
+
+                restart.AddCondition(AnimatorConditionMode.If, 0, "Hit");
+                restart.AddCondition(AnimatorConditionMode.If, 0, "HitStart");
+
+                var transitions = sharedMachine.anyStateTransitions;
+
+                System.Array.Copy(transitions, 2, transitions, 3, transitions.Length - 3);
+
+                transitions[2] = restart;
+
+                sharedMachine.anyStateTransitions = transitions;
+            }
+        }
+
         foreach (string guid in AssetDatabase.FindAssets("t:ActionVisualProfile", new[] { "Assets/EverWindGameplay" }))
         {
             var profile = AssetDatabase.LoadAssetAtPath<ActionVisualProfile>(AssetDatabase.GUIDToAssetPath(guid));

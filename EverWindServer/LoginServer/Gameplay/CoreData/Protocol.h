@@ -1,4 +1,4 @@
-    #pragma once
+#pragma once
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -8,10 +8,18 @@ namespace EverWind::Gameplay
 {
 inline constexpr uint16_t RequestPacket = 0x500, EventPacket = 0x501,
                           ProtocolVersion = 1;
+inline constexpr uint16_t MaxAttackTargets = 64;
 }
 
 namespace EverWind::Gameplay
 {
+enum class HitReaction : uint16_t
+{
+    Knockback = 1,
+    DamageOnly = 2,
+    Hit = 4
+};
+
 enum class ActionKind : uint16_t
 {
     None,
@@ -119,7 +127,8 @@ enum class RequestKind : uint16_t
     Tutorial,
     ResourceRefill,
     Save,
-    Logout
+    Logout,
+    AttackTargets
 };
 }
 
@@ -159,9 +168,13 @@ struct Request
     uint64_t actionId = 0;
 
     Vec3 position{};
+
+    uint16_t targetCount = 0;
+
+    int32_t targets[MaxAttackTargets]{};
 };
 
-static_assert(sizeof(Request) == 52);
+static_assert(sizeof(Request) == 310);
 #pragma pack(pop)
 }
 

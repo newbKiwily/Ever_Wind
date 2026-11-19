@@ -21,6 +21,7 @@ public sealed class GameplayCatalog : ScriptableObject
     public struct SkillEntry
     {
         public int Id;
+        public SkillDefinition Definition;
         public float Reach;
         public float Cooldown;
     }
@@ -98,6 +99,13 @@ public sealed class GameplayCatalog : ScriptableObject
                 return true;
             }
         return false;
+    }
+
+    public SkillDefinition Skill(int id)
+    {
+        foreach (var skill in Skills)
+            if (skill.Id == id) return skill.Definition;
+        return null;
     }
 
     public string ItemName(int id)

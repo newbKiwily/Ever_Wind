@@ -28,6 +28,8 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
     PlayerAction current;
 
+    AttackAction pendingAttack;
+
     MoveAction manual;
 
     ulong generation;
@@ -257,17 +259,24 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
     public void RequestAttack(int skill)
     {
-        if (!IsAvailableMonster(SelectedTarget))
+        var definition = Actor.Registry.Catalog.Skill(skill);
+        if (definition == null || definition.Kind == SkillKind.Buff)
+        {
+            LastResult = "Skill is not implemented";
+            return;
+        }
+        bool needsTarget = definition.Kind != SkillKind.Area || definition.RequiresTarget;
+        if (needsTarget && !IsAvailableMonster(SelectedTarget))
         {
             SelectNearest();
         }
 
-        if (SelectedTarget == null)
+        if (needsTarget && SelectedTarget == null)
         {
             return;
         }
 
-        BeginIntent(RequestKind.Attack, SelectedTarget.EntityId, skill);
+        BeginIntent(RequestKind.Attack, needsTarget ? SelectedTarget.EntityId : 0, skill);
     }
 
     public void RequestGather()
@@ -470,7 +479,9 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
         if (intentKind == RequestKind.Attack)
         {
-            var attack = new AttackAction(Actor, target, intentSkill, reach);
+            var skill = Actor.Registry.Catalog.Skill(intentSkill)?.Create(Actor, target);
+            var attack = new AttackAction(skill, reach);
+            pendingAttack = attack;
             var result = attack.TryRequest(cb);
 
             pendingActionRequest = attack.RequestId;
@@ -507,6 +518,8 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
     void ClearIntent()
     {
+        pendingAttack?.Skill?.End(true);
+        pendingAttack = null;
         hasIntent = false;
 
         waiting = false;
@@ -621,15 +634,19 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
     {
         if (m.Kind == EventKind.ActionStarted)
         {
+            var requested = pendingAttack != null && pendingAttack.RequestId == m.RequestId ? pendingAttack : null;
+            if (requested != null) pendingAttack = null;
             StopCurrent();
 
             ClearIntent();
 
             LastResult = "Action " + m.ActionId + ": " + (ActionKind)m.Code;
 
-            if ((ActionKind)m.Code == ActionKind.Attack && Actor.Registry.TryGet(m.Target, out var target))
-                current =
-                    new AttackAction(Actor, target, m.Definition, Actor.Registry.SkillReach(m.Definition));
+            if ((ActionKind)m.Code == ActionKind.Attack)
+            {
+                Actor.Registry.TryGet(m.Target, out var target);
+                current = requested ?? new AttackAction(Actor, target, m.Definition, Actor.Registry.SkillReach(m.Definition));
+            }
             else if ((ActionKind)m.Code == ActionKind.Gather)
                 current = new ObtainAction(Actor, m.Target);
             else if ((ActionKind)m.Code == ActionKind.Craft)
@@ -639,6 +656,7 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
                 current.Begin(generation);
 
                 current.AttachServerAction(m.ActionId);
+                if (current is AttackAction attack) attack.StartServerAction(m);
             }
 
             if (abandonedRequests.Remove(m.RequestId))
@@ -647,7 +665,16 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
             }
         }
 
-        if (m.Kind == EventKind.Hit && (m.Flags & 1) != 0)
+        if (m.Kind == EventKind.State && current is KnockbackAction && ((m.Flags & (ushort)HitReaction.Knockback) == 0 || m.Mode == PlayerMode.Dead))
+        {
+            current.Finish(ActionResult.Completed);
+
+            current = null;
+
+            Motor.Forced = false;
+        }
+
+        if (m.Kind == EventKind.Hit && (m.Flags & (ushort)HitReaction.Knockback) != 0)
         {
             ClearIntent();
 
@@ -655,7 +682,7 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
             waiting = false;
 
-            current = new KnockbackAction(Motor, m.Velocity, m.Duration);
+            current = new KnockbackAction(Motor, m.Velocity, Mathf.Max(0, (float)(m.ServerTime + m.Duration - Actor.Transport.EstimatedServerTime)));
 
             current.Begin(++generation);
 

@@ -10,7 +10,7 @@ $everwindPreviousPassword=$env:MYSQL_PWD
 try {
     $env:MYSQL_PWD=[regex]::Match($everwindConfig,'dbPassword = "([^"]+)"').Groups[1].Value
     $everwindFiles=@()
-    if($Stage -in @('Definitions','All')){$everwindFiles+='20261112_game_definitions.sql'}
+    if($Stage -in @('Definitions','All')){$everwindFiles+='20261112_game_definitions.sql';$everwindFiles+='20261119_skill_kinds.sql'}
     if($Stage -in @('Maps','All')){
         foreach($everwindMap in @('EverWindServer/LoginServer/MapData/Maps/Map0.txt','EverWindServer/LoginServer/MapData/Maps/Map1.txt')){
             if(-not(Test-Path -LiteralPath (Join-Path $everwindRoot $everwindMap))){throw "Missing exported map: $everwindMap"}

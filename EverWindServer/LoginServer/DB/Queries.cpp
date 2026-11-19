@@ -1118,7 +1118,7 @@ EverWind::Gameplay::GameDataHub Queries::LoadGameDefinitions()
 
             data.items.emplace(std::stoi(r[0]), v);
         });
-        rows("SELECT SkillID,Duration,ImpactSeconds,Reach,Damage,Cooldown,Knockback,DamageRatio,AreaRadius " "FROM SkillDefinition ORDER BY SkillID", [&](const auto &r)
+        rows("SELECT SkillID,Duration,ImpactSeconds,Reach,Damage,Cooldown,Knockback,DamageRatio,AreaRadius,SkillKind,RequiresTarget " "FROM SkillDefinition ORDER BY SkillID", [&](const auto &r)
         {
             Skill v{};
 
@@ -1130,6 +1130,10 @@ EverWind::Gameplay::GameDataHub Queries::LoadGameDefinitions()
             v.push = std::stof(r[6]);
             v.ratio = std::stof(r[7]);
             v.area = std::stof(r[8]);
+
+            v.kind = static_cast<SkillKind>(std::stoi(r[9]));
+
+            v.requiresTarget = std::stoi(r[10]) != 0;
 
             data.skills.emplace(std::stoi(r[0]), v);
         });

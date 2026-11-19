@@ -24,9 +24,12 @@ public sealed class AlivePresentation
 
     private int skill;
 
+    private SkillDefinition skillDefinition;
+
     private double start, hitUntil, knockbackUntil;
 
     private float duration;
+    private float hitDuration;
 
     private bool swing;
 
@@ -53,11 +56,45 @@ public sealed class AlivePresentation
         lastPosition = actor.transform.position;
     }
 
+    private void ResetForSpawn(Vector3 position)
+    {
+        seen.Clear();
+        seenOrder.Clear();
+
+        action = 0;
+
+        kind = ActionKind.None;
+
+        skill = 0;
+        skillDefinition = null;
+
+        start = 0;
+        hitUntil = 0;
+        knockbackUntil = 0;
+
+        duration = 0;
+
+        hitDuration = 0;
+
+        swing = false;
+
+        lastPosition = position;
+
+        PresentedActionCount = 0;
+
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            animator.Rebind();
+
+            animator.SetFloat("ActionSpeed", 1);
+        }
+    }
+
     public void Handle(ServerMessage message)
     {
         if (message.Kind == EventKind.Spawn)
         {
-            lastPosition = message.Position;
+            ResetForSpawn(message.Position);
         }
 
         if (message.Kind == EventKind.ActionStarted)
@@ -81,6 +118,7 @@ public sealed class AlivePresentation
             kind = (ActionKind)message.Code;
 
             skill = message.Definition;
+            skillDefinition = actor.Kind == EntityKind.Player ? actor.Registry?.Catalog?.Skill(skill) : null;
 
             start = message.Value;
 
@@ -124,18 +162,60 @@ public sealed class AlivePresentation
             }
         }
 
+        double now = actor.Transport != null ? actor.Transport.EstimatedServerTime : Time.unscaledTimeAsDouble;
+
+        if (message.Kind == EventKind.State || message.Kind == EventKind.Spawn)
+        {
+            bool knocked = (message.Flags & (ushort)HitReaction.Knockback) != 0;
+
+            knockbackUntil = knocked ? message.ServerTime + message.HitTime : 0;
+
+            if ((message.Flags & (ushort)HitReaction.Hit) != 0)
+            {
+                hitUntil = message.ServerTime + message.HitTime;
+
+                if (hitDuration <= 0)
+                {
+                    hitDuration = message.HitTime;
+                }
+            }
+            else if (!knocked)
+            {
+                hitUntil = 0;
+            }
+        }
+
         if (message.Kind == EventKind.Hit)
         {
-            double now = actor.Transport != null ? actor.Transport.EstimatedServerTime : Time.unscaledTimeAsDouble;
-
-            hitUntil = now + .18;
-
-            if ((message.Flags & 1) != 0)
+            if (message.Mode == PlayerMode.Dead)
             {
-                knockbackUntil = now + message.Duration;
+                hitUntil = 0;
+                knockbackUntil = 0;
+            }
+            else if ((message.Flags & (ushort)HitReaction.Knockback) != 0)
+            {
+                hitUntil = 0;
+
+                knockbackUntil = message.ServerTime + message.Duration;
+
+                animator?.ResetTrigger("HitStart");
+            }
+            else if ((message.Flags & (ushort)HitReaction.DamageOnly) == 0 && now >= knockbackUntil)
+            {
+                hitDuration = message.Duration;
+
+                hitUntil = message.ServerTime + message.Duration;
+
+                if (animator != null && now < hitUntil)
+                {
+                    animator.ResetTrigger("HitStart");
+
+                    animator.SetTrigger("HitStart");
+                }
             }
 
-            SpawnEffect(profile != null ? profile.HitEffect : null);
+            var hitDefinition = actor.Registry?.Catalog?.Skill(message.Definition);
+            SpawnEffect(hitDefinition != null && hitDefinition.HitEffect != null ? hitDefinition.HitEffect : profile != null ? profile.HitEffect : null);
 
             GameplayIntegration.Active?.ShowDamage(actor, message);
         }
@@ -153,14 +233,18 @@ public sealed class AlivePresentation
 
         if (animator != null && animator.runtimeAnimatorController != null)
         {
-            bool knocked = now < knockbackUntil;
+            bool knocked = actor.Mode != PlayerMode.Dead && now < knockbackUntil;
 
             animator.SetFloat("Speed", moving ? 1 : 0);
 
             animator.SetBool("Combat", actor.Mode == PlayerMode.Combat);
             animator.SetBool("Dead", actor.Mode == PlayerMode.Dead);
             animator.SetBool("Knockback", knocked);
-            animator.SetBool("Hit", !knocked && now < hitUntil);
+            animator.SetBool("Hit", actor.Mode != PlayerMode.Dead && !knocked && now < hitUntil);
+
+            var hitClip = profile != null ? profile.ResolveClip("Hit") : null;
+
+            animator.SetFloat("HitSpeed", hitClip != null && hitDuration > 0 ? hitClip.length / hitDuration : 1);
             animator.SetBool("ActionRunning", action != 0);
 
             var clip = profile != null ? profile.ResolveClip(StateName()) : null;
@@ -168,11 +252,15 @@ public sealed class AlivePresentation
             animator.SetFloat("ActionSpeed", clip != null && duration > 0 ? clip.length / duration : 1);
         }
 
-        if (action != 0 && kind == ActionKind.Attack && !swing && now - start >= (profile != null ? profile.SwingCue : .2f))
+        if (action != 0 && kind == ActionKind.Attack && !swing && now - start >= (skillDefinition != null ? skillDefinition.EffectDelay : profile != null ? profile.SwingCue : .2f))
         {
             swing = true;
 
-            if (GameplayIntegration.Active != null)
+            if (skillDefinition != null && skillDefinition.SwingEffect != null)
+            {
+                SpawnEffect(skillDefinition.SwingEffect);
+            }
+            else if (GameplayIntegration.Active != null && actor.Kind == EntityKind.Player)
             {
                 GameplayIntegration.Active.PlaySwing(skill, position);
             }
@@ -185,7 +273,7 @@ public sealed class AlivePresentation
 
     private int Slot()
     {
-        return kind == ActionKind.Attack ? Mathf.Clamp(skill, 1, 5) : kind == ActionKind.Craft ? 7
+        return kind == ActionKind.Attack ? Mathf.Clamp(skillDefinition != null ? skillDefinition.AnimationSlot : skill, 1, 5) : kind == ActionKind.Craft ? 7
                                                                                                : 6;
     }
 
@@ -202,7 +290,7 @@ public sealed class AlivePresentation
             return;
         }
 
-        var instance = Object.Instantiate(prefab, actor.transform.position + (profile != null ? profile.EffectOffset : Vector3.up), Quaternion.identity);
+        var instance = Object.Instantiate(prefab, actor.transform.position + (profile != null ? profile.EffectOffset : Vector3.up), actor.transform.rotation);
 
         Object.Destroy(instance, 3);
     }

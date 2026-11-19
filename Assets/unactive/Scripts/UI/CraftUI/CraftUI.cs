@@ -7,7 +7,25 @@ public class CraftUI : MonoBehaviour
 {
     private PopUpUIManager _popUpUIManager;
     private Inventory Inventory => _popUpUIManager.Inventory;
-    private ItemMediator ItemMediator => SingletonManager.Instance.GetSingleton<ItemMediator>();
+    private InventoryItem FindItem(string itemName)
+    {
+        var catalog = EverWind.Gameplay.ContainerInMap.Current?.Catalog;
+
+        if (catalog == null)
+        {
+            return null;
+        }
+
+        foreach (var entry in catalog.Items)
+        {
+            if (entry.Definition != null && entry.Definition.ItemName == itemName)
+            {
+                return entry.Definition;
+            }
+        }
+
+        return null;
+    }
     private ScrollRect _scrollRect;
     private RectTransform _scrollArea;
     private RectTransform _contentRect;
@@ -94,7 +112,7 @@ public class CraftUI : MonoBehaviour
 
     void InstanceCraftListSlot(CraftItemRecipe recipe)
     {
-        var resultItem = ItemMediator.GetItemInfo(recipe.ResultItemName);
+        var resultItem = FindItem(recipe.ResultItemName);
         if (resultItem == null)
             return;
 
@@ -175,7 +193,7 @@ public class CraftUI : MonoBehaviour
         }
 
         string craftedItemName = _selectedRecipe.ResultItemName;
-        var resultItem = ItemMediator.GetItemInfo(craftedItemName);
+        var resultItem = FindItem(craftedItemName);
         if (resultItem != null)
         {
             Inventory.PutItem(resultItem);

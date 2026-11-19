@@ -75,6 +75,8 @@ class GameplayProcessor
 
     Error HandleAttackRequest(Player &p, const Request &r);
 
+    Error HandleAttackTargetsRequest(Player &p, const Request &r);
+
     Error HandleGatherRequest(Player &p, const Request &r);
 
     Error HandleCraftRequest(Player &p, const Request &r);

@@ -127,6 +127,8 @@ bool Monster::CanRespawn(double now) const
 
 void Monster::Respawn(Vec3 position)
 {
+    ResetHitReaction();
+
     hp = maxHp;
 
     mode = Mode::NonCombat;

@@ -93,6 +93,20 @@ Event GameplayProcessor::Base(EventKind kind, const Actor &a) const
         e.maxHp = a.maxHp;
 
         e.mode = a.mode;
+
+        if (kind == EventKind::State || kind == EventKind::Spawn)
+        {
+            if (a.pushEnd > world.now)
+            {
+                e.flags = static_cast<uint16_t>(HitReaction::Knockback);
+                e.hitTime = static_cast<float>(a.pushEnd - world.now);
+            }
+            else if (a.hitReactionEnd > world.now)
+            {
+                e.flags = static_cast<uint16_t>(HitReaction::Hit);
+                e.hitTime = static_cast<float>(a.hitReactionEnd - world.now);
+            }
+        }
     }
     else if (auto level = dynamic_cast<const StaticLevel *>(&a))
     {
@@ -399,6 +413,15 @@ void GameplayProcessor::Cancel(Actor &a, Error reason)
 
 void GameplayProcessor::Start(Actor &a, ActionKind kind, int target, int definition, float duration, float impact, uint64_t req)
 {
+    if (a.kind == EntityKind::Player)
+    {
+        auto &p = static_cast<Player &>(a);
+
+        p.attackTargets.clear();
+
+        p.reportedAttack = 0;
+    }
+
     a.action = {world.nextAction++, kind, target,
                 definition, world.now, world.now + duration,
                 world.now + impact, false};
@@ -452,6 +475,11 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
 
     float damage = skill.ratio >= 0 ? attack * (attacker.kind == EntityKind::Player ? 1 + skill.ratio / 100.0f : 1) * 100.0f / (100 + defence) : skill.damage;
 
+    if (attacker.kind == EntityKind::Player)
+    {
+        damage *= GameDataHub::PlayerDamageMultiplier;
+    }
+
     damageable->ApplyDamage(damage);
 
     auto e = Base(EventKind::Hit, target);
@@ -460,10 +488,14 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
 
     e.actionId = attacker.action.id;
 
+    e.definition = attacker.action.definition;
+
     e.value = damage;
 
     if (target.hp <= 0)
     {
+        target.ResetHitReaction();
+
         target.mode = Mode::Dead;
 
         Cancel(target, Error::Dead);
@@ -488,30 +520,33 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
             Activity(static_cast<Player &>(attacker), 0, target.visual);
         }
     }
-    else if (skill.push > 0)
+    else
     {
-        Cancel(target);
+        HitReaction reaction = target.RegisterHit(world.now);
 
-        Vec3 d{target.p.x - attacker.p.x, 0, target.p.z - attacker.p.z};
+        e.flags = static_cast<uint16_t>(reaction);
 
-        float l = std::max(.001f, Distance(target.p, attacker.p));
-
-        target.push = Scale(d, skill.push / (l * .3f));
-
-        target.pushEnd = world.now + .3;
-
-        target.pushId = world.nextAction++;
-
-        if (target.kind == EntityKind::Player)
+        if (reaction == HitReaction::Knockback)
         {
-            ++static_cast<Player &>(target).revision;
+            Cancel(target);
+
+            target.StartKnockback(attacker.p, world.now);
+
+            target.pushId = world.nextAction++;
+
+            if (target.kind == EntityKind::Player)
+            {
+                ++static_cast<Player &>(target).revision;
+            }
+
+            e.velocity = target.push;
+
+            e.duration = GameDataHub::KnockbackSeconds;
         }
-
-        e.velocity = target.push;
-
-        e.duration = .3f;
-
-        e.flags = 1;
+        else if (reaction == HitReaction::Hit)
+        {
+            e.duration = static_cast<float>(target.hitReactionEnd - world.now);
+        }
     }
 
     e.mode = target.mode;
@@ -554,7 +589,17 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
 
     const auto action = a.action;
 
-    if (action.kind == ActionKind::Attack && !action.hit && world.now >= action.impact)
+    bool waitingForTargets = false;
+
+    if (action.kind == ActionKind::Attack && a.kind == EntityKind::Player)
+    {
+        const auto &p = static_cast<Player &>(a);
+        const auto &skill = *p.FindSkill(action.definition)->definition;
+
+        waitingForTargets = skill.kind == SkillKind::Area && p.reportedAttack != action.id;
+    }
+
+    if (action.kind == ActionKind::Attack && !action.hit && !waitingForTargets && world.now >= action.impact)
     {
         a.action.hit = true;
 
@@ -572,10 +617,14 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
 
         impact.space = &m;
 
-        if (skill.area > 0 && a.kind == EntityKind::Player)
+        if (skill.kind == SkillKind::Area && a.kind == EntityKind::Player)
         {
-            for (auto &[id, target] : m.monsters)
+            auto &p = static_cast<Player &>(a);
+
+            for (int id : p.attackTargets)
             {
+                auto target = world.Target(id, a.map);
+
                 impact.target = target;
 
                 if (Validation::Chain().Then<AttackImpactValidator>(world).Check(impact) == Error::None)
@@ -593,6 +642,11 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
                 Hit(a, *t, skill);
             }
         }
+    }
+    // 목록 전송 지연을 제한적으로 허용하며 목록이 없으면 명중을 생성하지 않는다.
+    if (waitingForTargets && world.now < action.end + GameDataHub::AreaTargetReportGraceSeconds)
+    {
+        return;
     }
 
     if (!a.action.id || a.action.id != action.id || world.now < action.end)
@@ -1253,6 +1307,45 @@ Error GameplayProcessor::HandleAttackRequest(Player &p, const Request &r)
     return Error::None;
 }
 
+Error GameplayProcessor::HandleAttackTargetsRequest(Player &p, const Request &r)
+{
+    if (r.kind != RequestKind::AttackTargets || r.targetCount > MaxAttackTargets)
+    {
+        return Error::BadRequest;
+    }
+
+    if (!r.actionId || p.action.id != r.actionId || p.action.kind != ActionKind::Attack || p.action.definition != r.definition)
+    {
+        return Error::Stale;
+    }
+
+    const auto skill = p.FindSkill(r.definition);
+
+    if (!skill || skill->definition->kind != SkillKind::Area)
+    {
+        return Error::BadRequest;
+    }
+
+    if (p.reportedAttack == r.actionId || p.action.hit || world.now > p.action.end + GameDataHub::AreaTargetReportGraceSeconds)
+    {
+        return Error::Expired;
+    }
+
+    p.attackTargets.clear();
+
+    for (uint16_t i = 0; i < r.targetCount; ++i)
+    {
+        if (std::find(p.attackTargets.begin(), p.attackTargets.end(), r.targets[i]) == p.attackTargets.end())
+        {
+            p.attackTargets.push_back(r.targets[i]);
+        }
+    }
+
+    p.reportedAttack = r.actionId;
+
+    return Error::None;
+}
+
 Error GameplayProcessor::HandleGatherRequest(Player &p, const Request &r)
 {
     if (r.kind != RequestKind::Gather)
@@ -1377,6 +1470,8 @@ Error GameplayProcessor::HandleChangeMapRequest(Player &p, const Request &r)
 
     p.velocity = {};
 
+    p.ResetHitReaction();
+
     p.pushEnd = 0;
 
     p.zones.clear();
@@ -1405,6 +1500,8 @@ Error GameplayProcessor::HandleReviveRequest(Player &p, const Request &r)
     {
         return error;
     }
+
+    p.ResetHitReaction();
 
     p.hp = p.maxHp;
 

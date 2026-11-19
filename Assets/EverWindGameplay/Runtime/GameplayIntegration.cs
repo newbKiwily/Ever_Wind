@@ -325,7 +325,10 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
 
     public void PlaySwing(int skill, Vector3 p)
     {
-        Effects.PlayEffect(skill == 1 ? "Skill_normal" : skill == 2 ? "Skill_smash" : "Skill_windmill", p);
+        var definition = Catalog.Skill(skill);
+        if (definition == null || definition.SwingEffect == null) return;
+        var effect = Instantiate(definition.SwingEffect, p, Quaternion.identity);
+        Destroy(effect, 3);
     }
 
     void OnDestroy()

@@ -17,6 +17,12 @@ public abstract class AliveServerTransmitter : ServerTransmitter
     {
         base.InitializeEntity(spawn);
 
+        ActionId = 0;
+
+        destination = spawn.Position;
+
+        havePosition = false;
+
         Apply(spawn);
 
         ApplyPosition(spawn.Position);

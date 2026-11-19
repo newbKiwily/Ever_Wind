@@ -36,7 +36,7 @@ public sealed class PlayerServerTransmitter : AliveServerTransmitter
     {
         var motor = GetComponent<MovementMotor>();
 
-        if (message.Kind == EventKind.Hit && (message.Flags & 1) != 0)
+        if (message.Kind == EventKind.Hit && (message.Flags & (ushort)HitReaction.Knockback) != 0)
         {
             revision = message.Revision;
 
@@ -49,7 +49,7 @@ public sealed class PlayerServerTransmitter : AliveServerTransmitter
 
         if (message.Kind == EventKind.State)
         {
-            if (message.Revision > revision || message.Mode == PlayerMode.Dead || motor != null && motor.Forced)
+            if (message.Revision > revision || message.Mode == PlayerMode.Dead || (message.Flags & (ushort)HitReaction.Knockback) != 0 || motor != null && motor.Forced)
             {
                 ResetPosition(message, motor);
             }

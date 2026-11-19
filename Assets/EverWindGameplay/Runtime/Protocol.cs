@@ -23,7 +23,8 @@ public enum RequestKind : ushort
     Tutorial,
     ResourceRefill,
     Save,
-    Logout
+    Logout,
+    AttackTargets
 }
 
 public enum EventKind : ushort
@@ -55,6 +56,14 @@ public enum PlayerMode : ushort
     Combat,
     Looting,
     Dead
+}
+
+[System.Flags]
+public enum HitReaction : ushort
+{
+    Knockback = 1,
+    DamageOnly = 2,
+    Hit = 4
 }
 
 public enum ActionKind : ushort
@@ -106,6 +115,7 @@ public sealed class Request
     public uint Epoch, Revision, Sequence;
     public int Target, Definition;
     public Vector3 Position;
+    public int[] Targets = Array.Empty<int>();
 }
 
 public sealed class ServerMessage
@@ -130,11 +140,11 @@ public interface IServerMessageHandler
 public static class Protocol
 {
     public const ushort Version = 1, RequestPacket = 0x500, EventPacket = 0x501;
-    public const int RequestSize = 52, EventSize = 108;
+    public const int MaxAttackTargets = 64, RequestSize = 310, EventSize = 108;
 }
 
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
-public struct RequestPacket
+public unsafe struct RequestPacket
 {
     public ushort Version;
     public RequestKind Kind;
@@ -143,6 +153,8 @@ public struct RequestPacket
     public int Target, Definition;
     public ulong ActionId;
     public float X, Y, Z;
+    public ushort TargetCount;
+    public fixed int Targets[Protocol.MaxAttackTargets];
 }
 
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]

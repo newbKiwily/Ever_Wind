@@ -56,12 +56,15 @@ MonoBehaviour:
     Definition: {fileID: 11400000, guid: 91ed4a87a3fd9d149a4923375f5efbb8, type: 2}
   Skills:
   - Id: 1
+    Definition: {fileID: 11400000, guid: 995b56f140fb05c4ca57538866e7ae54, type: 2}
     Reach: 1.2
     Cooldown: 0.8
   - Id: 2
+    Definition: {fileID: 11400000, guid: 013c2163af2915042ab28fbc9420f680, type: 2}
     Reach: 1.8
     Cooldown: 2
   - Id: 3
+    Definition: {fileID: 11400000, guid: 1723c63cd667f644db0d50959b05e397, type: 2}
     Reach: 2.5
     Cooldown: 2
   Quests:

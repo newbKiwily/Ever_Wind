@@ -21,6 +21,11 @@ Error AttackRangeValidator::Validate(const ValidationContext &context) const
     auto target = world.Target(c.request.target, c.player.map);
     auto skill = c.player.FindSkill(c.request.definition);
 
+    if (skill && skill->definition->kind == SkillKind::Area && !skill->definition->requiresTarget)
+    {
+        return Error::None;
+    }
+
     if (!target)
     {
         return Error::MissingTarget;

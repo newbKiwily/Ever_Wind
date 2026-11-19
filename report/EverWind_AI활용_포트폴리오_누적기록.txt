@@ -140,7 +140,30 @@ A-11. 최근 검증의 범위와 한계
 [미확인/보류]
 튜토리얼 완료 전 실제 다른 맵 진입은 기존 검증기에 제한되어 맵0->맵1 성공으로 기록하지 않는다. 마지막 실제 플레이어 공격은 대상 선택이 성립하지 않아 명중/완료까지 확인하지 못했다. 다른 플레이어 실제 다중 접속, 모든 아이템/퀘스트/제작 회귀, 장시간 메모리 및 동접 성능, 서버 위치 이력 기반 스냅샷 보간, 신규 직업/새 리깅 에셋은 미검증이다. 기존 QuestManager 미사용 필드 경고 1건은 유지한다. 이번 문서 작업에서는 게임 실행 검증을 다시 하지 않았다.
 
+
+A-12. 몬스터 재사용과 연속 피격 전투 규칙 — 2026-11-18 후속 갱신
+[현행 구현]
+WorldLoader는 몬스터 Despawn 때 등록 해제·SetActive(false)로 동일 맵 안에 보관한다. 같은 엔티티 ID·종류의 Spawn이 오면 서버 위치/HP/Mode 및 행동·보간·피격·Animator 상태를 초기화하고 재등록·SetActive(true)로 재사용한다. 재사용 횟수 제한은 없다. 기존 보고의 4회는 모의 검증 반복 횟수다. 종류가 바뀌거나 기존 객체가 없으면 새로 생성하며 맵 이동/로그아웃 때 보관 개체도 파괴한다.
+연속 피격 기준은 대상별 서버 피격 반응 종료 시각이다. 이전 반응이 끝나기 전 다음 유효 Hit가 들어오면 횟수를 올리고 반응 시간을 갱신한다. 3회째 넉백, 넉백 중에는 피해만 적용하며 피격 횟수/반응/넉백 종료 시간을 갱신하지 않는다. 사망이 최우선이다.
+GameDataHub의 공통 상수: ConsecutiveHitThreshold=3, PlayerHitSeconds=.5, MonsterHitSeconds=1, KnockbackSeconds=.3, KnockbackDistance=2. 기존 PlayerReviveDelaySeconds=10은 유지한다. 일반 스킬의 사거리/쿨다운/피해 등 DB 정의 전체를 정적으로 옮긴 변경은 아니다. 기존 스킬별 push>0 즉시 넉백 조건은 이번 3회 규칙으로 대체했다.
+서버 Actor가 횟수/반응 종료 시각과 RegisterHit/StartKnockback/ResetHitReaction을 제공한다. 공통 Hit 처리부는 먼저 피해·사망을 확정한 뒤 반응을 선택한다. 클라이언트는 HitReaction 플래그와 서버 시각/지속 시간으로 표현하며 HitStart 재전이와 HitSpeed로 재피격·고정 시간을 반영한다. State의 서버 넉백 종료는 로컬 강제 이동도 종료한다. wire 요청 52/이벤트 108바이트는 유지했다.
+[당시 검증/범위]
+서버 빌드, 실제 Hit 함수를 호출하는 격리된 native 실행 검증, Player/OtherPlayer/Monster Play Mode 반응 검사와 조기 넉백 종료 검사, Addressables 빌드 통과. 이 구간에서 실제 TCP 다중 전투/실제 서버 리스폰 대기 검증은 하지 않았다.
+
 ======================================================================
+
+A-13. 스크립트 기반 스킬 실행과 클라이언트 범위 탐지 — 2026-11-19 추가
+[현행 합의/구현]
+클라이언트 일반 C# 추상 Skill 아래에 SingleTargetSkill/RangedSkill/AreaSkill/BuffSkill을 둔다. PlayerActionController가 사용별 인스턴스를 생성해 AttackAction에 등록하고, 요청 때 만든 같은 인스턴스를 서버 ActionStarted 이후에도 유지한다. Controller는 대상 선택·접근·취소, Action은 실행 수명, Skill은 종류별 실행을 담당한다.
+일반공격/스매시는 SingleTargetSkill, 윈드밀은 AreaSkill로 기존 ID 1/2/3에 연결했다. RangedSkill은 투사체 없는 즉발 명중형만 지원하는 등록 경로를 준비했으며 실제 신규 원거리 스킬 슬롯은 추가하지 않았다. BuffSkill은 사용자 후속 지시에 따라 스탯 설계 확정 후 구현한다는 주석과 사용 차단만 두며 버프 적용·지속·중첩·신규 슬롯은 구현하지 않았다.
+SkillDefinition 에셋에 종류/ID/대상 필요 여부/Animator 슬롯/휘두르기·피격 이펙트/이펙트 지연/범위 탐지기 프리팹을 연결한다. 서버 수치의 기준은 계속 DB이다. 기존 클라이언트 카탈로그의 Reach/Cooldown은 유지하며 전체 DB 카탈로그 수신 정책은 확장하지 않았다.
+범위기는 서버 시작 시각+HitTime에 클라이언트 탐지기로 몬스터 목록을 한 번 보내고 서버는 그 목록에 대해서만 명중을 검사한다. 허용 거리는 XZ 중심 거리 <= AreaRadius+공격자 반경+대상 반경이다. 같은 맵의 살아 있는 몬스터만 적용하고 중복 ID는 한 번만 처리한다. 범위기의 Ray 형태·벽 가림·파티클 분포를 서버에서 재현하지 않는 것은 유연한 PvE 판정을 원한 사용자의 명시적 선택이다. 단일·원거리 공격의 기존 타격 시 거리/Geometry 검사는 유지한다.
+발동 사거리는 기존 Reach, 범위 타격 허용 거리는 AreaRadius로 분리한다. 윈드밀은 기존처럼 락온 접근 후 발동하도록 연결했고 AreaSkill은 RequiresTarget=false인 제자리 발동도 지원한다. 수동 64방향 탐지선/두께를 가진 WindmillRange 프리팹을 등록했다. 파티클에서 범위를 추출하는 에디터 도구는 만들지 않았다.
+범위 목록은 AttackTargets 요청에 행동 ID와 스킬 ID를 붙여 전달한다. 한 행동의 목록은 한 번만 수락하며 취소/종료/이전 행동 ID는 거절한다. 서버는 예정 타격 시각 이전에는 피해를 적용하지 않고, 목록 미도착 시 행동 종료 뒤 최대 1초만 기다린 후 명중 없이 종료한다. 최대 목록은 64개이고 초과 탐지 시 엔티티 ID 정렬 후 64개로 제한한다.
+프로토콜은 v2, 고정 요청 본문 310바이트(대상 수 2+ID 배열 256 추가), 이벤트 108바이트다. 클라이언트/서버를 함께 갱신해야 한다. DB SkillDefinition에는 SkillKind/RequiresTarget 컬럼을 추가했고 기존 광역 정의를 Area로 전환했다. 계정 데이터와 기존 스킬 수치는 변경하지 않았다.
+[이번 검증]
+Unity 컴파일, 프레임 진행 확인 후 Play Mode 탐지/종류별 인스턴스/락온/즉발 원거리/버프 사용 차단/종료·취소 정리/Animator 슬롯 1·2·3 검사, 루프백 TCP의 대상 목록 단일 전송, native 제품 함수 검증, 실제 DB를 읽는 서버 시작·정상 종료, Addressables 빌드를 수행했다. 실제 접속 플레이어의 전체 전투 왕복과 다중 접속 전투는 별도 미검증이다. 상세 실패·수정·한계는 T 회차에 보존한다.
+
 
 [현행 후속 수정 — phase 및 GameplaySender 제거]
 StartupPhase/GamePhase 및 조회 API를 제거했다. ServerApplication.Initialize와 MapManager.Initialize가 내부 private 초기화 함수를 고정 순서로 호출하며 오류 시 다음 단계로 진행하지 않는다. 개별 Map 초기화 함수는 외부에서 호출할 수 없다. 초기화 완료/실행/정지의 최소 bool만 수명 제어에 사용한다.
@@ -8420,5 +8443,260 @@ R-12. 기록 시점·사용량과 다음 기준점
   },
   "coverage": "동일 채팅 공개 사용자 메시지 48건과 현재 소스·구현 당시 보고/도구 결과 대조. 요청에 따라 제외한 변경 내용은 서술하지 않음. 전체 대화 원문 복제 아님. 기존 과거 전수 보충 공백 유지.",
   "pending": "실제 다른 맵 입장/플레이어 공격 완료/다중 접속/전체 DB 카탈로그 정책/신규 스킬·버프/리타기팅/대규모 성능 등 미확인·후속. 사용량 스냅샷 이후 문서 쓰기·검증·최종 응답은 다음 회차 반영."
+}
+[[PORTFOLIO_CHECKPOINT END]]
+
+
+======================================================================
+S. 2026-11-18 몬스터 재사용·연속 피격 전투 시스템 구현 기록
+======================================================================
+
+S-1. 변경 범위
+직전 R 이후 실제 코드·에셋에 반영한 몬스터 GameObject 재사용과 공통 연속 피격 전투 규칙만 기록한다. 각 기능과 직접 관련된 사용자 요구·결정 이유·변경 파일·구현 결과·검증·미확인 범위를 포함한다. 아래 검증은 구현 당시 결과이며 이번 기록 수정에서 새로 실행한 것이 아니다.
+
+S-2. 동일 몬스터 GameObject 비활성화·재활성화 구현
+[사용자 결정]
+서버의 리스폰 권위는 유지하면서 기존 클라이언트 몬스터를 SetActive(false/true)로 재활용하도록 요청했다. 별도 전역 풀 관리자를 추가하지 않고 기존 WorldLoader 안에서 동일 맵/동일 ID 재사용을 담당하게 했다.
+[구현]
+WorldLoader.inactiveMonsters가 비활성 몬스터를 ID별로 보관한다. Despawn은 대기 이벤트 제거 -> 등록 해제 -> SetActive(false)까지 수행하고 몬스터이면 파괴/Material 해제를 생략한다. 다른 엔티티의 기존 파괴 정책은 유지한다.
+Spawn 시 TryReuseMonster가 같은 ID의 보관 객체를 찾아 종류 Definition까지 일치하면 비활성 상태에서 Bind로 서버 스폰 정보를 적용하고 루트 Collider를 복구한 뒤 SetActive(true)로 재활성화한다. 같은 ID라도 종류가 바뀌면 기존 외형/소유 Material을 제거하고 새 생성 경로로 돌아간다. 외부 파괴 등으로 객체가 없으면 새로 만든다.
+AliveServerTransmitter.InitializeEntity에서 ActionId/보간 목표/위치 보유 여부를 초기화한다. AlivePresentation.ResetForSpawn이 행동 ID/중복 기록/피격·넉백 타이머/재생 카운터를 지우고 Animator.Rebind로 상태를 초기화한다. 일반 표현 객체도 매번 새로 만들지 않고 재사용한다. MonsterServerTransmitter는 Definition을 보관해 외형 종류를 검증한다.
+맵 이동/로그아웃의 ClearWorld에서는 보관 목록도 비우고 월드 자식 객체 및 소유 Material을 정리한다. Addressables 핸들 수명은 기존 맵 캐시 규칙을 따른다. 같은 맵/ID에 한정한 재사용이며 새 ID의 몬스터끼리 임의로 외형 객체를 돌려 쓰는 범용 풀을 구현한 것은 아니다.
+[변경 파일]
+Assets/Scripts/Server/Loader/WorldLoader.cs.
+Assets/EverWindGameplay/Runtime/AliveServerTransmitter.cs, AlivePresentation.cs, MonsterServerTransmitter.cs.
+[당시 검증]
+Unity 컴파일과 실제 프레임 진행 중인 Play Mode에서 동일 GameObject ID를 4번의 재생성 사이클 동안 비교했다. 비활성/등록 해제, 활성/재등록, HP/Mode/위치, 진행 공격·이전 목표 위치·피격/넉백/Dead 파라미터 초기화, Collider 복구를 확인했다. Material은 보관 중 유지되고 ClearWorld 뒤 실제 지연 Destroy가 끝난 것도 확인했다. 종류 불일치 시 재사용 거부와 비몬스터 해제 정책 유지도 별도 검사했다. 최종 ground truth 오류 0이었다.
+임시 검증은 Library/VerifyMonsterReuse.cs, VerifyMonsterReuseFallback.cs 등에 두었다. 실제 서버에서 몬스터를 여러 번 죽여 기다린 검증은 아니며 스폰/제거 처리를 모의 호출한 실행 검사였다. 현재 생산 코드의 재사용 횟수 제한은 없다.
+
+S-3. 연속 피격 전투 규칙 합의
+[사용자 요구]
+모든 Alive 엔티티가 연속 피격 3회째에 넉백되도록 요구했다. 연속 피격의 기준은 이전 피격 애니메이션 종료 전 다시 맞는 것이며 적절한 실제 클립은 나중에 가져오므로 플레이어 .5초/몬스터 1초로 고정했다. 넉백 중 다른 행동·피격 애니메이션은 재생하지 않되 피해는 계속 받아야 한다.
+AI는 서버가 고정 반응 시간으로 연속 여부를 판정하고 클라이언트가 반응 종류/시간을 표현하는 안을 제시했다. 사망과 넉백의 우선순위 및 공통 넉백 값을 확인했고, 사용자는 사망 우선/현재 값을 공통 거리·시간으로 사용/이번에 고정한 전투 값을 공통 기준으로 설정하도록 확정했다.
+[확정한 공통 값과 의미]
+GameDataHub::ConsecutiveHitThreshold=3.
+GameDataHub::PlayerHitSeconds=.5f: 로컬/다른 플레이어 모두 같은 서버 Player 기준.
+GameDataHub::MonsterHitSeconds=1.0f.
+GameDataHub::KnockbackSeconds=.3f.
+GameDataHub::KnockbackDistance=2.0f.
+기존 PlayerReviveDelaySeconds=10.0f는 유지한다.
+넉백 거리 2.0은 기존 SkillDefinition 마이그레이션의 넉백 설정에서 확인한 값이다. 이 작업에서 실 DB의 현재 스킬 행을 다시 조회한 것은 아니며, DB 스키마/내용을 바꾸지 않고 기존 설정 값을 공통 상수로 채택했다. 스킬 사거리/쿨다운/피해 등의 모든 DB 정의를 상수로 옮겼다는 의미가 아니다.
+
+S-4. 서버 판정·반응 상태 구현
+Actor에 consecutiveHits/hitReactionEnd와 RegisterHit/StartKnockback/ResetHitReaction을 추가했다. 일반 피격 시 now < hitReactionEnd면 횟수를 올리고 그렇지 않으면 1회로 시작한다. 1~2회는 대상 종류별 반응 종료 시각을 갱신한다. 경계 시각과 같으면 새 연속으로 취급한다.
+예: 플레이어 첫 0.0초 -> 종료 .5초, 두 번째 .4초 -> 종료 .9초, 세 번째 .8초 -> 넉백. 대상별 횟수이므로 공격자가 달라도 같은 대상에 대한 유효 Hit는 합산된다. 연속 종료 여부를 클라이언트 Animator 보고나 패킷 도착 시간에 맡기지 않는다.
+GameplayProcessor.Hit는 기존 IDamageable 확인·피해 계산·ApplyDamage를 유지한다. HP가 0이면 먼저 사망/행동 취소/피격 정보 초기화/넉백 중단을 처리한다. 살아 있으면 RegisterHit가 반응을 선택한다.
+- Hit: 반응 시간과 일반 피격 결과 전송.
+- Knockback: 3회째 횟수/피격 타이머를 비우고 현재 행동 취소, 세 번째 공격자 반대 방향으로 공통 거리/시간의 넉백 시작.
+- DamageOnly: 이미 넉백 중이면 HP 결과만 전송하며 횟수/넉백 방향/종료 시각을 갱신하지 않는다.
+서로 같은 XZ에서 타격되어 방향 벡터가 0이면 유효한 고정 방향을 사용한다. 넉백 후 다음 피격은 다시 첫 회다. 사망·부활·맵 전환·몬스터 Respawn에 ResetHitReaction을 연결했다.
+기존 skill.push>0 즉시 넉백 분기는 제거했다. 기존 DB 조회/Skill의 해당 필드를 이번에 스키마에서 삭제한 것은 아니며, 현재 이 피격 발동 경로에서는 공통 3회 규칙과 공통 거리를 사용한다.
+Actor.UpdateKnockback는 마지막 틱이 종료 시각을 지나도 실제 남은 시간 구간만 이동하도록 보완했다. 이동 중 기존 Map.TryMove/Geometry/지면·맵 경계 검사는 유지한다. 벽에 막히면 조기 종료할 수 있고, 끝난 상태를 클라이언트가 반영하게 했다.
+
+S-5. 패킷·클라이언트 표현·Animator 수정
+공통 HitReaction 플래그 값을 서버 Protocol.h와 클라이언트 Protocol.cs에 정의했다: Knockback=1, DamageOnly=2, Hit=4. 기존 이벤트 Flags/Duration/ServerTime/Velocity를 사용하고 State/Spawn의 HitTime에 현재 반응의 남은 시간을 전달해 중간 합류·상태 동기화에 활용한다. Spawn.Duration의 기존 이동 속도 용도는 유지한다. 요청 52/이벤트 108바이트 wire 크기는 바꾸지 않았다.
+AlivePresentation은 서버 시각+지속 시간으로 hitUntil/knockbackUntil을 관리한다. 일반 피격은 HitStart Trigger를 발행하고 HitSpeed를 클립 길이/지정 시간으로 설정한다. 두 번째 피격도 Hit를 처음부터 재시작한다. 넉백 시작 시 피격 타이머/Trigger를 지우고, DamageOnly는 피격 애니메이션/넉백 종료를 갱신하지 않는다. 사망이면 반응 타이머를 지워 Dead 전이가 우선한다.
+SharedAliveAnimatorSetup은 기존 그래프에도 HitStart/HitSpeed와 자기 재진입 가능한 Hit 전이를 추가하도록 했다. 해당 전이는 사망/넉백 조건보다 뒤, 일반 Hit 복귀 조건보다 앞에 두고 새 클립으로 교체해도 동일한 고정 시간 정책을 사용한다. 활성 Player/Skeleton/Spider Override가 같은 공통 그래프를 참조한다.
+PlayerServerTransmitter는 넉백 플래그가 있는 서버 상태의 위치 보정을 반영한다. PlayerActionController는 서버 타격 시각을 고려한 남은 넉백 시간으로 로컬 KnockbackAction을 만들고, State가 넉백 종료/사망을 알리면 로컬 강제 이동과 잠금을 종료한다. 추가 DamageOnly Hit가 새 KnockbackAction을 만드는 경로는 없다.
+피해 효과 호출/HP 갱신은 계속 허용하되 캐릭터 반응 애니메이션을 넉백 중 바꾸지 않는 정책이다. 신규 버프/콤보 공격 스킬/PvP/회피 시스템을 추가한 것은 아니다.
+[변경 파일]
+EverWindServer/LoginServer/Gameplay/CoreData/GameDataHub.h, Protocol.h.
+Gameplay/Map/Entity/Actor.h/cpp, Monster.cpp, GameplayProcessor.cpp.
+Assets/EverWindGameplay/Runtime/Protocol.cs, AlivePresentation.cs, PlayerServerTransmitter.cs, PlayerActionController.cs.
+Assets/EverWindGameplay/Editor/SharedAliveAnimatorSetup.cs, Generated/AliveAnimation/Alive.controller 및 관련 Override/Addressables 빌드 산출물.
+
+S-6. 실패·수정·당시 검증과 한계
+[실패와 수정]
+재컴파일 도메인 재로딩 중 Pipeline 인스턴스를 일시 찾지 못해 Play Mode 명령이 실행되지 않은 적이 있다. 에디터 로그와 복구 상태를 확인한 뒤 다시 컴파일 상태를 읽고 실행했다. 이를 코드 오류나 검증 성공으로 오인하지 않았다.
+처음 임시 C++ 검사에서 private/public 매크로 접근 변경이 MSVC 링크 심벌과 맞지 않아 Hit 호출 링크가 실패했다. 검사용 접근 방법을 바꿔 해결했으며 생산 코드에서 Hit를 public으로 노출하지 않았다. 임시 링크의 EDITANDCONTINUE/최적화 옵션 경고와 제품 빌드 성공은 구분한다.
+[서버 실행 검증]
+Debug x64 최종 서버 빌드 성공. 기존 Queries의 변환 경고는 유지됐다. 별도 DB/TCP 없이 격리 MapManager/Map/Player/Monster를 구성하고 실제 GameplayProcessor.Hit 함수를 호출했다. 일반 Hit 플래그와 플레이어 .5/몬스터 1초, .4초 간격 갱신/3회 넉백, 넉백 중 HP 감소·종료 시각 불변·횟수 불변, 넉백 중 큰 피해로 사망 우선, Monster.Respawn 초기화, 정확한 시간 경계에서 1회 재시작을 assert했다.
+공통 넉백의 종료 틱을 넘기는 이동에서 방해물 없는 XZ 이동 거리가 2.0인지 확인했다. 요청/이벤트 wire 크기 52/108도 컴파일 시 확인했다. 이것은 실제 서버 함수 실행 검증이지만 실제 접속자를 모아 수행한 네트워크 전투 검증은 아니다.
+[클라이언트 실행 검증]
+Play Mode 프레임 진행을 확인한 뒤 PlayerServerTransmitter/OtherPlayerServerTransmitter/MonsterServerTransmitter 세 타입과 실제 모델/Override를 사용했다. 첫 Hit 진입, 두 번째 Hit의 normalizedTime 재시작, HitSpeed로 지정 시간 맞춤, Knockback 진입, DamageOnly의 HP 갱신·Hit 미재생·넉백 시각 불변, Dead 우선 전이를 검사했다. 각 타입 모두 통과했다.
+추가로 로컬 플레이어에 KnockbackAction이 시작된 뒤 서버 State가 종료를 알릴 때 current Action과 MovementMotor.Forced가 함께 해제되는지 확인했다. 클라이언트 최종 컴파일 성공, Addressables 빌드 성공, 마지막 console ground truth는 컴파일 실패 false/오류 0/현재 경고 0이었다. 과거 기록의 기존 QuestManager 경고가 소스에서 제거됐다는 의미로 확대하지 않는다.
+임시 검증 소스는 Library/HitChainCheck, Library/VerifyHitChainPresentation.cs, Library/VerifyLocalKnockbackEnd.cs에 두었다. 상시 테스트 프로젝트/CI를 새로 추가하지 않았고 로컬 임시 산출물의 장기 존재를 보장하지 않는다. 검증 후 Play Mode를 종료했다.
+[미확인 범위]
+실제 TCP로 여러 공격자가 연속 타격하는 전투, 지연·단절·재접속 중 전체 반응, 실제 서버의 반복 몬스터 사망/재생성 대기, 새 피격/넉백 클립·새 리그와의 호환성은 아직 미확인이다. 벽에 의한 조기 종료는 로컬 상태 전달 검사까지 했으며 모든 맵 경사/장애물 회귀를 전수 수행한 것은 아니다. 대규모 동접/메모리/성능 수치를 주장하지 않는다.
+
+[실제 사용량 스냅샷]
+{
+  "source": "same-thread local token_usage_record; unique response_id usage",
+  "previous_checkpoint_response_id": "resp_062c5e614fa4e210016afc72c164bc87d0a4d6a08066f499ad",
+  "unique_response_count": 75,
+  "incremental_usage_sum": {
+    "input_tokens": 22876671,
+    "cached_input_tokens": 22565632,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 73788,
+    "reasoning_output_tokens": 21875,
+    "total_tokens": 22950459
+  },
+  "latest_cumulative": {
+    "input_tokens": 306823919,
+    "cached_input_tokens": 300275584,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 1140294,
+    "reasoning_output_tokens": 407450,
+    "total_tokens": 307964213
+  },
+  "delta_since_previous_checkpoint": {
+    "input_tokens": 22876671,
+    "cached_input_tokens": 22565632,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 73788,
+    "reasoning_output_tokens": 21875,
+    "total_tokens": 22950459
+  },
+  "sum_matches_delta": true,
+  "response_id": "resp_062c5e614fa4e210016afd4a0d0a6087d0b7ad9007ff875b00",
+  "timestamp_utc": "2026-11-18T06:48:17.826Z",
+  "public_user_message_count": 22,
+  "scope": "직전 R 사용량 기준점 이후부터 이번 기록 준비 시점까지. 캐시/추론 하위 지표를 총량에 다시 더하지 않고 비용을 추정하지 않는다. 스냅샷 이후 문서 쓰기·검증·최종 응답은 다음 회차에 반영한다."
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1bc13-8b09-7bf3-b2b1-fbc971e1014f",
+  "record_date": "2026-11-18",
+  "covered_user_message_id": "msg_01a1ed6e-d05e-7020-ac88-e73d31c0c690",
+  "covered_user_timestamp_utc": "2026-11-18T06:53:44.926Z",
+  "covered_user_request": "아니. 실제 구현해서 바꾼 부분과 그와 관련된 내용만 정리해줘. 나머진 x",
+  "previous_content_checkpoint": "R. 2026-11-18 클라이언트 로딩 개편·엔티티 책임 분리·공통 애니메이션 증분 기록",
+  "implementation_status": "몬스터 오브젝트 재사용과 공통 연속 피격 규칙의 실제 구현 변경·관련 요구·파일·당시 검증·한계만 기록. 이번 문서 수정 중 게임 변경·새 실행 검증 없음.",
+  "usage_checkpoint_response_id": "resp_062c5e614fa4e210016afd4a0d0a6087d0b7ad9007ff875b00",
+  "usage_checkpoint_timestamp_utc": "2026-11-18T06:48:17.826Z",
+  "usage_checkpoint": {
+    "input_tokens": 306823919,
+    "cached_input_tokens": 300275584,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 1140294,
+    "reasoning_output_tokens": 407450,
+    "total_tokens": 307964213
+  },
+  "incremental_unique_response_count": 75,
+  "incremental_usage_sum": {
+    "input_tokens": 22876671,
+    "cached_input_tokens": 22565632,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 73788,
+    "reasoning_output_tokens": 21875,
+    "total_tokens": 22950459
+  },
+  "coverage": "직전 R 이후 실제 구현 변경만 수록하도록 S 회차를 재정리했다. 사용량 메타데이터의 집계 기준 응답/시각은 기존 스냅샷 그대로 유지하며 그 이후 사용량은 다음 회차에 반영한다.",
+  "pending": "구현 기능의 실제 TCP 다중 전투/반복 서버 리스폰/새 클립·리그/맵별 회귀와 성능 검증은 미확인."
+}
+[[PORTFOLIO_CHECKPOINT END]]
+
+
+======================================================================
+T. 2026-11-19 스크립트 기반 스킬 실행·범위 대상 보고 구현 기록
+======================================================================
+
+T-1. 기록 범위와 사용자 요구
+직전 S 이후 이번 채팅에서 최종 코드·에셋·DB에 반영한 스킬 구조 변경과 이에 직접 관련된 요구·설계 결정·검증만 추가한다. 이번 채팅의 조회 가능한 공개 사용자 발언은 초기 공격 설명 요청부터 구현/기록 요청 및 버프 범위 정정까지다. 이전 체크포인트는 다른 채팅 ID이므로 그 이후의 모든 채팅·작업을 전수 복원했다고 주장하지 않는다. 작업 시작 때 이미 수정되어 있던 씬/UI/몬스터 재사용/피격 시스템 등은 이번 스킬 작업의 신규 구현으로 중복 기록하지 않는다.
+사용자는 스킬별 전용 실행 객체를 만들고 PlayerActionController가 AttackAction을 실행할 때 해당 스킬을 등록하도록 요청했다. 단일 공격은 기존 락온을 유지하고 스킬마다 표현을 다르게 연결하며, 범위기는 보이지 않는 Ray 탐지 오브젝트로 여러 몬스터를 감지하도록 했다. 범위기의 발동 사거리와 실제 공격 범위는 구분한다.
+추가 정정으로 원거리는 날아가는 투사체 없이 즉발 명중형만 존재한다고 확정했다. 버프도 종류에 포함하되 AI가 임시 공격력 증가 버프 등록을 제안하자 사용자는 스탯 구조가 아직 확립되지 않았으므로 클래스와 추후 구현 주석만 남기고 내부 기능을 비우도록 지정했다. 최종 코드에는 임의 버프 효과/스탯/4번 키 스킬을 추가하지 않았다.
+사용자는 범위기의 서버 검증을 완화하도록 명시했다. 클라이언트 Ray가 감지한 몬스터 목록을 보내면 서버는 스킬의 허용 거리 안에 있는 대상만 명중으로 인정한다. PvP가 없는 RPG에서 유연한 판정을 통해 플레이 경험을 개선하려는 선택이다. 파티클 특정 시점에서 탐지 범위를 추출하는 편집 도구는 이번 구현에서 제외했다. 도구 내부 설계는 사용자가 이후 진행한다.
+
+T-2. 대안과 최종 선택 / 사용자·AI 역할
+AI의 이전 제안은 클라이언트와 서버가 같은 정밀 범위를 재현하는 방식이었다. 사용자는 이를 정정해 서버는 범위 모양/벽 충돌을 재현하지 않고 거리만 확인하는 방식으로 선택했다. 사용자가 게임 권위의 경계와 필요한 공격 종류, 버프의 보류 범위를 결정했고 AI는 기존 Action·송수신기·Validator·DB 구조를 활용해 실행 객체와 패킷 계약을 구현했다.
+스킬마다 Controller 분기를 늘리는 대신 공통 Skill 실행 계약과 종류별 하위 클래스를 사용했다. 공유 설정은 SkillDefinition 에셋, 사용별 대상/행동 ID/탐지기/보고 여부는 Skill 인스턴스로 분리했다. 새 스킬 엔진이나 투사체 시스템은 추가하지 않았다.
+요청 시 만든 AttackAction/Skill을 pendingAttack으로 보관하고, 같은 RequestId의 ActionStarted가 오면 그 인스턴스를 실행 상태로 전환한다. Controller의 기존 세대·요청 ID·행동 ID 기반 취소와 늦은 응답 처리를 유지했다. 공격별 효과 키 삼항 분기는 스킬 에셋 참조로 대체했다.
+
+T-3. 클라이언트 실제 구현
+Skill.cs: 실행 주체·락온 대상·공유 정의·서버 행동 ID·시작/타격 시각을 보관하고 거리 검사/사용 요청/서버 시작/갱신/종료 계약을 제공한다. AttackAction은 Skill을 주입받는 생성자를 가지며 갱신과 종료를 스킬에 전달한다.
+SingleTargetSkill.cs: 기존 단일 락온 사용 경로를 유지한다. 일반공격과 스매시는 서로 다른 설정 에셋을 사용한다.
+RangedSkill.cs: SingleTargetSkill 기반의 즉발 원거리 실행 종류다. 실제 신규 원거리 스킬 ID·DB 행·키 슬롯은 만들지 않았다. 기존 공통 서버 타격 시각에 명중하는 방식이며 비행체/이동 중 충돌은 없다.
+BuffSkill.cs: 향후 스탯 구조 확정 후 효과·지속·중첩·해제를 구현한다는 주석을 두었다. CanExecute=false 및 Controller/서버의 사용 차단으로 미구현 버프가 공격으로 처리되지 않게 했다. 스탯 모델이나 버프 상태 저장을 추가하지 않았다.
+SkillDefinition.cs: ID, SkillKind, RequiresTarget, AnimationSlot, SwingEffect/HitEffect, EffectDelay, RangeDetector를 제공한다. 종류에 맞는 스킬 인스턴스를 생성한다. 기존 GameplayCatalog.SkillEntry에 Definition 참조와 Skill(id) 조회를 추가했으며 기존 Reach/Cooldown 필드는 유지했다.
+AreaSkill.cs: 서버 ActionStarted에서 탐지기 프리팹을 캐릭터 자식으로 생성한다. 서버 기준 시작 시각+HitTime에 한 번 탐지하여 AttackTargets를 보내고 탐지기를 제거한다. 정상 종료/취소/비활성화 경로에서도 정리한다. 탐지기 미등록 상태는 사용을 막는다.
+SkillRangeDetector.cs: 수동 설정한 시작점·방향·길이·두께를 읽어 RaycastAll 또는 SphereCastAll과 시작점 겹침 검사를 수행한다. 살아 있는 같은 Registry의 MonsterServerTransmitter만 수집하며 여러 Collider/여러 선에 걸린 ID는 중복 제거한다. 런타임 Renderer는 없고 선택 시 Gizmo 선만 표시한다. 최대 64개로 제한하며 초과 시 ID 정렬의 앞 64개를 사용한다.
+기존 ID 1/2/3을 NormalAttack/Smash/Windmill 에셋에 연결했다. 일반공격/스매시는 SingleTarget, 윈드밀은 Area이며 Animator 슬롯 1/2/3과 기존 파티클 프리팹을 연결했다. WindmillRange.prefab은 반경 3, 높이 .5, 두께 .16의 64방향 수동 탐지선이다. 파티클을 분석하여 만든 결과가 아니다. 기존 윈드밀의 락온/접근 후 시작은 유지하고, 종류 구현은 RequiresTarget=false인 제자리 범위 발동도 수용한다.
+AlivePresentation은 스킬 정의의 Animator 슬롯과 이펙트/지연을 사용하고 캐릭터 방향에 맞춰 이펙트를 생성한다. 모델별 클립과 공통 Animator/Override 구조, root motion·애니메이션 이벤트의 판정 비권위 정책은 유지한다. 서버 Hit 이벤트에 스킬 ID를 실어 피격 이펙트 선택에 활용한다.
+
+T-4. 서버·DB·프로토콜 실제 구현
+서버 Skill 데이터 구조에 SingleTarget/Ranged/Area/Buff 종류와 requiresTarget을 추가했다. 기존 SkillDefinition 테이블에 SkillKind/RequiresTarget을 추가하는 재실행 가능한 마이그레이션을 만들고 실제 DB에 적용했다. AreaRadius>0인 기존 단일 기본 종류의 행만 Area로 전환한다. 신규 원거리/버프 행은 삽입하지 않는다. 기존 Definitions 마이그레이션 도구에도 새 SQL을 연결했다. Queries는 두 컬럼을 조회하고 GameDataHub가 종류와 유한한 수치 등을 검증한다.
+HandleAttackRequest는 기존 사용 시작 검증과 쿨다운 확정을 유지한다. 버프는 거절하고 대상이 필요한 공격은 살아 있는 몬스터를 요구한다. 대상이 필요 없는 Area는 target=0으로 시작할 수 있다. 시작 시 Player의 이전 대상 목록과 보고 행동 ID를 초기화한다.
+AttackTargets는 행동 ID/스킬 ID/대상 수/최대 64개 ID를 전달한다. PacketMethod가 명시적 핸들러로 큐에 넣고 HandleAttackTargetsRequest가 현재 Attack 행동과 ID/스킬 일치, 중복 보고, 만료를 검사한다. 유효 목록은 중복을 제거해 보관한다. 대상이 잘못된 항목은 타격 시 개별 제외하며 다른 유효 대상의 명중은 유지한다.
+UpdateActor는 Area의 목록이 보고되기 전에는 타격하지 않는다. 예정 타격 시각 전에 받은 목록도 시각이 도달할 때까지 피해를 적용하지 않는다. 목록이 없으면 원래 종료 시각 뒤 AreaTargetReportGraceSeconds=1초까지만 기다린 뒤 피해 없이 종료한다. 보고하지 않은 주변 몬스터를 자동 검색하여 맞히던 기존 서버 광역 순회는 제거했다.
+타격 때 같은 맵 조회로 대상을 찾고 살아 있는 Monster인지 확인한다. XZ 거리 <= AreaRadius+공격자 반경+대상 반경이면 적용하며 범위기의 Geometry/벽/정밀 모양/높이를 다시 검사하지 않는다. 발동 조건에는 기존 Reach를 사용한다. 단일·즉발 원거리의 타격 시 거리/Geometry와 기존 피해·연속 피격·넉백·사망 처리는 재사용한다.
+프로토콜 버전을 1에서 2로 바꿨고 AttackTargets를 요청 enum 끝에 추가하여 기존 요청 번호를 보존했다. 요청 본문은 기존 52바이트 뒤에 count 2바이트와 64개 int ID 256바이트를 붙인 310바이트다. 헤더 포함 314바이트이며 이벤트 본문은 108바이트 그대로다. 파싱 전 크기, 계약의 최대 개수/ID 양수/목록을 허용하는 요청 종류를 검사한다. 고정 초기화 배열은 기존 요청 캐시의 바이트 비교에도 포함된다. 구버전 클라이언트/서버와 혼합 실행하는 호환 프로토콜은 구현하지 않았다.
+
+T-5. 변경 파일
+클라이언트 신규: Assets/EverWindGameplay/Runtime/Skill.cs, SkillDefinition.cs, SingleTargetSkill.cs, RangedSkill.cs, AreaSkill.cs, BuffSkill.cs, SkillRangeDetector.cs 및 Unity 생성 meta.
+클라이언트 수정: 같은 Runtime의 PlayerActions.cs, PlayerActionController.cs, GameplayCatalog.cs, AlivePresentation.cs, GameplayIntegration.cs, Protocol.cs 및 Assets/Scripts/Server/PacketMethod.cs.
+에셋: Assets/EverWindGameplay/Generated/Catalog.asset, Generated/Skills/NormalAttack.asset, Smash.asset, Windmill.asset, WindmillRange.prefab 및 meta.
+서버: Gameplay/CoreData/GameplayData.h, Protocol.h, GameDataHub.h/cpp; Gameplay/Map/Entity/Player.h; Gameplay/GameplayProcessor.h/cpp; Network/PacketMethod.h/cpp; Validation/PacketValidator.cpp, Validation/Ingame/AttackTargetValidator.cpp, AttackRangeValidator.cpp, AttackImpactValidator.cpp; DB/Queries.cpp; DB/Migrations/20261119_skill_kinds.sql; Tools/migrate-server-data.ps1.
+요청한 범위 밖의 기존 미커밋 변경을 이번 구현 성과로 포함하지 않는다. 임시 검증 소스는 Library에 두며 제품 코드/상시 CI 테스트로 간주하지 않는다.
+
+T-6. 이번에 실제 수행한 검증
+서버 Debug x64 제품 빌드 성공. 기존 Queries의 size_t 변환 경고는 남아 있다. 새 DB 스키마를 적용한 뒤 실제 LoginServer.exe가 DB 기준 정의/맵/월드/콜백을 초기화하고 포트 4000 시작 메시지를 출력한 후 quit으로 정상 종료(코드 0)했다. 이 시작·종료 검사는 실제 접속 전투 검사가 아니다.
+native 격리 실행은 제품 Gameplay/Validation 오브젝트를 링크하고 실제 HandleAttackRequest/HandleAttackTargetsRequest/UpdateActor를 호출했다. 보고 전 피해 없음, 중복 ID 단일 피해, 보고한 복수 몬스터의 피해, 거리 밖/사망/다른 맵/존재하지 않는 ID/플레이어 제외, 보고하지 않은 주변 몬스터 피해 없음, 중복 보고 거절, 행동 종료 후 늦은 보고 거절, 목록 미도착 유예 종료, 이른 보고의 타격 시각 대기, 취소한 행동 ID 거절, 기존 단일/즉발 원거리 타격, 버프 사용 차단을 assert하여 통과했다.
+Unity에서 인코딩한 실제 314바이트 패킷을 파일로 저장하고 native Request로 읽어 버전/종류/대상 목록을 확인했다. 요청/이벤트 본문 310/108바이트와 64개 초과/음수 ID 계약 거절도 확인했다.
+Unity 컴파일 성공. Play Mode에서 프레임 카운터가 실제 증가하는 것을 확인한 후 검증했다. 생성한 몬스터 Collider와 중복 Collider로 수동 탐지기의 결과가 기대 ID 두 개만 포함하는지 확인했다. 종류별 클래스 선택, 사용별 인스턴스 독립성, 락온 사거리, 즉발 원거리 객체, 예약 버프 차단, 탐지기 생성/취소 후 제거도 통과했다.
+별도 루프백 TCP 연결을 사용해 PlayerActionController.RequestAttack -> Attack 요청 -> 모의 ActionStarted -> 동일 pending AttackAction/AreaSkill 유지 -> 타격 시점 이후 AttackTargets 단 한 번 전송 -> ActionEnded/Cancelled 정리를 검사했다. 대상 ID와 행동 ID, 일반공격/스매시/윈드밀의 Animator 슬롯 1/2/3 및 ActionRunning 파라미터를 확인했다. 이 검사는 제품 C++ 서버로 로그인하여 전투한 것이 아니라 클라이언트 실행과 실제 소켓 전송을 검증한 것이다.
+Addressables 에셋 빌드 성공. 최종 소스 반영 재빌드 중 Windows 파일 잠금 오류가 있었으나 이후 재시도에서 Error=null로 성공했다. 검증 종료 뒤 Play Mode를 종료했고 배경 실행 임시 override를 해제했으며 auto-tick을 껐다. Library의 임시 파일은 향후 존재를 보장하는 상시 테스트가 아니다.
+
+T-7. 실패·수정과 미확인 범위
+임시 Unity 검증 스크립트에서 ReferenceEquals를 object.ReferenceEquals로 한정하지 않아 컴파일 실패한 것을 수정했다. 추가 TCP 검사에서 행동 ID 바이트 오프셋을 40으로 잘못 지정해 assert가 실패했으며 실제 패킷 배치의 36으로 수정 후 통과했다. 제품 패킷 인코딩 오류로 기록하지 않는다. native 격리 링크의 EDITANDCONTINUE/OPT:ICF 경고는 제품 빌드 실패와 구분한다.
+Addressables 최종 재빌드가 ProjectSettings/ScriptableBuildPipeline.json의 Win32 IO 1224 잠금으로 한 차례 실패했다. 코드나 에셋을 우회 변경하지 않고 오류를 확인한 뒤 재시도하여 성공했다.
+제품 서버와 실제 접속 플레이어를 연결한 일반공격/스매시/윈드밀 전체 왕복, 실제 다중 접속·지연/단절/재접속 중 전투, 모든 맵/경사/장애물에서의 플레이 체감, 새 원거리 스킬 콘텐츠, 실제 버프, 대규모 동접 성능은 이번에 검증하지 않았다. 이펙트의 미술적 적합성/픽셀 단위 범위 일치도 검증했다고 주장하지 않는다.
+사용자가 정밀 모양 대신 범위 거리만 서버에서 확인하도록 선택했으므로 목록에 포함된 거리 내 몬스터는 벽 뒤나 Ray 밖이더라도 서버에서 배제하지 않는다. 클라이언트 탐지 결과를 유연하게 인정하는 정책의 의도된 한계다. 목록 최대 64개와 종료 후 1초 유예는 현재 구현 제한이다.
+후속 과제는 사용자 설계에 따른 파티클 특정 시점 범위 편집 도구, 실제 원거리 스킬의 정의/표현 등록, 스탯 합의 이후 버프 구현, 전체 네트워크 전투 검증이다. 전체 클라이언트 DB 기준 데이터 수신 정책은 기존 보류 범위를 유지한다.
+
+
+[실제 사용량 스냅샷 — 현재 채팅 고유 응답 합계]
+{
+  "source": "same-thread local token_usage_record; unique response_id usage",
+  "thread_id": "01a1f372-deef-7a22-9dbe-3f184acc6db3",
+  "unique_response_count": 62,
+  "measured_scope": "현재 채팅 시작부터 이번 사용량 기록 쓰기 직전까지",
+  "incremental_usage_sum": {
+    "input_tokens": 8255771,
+    "cached_input_tokens": 8024320,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 48137,
+    "reasoning_output_tokens": 10129,
+    "total_tokens": 8303908
+  },
+  "latest_thread_cumulative": {
+    "input_tokens": 8255771,
+    "cached_input_tokens": 8024320,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 48137,
+    "reasoning_output_tokens": 10129,
+    "total_tokens": 8303908
+  },
+  "usage_checkpoint_response_id": "resp_0a5ea5a86555c671016aff075e163487d0a705f1815ad13d0a",
+  "usage_checkpoint_timestamp_utc": "2026-11-19T14:28:24.788Z",
+  "note": "직전 S 체크포인트는 다른 채팅이다. 다른 채팅 이후 사용량을 추정·차감하지 않는다. 고유 응답별 usage만 합산하며 누적 스냅샷/캐시/추론 수치를 total에 중복 가산하지 않는다. 비용 추정 없음. 이 기준점 이후 기록 쓰기·검증·최종 응답 사용량은 다음 회차 대상."
+}
+
+[[PORTFOLIO_CHECKPOINT BEGIN]]
+{
+  "schema_version": 1,
+  "thread_id": "01a1f372-deef-7a22-9dbe-3f184acc6db3",
+  "record_date": "2026-11-19",
+  "covered_user_message_id": "msg_01a1f424-286d-72c0-ac8c-c880d9ca384c",
+  "covered_user_timestamp_utc": "2026-11-19T14:09:32.781Z",
+  "implementation_request_message_id": "msg_01a1f422-b139-7c23-a418-bef5f78e9e16",
+  "covered_user_request": "파티클 편집 도구를 제외한 스킬 설계 구현과 누적 기록 요청. 후속 버프 정정: 클래스·추후 구현 주석만 남기고 효과는 구현하지 않음.",
+  "previous_content_checkpoint": "S. 2026-11-18 몬스터 재사용·연속 피격 전투 시스템 구현 기록 (다른 채팅)",
+  "implementation_status": "Skill 하위 종류/Action 주입/기존 스킬 에셋/클라이언트 Ray 목록/서버 거리 판정/DB 종류/프로토콜 v2 구현 및 T 회차 기록. 버프 실제 기능·파티클 편집 도구 제외.",
+  "usage_checkpoint_response_id": "resp_0a5ea5a86555c671016aff075e163487d0a705f1815ad13d0a",
+  "usage_checkpoint_timestamp_utc": "2026-11-19T14:28:24.788Z",
+  "incremental_unique_response_count": 62,
+  "incremental_usage_sum": {
+    "input_tokens": 8255771,
+    "cached_input_tokens": 8024320,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 48137,
+    "reasoning_output_tokens": 10129,
+    "total_tokens": 8303908
+  },
+  "coverage": "현재 채팅의 공개 사용자 발언 7건과 현재 코드·에셋 및 이번 도구 검증 결과. S 이후 다른 채팅의 미조회 작업은 전수 복원하지 않았으며 이번 시작 전 미커밋 변경은 신규 성과로 중복 기록하지 않음.",
+  "pending": "제품 서버와 실제 접속 클라이언트의 전체 전투/다중 접속·지연·단절 회귀, 신규 원거리 콘텐츠, 스탯 설계 이후 버프, 사용자 설계의 파티클 특정 시점 범위 편집 도구. 이번 토큰 기준점 이후 작업 사용량은 후속 회차 반영."
 }
 [[PORTFOLIO_CHECKPOINT END]]

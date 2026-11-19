@@ -76,10 +76,22 @@ struct Recipe
 
 namespace EverWind::Gameplay
 {
+enum class SkillKind : uint16_t
+{
+    SingleTarget,
+    Ranged,
+    Area,
+    Buff
+};
+
 struct Skill
 {
     float duration, hit, reach, damage, cooldown, push;
     float ratio = -1, area = 0;
+
+    SkillKind kind = SkillKind::SingleTarget;
+
+    bool requiresTarget = true;
 };
 }
 

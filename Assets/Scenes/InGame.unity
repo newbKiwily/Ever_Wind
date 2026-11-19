@@ -250,85 +250,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &946003881
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 946003883}
-  - component: {fileID: 946003882}
-  m_Layer: 0
-  m_Name: ItemMediator
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &946003882
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 946003881}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ab38c9732a6b83f489001e2e7d5e72c6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Priority: 0
-  ItemTable:
-    _serializedList:
-    - Key: Rock
-      Value: {fileID: 11400000, guid: 20eeee0585510bd42887d4e48958cae5, type: 2}
-    - Key: Branch
-      Value: {fileID: 11400000, guid: 9af72be9c3f67de4e841541795c16d1a, type: 2}
-    - Key: IronBoots
-      Value: {fileID: 11400000, guid: 89c57969eae9c94479444659c26c774e, type: 2}
-    - Key: IronBody
-      Value: {fileID: 11400000, guid: c573eec94c5fc7244abf6d374bbd2486, type: 2}
-    - Key: IronGloves
-      Value: {fileID: 11400000, guid: bd9bb6b1a778b6f4983868281575f6f5, type: 2}
-    - Key: IronSword
-      Value: {fileID: 11400000, guid: 84d2d518df5cde64495878e5dc6ee1cf, type: 2}
-    - Key: Iron
-      Value: {fileID: 11400000, guid: 25065b59b13695f4cacbd0f074112efd, type: 2}
-    - Key: SmallHpPotion
-      Value: {fileID: 11400000, guid: 7e8e30be792255a44b13513e2ef6f237, type: 2}
-    - Key: CampFire
-      Value: {fileID: 11400000, guid: 6e6bfe2d4b71aa647801ffbc057c9c90, type: 2}
-    - Key: CrownHelmet
-      Value: {fileID: 11400000, guid: bb65ece32555d5941b8db172ff787a25, type: 2}
-    - Key: Grass
-      Value: {fileID: 11400000, guid: d40f8ef0f3a896b438579653c2717070, type: 2}
-    - Key: AdvancedBranch
-      Value: {fileID: 11400000, guid: fbb845551d220a64589a1286ca231557, type: 2}
-  FieldItemTable:
-    _serializedList:
-    - Key: 0
-      Value: {fileID: 8477820930375564801, guid: 3a810cad1ba847045991925f94f2df2d, type: 3}
-    - Key: 2
-      Value: {fileID: 7210437765295715936, guid: 0cdf845aa9ea7ff45bce40b8ea73dcd1, type: 3}
-    - Key: 1
-      Value: {fileID: 5675078281938570985, guid: e69392c147055714fbb1abe6aaeb5f8d, type: 3}
---- !u!4 &946003883
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 946003881}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -565,11 +486,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EverWind.Gameplay.GameplayIntegration
   Registry: {fileID: 1504733020}
   Input: {fileID: 1765550091}
-  Popups: {fileID: 0}
   Quests: {fileID: 504035670}
   Tutorial: {fileID: 589402972}
-  Display: {fileID: 0}
-  EnemyUI: {fileID: 0}
   Effects: {fileID: 1003063101}
 --- !u!114 &1504733020
 MonoBehaviour:
@@ -654,7 +572,6 @@ SceneRoots:
   - {fileID: 1003063100}
   - {fileID: 1765550092}
   - {fileID: 589402973}
-  - {fileID: 946003883}
   - {fileID: 1013750436}
   - {fileID: 782628377}
   - {fileID: 504035671}

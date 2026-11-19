@@ -38,6 +38,10 @@ class Player final : public Actor, public IDamageable
   public:
     std::vector<SkillState> skills;
 
+    std::vector<int> attackTargets;
+
+    uint64_t reportedAttack = 0;
+
     std::vector<QuestStateEntry> quests;
 
     std::vector<TutorialStateEntry> tutorials;

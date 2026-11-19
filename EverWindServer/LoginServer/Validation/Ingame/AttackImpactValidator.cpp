@@ -22,12 +22,14 @@ Error AttackImpactValidator::Validate(const ValidationContext &context) const
         return Error::Dead;
     }
 
-    if (s.area > 0 && a.kind == EntityKind::Player)
+    if (s.kind == SkillKind::Area && a.kind == EntityKind::Player)
     {
-        if (Distance(a.p, t.p) > s.area + t.radius)
+        if (Distance(a.p, t.p) > s.area + a.radius + t.radius)
         {
             return Error::OutOfRange;
         }
+        // 범위기는 클라이언트 탐지를 인정하고 서버는 대상별 거리만 재검사한다.
+        return t.kind == EntityKind::Monster ? Error::None : Error::MissingTarget;
     }
     else
     {

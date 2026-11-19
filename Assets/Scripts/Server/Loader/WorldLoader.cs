@@ -19,6 +19,8 @@ public class WorldLoader : SingletonBase<WorldLoader>
     private readonly Dictionary<GameObject, List<Material>> ownedMaterials = new Dictionary<GameObject, List<Material>>();
     private readonly Dictionary<int, List<ServerMessage>> waiting = new Dictionary<int, List<ServerMessage>>();
 
+    private readonly Dictionary<int, MonsterServerTransmitter> inactiveMonsters = new Dictionary<int, MonsterServerTransmitter>();
+
     public ContainerInMap Container;
 
     public ServerTransmitterManager Registry;
@@ -240,6 +242,13 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
             actor.gameObject.SetActive(false);
 
+            if (actor is MonsterServerTransmitter monster)
+            {
+                inactiveMonsters[id] = monster;
+
+                return;
+            }
+
             ReleaseMaterials(actor.gameObject);
 
             Destroy(actor.gameObject);
@@ -251,6 +260,7 @@ public class WorldLoader : SingletonBase<WorldLoader>
         StopAllCoroutines();
 
         waiting.Clear();
+        inactiveMonsters.Clear();
 
         groundColliders = Array.Empty<Collider>();
 
@@ -322,6 +332,43 @@ public class WorldLoader : SingletonBase<WorldLoader>
         return root.AddComponent<ServerTransmitter>();
     }
 
+    private bool TryReuseMonster(ServerMessage spawn)
+    {
+        if (!inactiveMonsters.TryGetValue(spawn.Entity, out MonsterServerTransmitter monster))
+        {
+            return false;
+        }
+
+        inactiveMonsters.Remove(spawn.Entity);
+
+        if (monster == null)
+        {
+            return false;
+        }
+
+        // 같은 ID라도 몬스터 종류가 바뀌면 기존 외형을 재사용하지 않는다.
+        if (monster.Definition != spawn.Definition)
+        {
+            ReleaseMaterials(monster.gameObject);
+
+            Destroy(monster.gameObject);
+
+            return false;
+        }
+
+        // 비활성 상태에서 서버 스폰 정보와 표현 상태를 초기화한 뒤 활성화한다.
+        monster.Bind(Registry, spawn);
+
+        foreach (Collider collider in monster.GetComponents<Collider>())
+        {
+            collider.enabled = true;
+        }
+
+        monster.gameObject.SetActive(true);
+
+        return true;
+    }
+
     private void Spawn(ServerMessage m)
     {
         if (Registry.TryGet(m.Entity, out _))
@@ -346,6 +393,11 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
             boundary.AddComponent<ServerTransmitter>().Bind(Registry, m);
 
+            return;
+        }
+
+        if (kind == EntityKind.Monster && TryReuseMonster(m))
+        {
             return;
         }
 
