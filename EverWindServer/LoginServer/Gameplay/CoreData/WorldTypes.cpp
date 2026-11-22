@@ -123,7 +123,7 @@ namespace EverWind::Gameplay
 {
 const char *ErrorName(Error error)
 {
-    static constexpr const char *names[] = {"None", "Unauthenticated", "BadRequest", "WrongWorld", "Stale", "Dead", "Restricted", "OutOfRange", "MissingTarget", "Cooldown", "Busy", "Exhausted", "Ingredients", "Collision", "Speed", "DuplicateConflict", "Expired", "Cancelled"};
+    static constexpr const char *names[] = {"None", "Unauthenticated", "BadRequest", "WrongWorld", "Stale", "Dead", "Restricted", "OutOfRange", "MissingTarget", "Cooldown", "Busy", "Exhausted", "Ingredients", "Collision", "Speed", "DuplicateConflict", "Expired", "Cancelled", "InsufficientPoints", "RankLimit", "UnlearnedSkill"};
 
     const auto index = static_cast<unsigned>(error);
 

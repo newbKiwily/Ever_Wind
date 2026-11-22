@@ -1041,211 +1041,6 @@ bool Queries::UpdateUserQuest(const std::string &userId, const NetPackets::PKT_Q
 
     return true;
 }
-
-EverWind::Gameplay::GameDataHub Queries::LoadGameDefinitions()
-{
-    using namespace EverWind::Gameplay;
-
-    std::lock_guard<std::mutex> lock(db_.GetMutex());
-
-    MYSQL *connection = db_.GetConnection();
-
-    if (!connection)
-    {
-        throw std::runtime_error("Database unavailable during game initialization");
-    }
-
-    GameDataHub data;
-
-    auto rows = [&](const char *sql, auto consume)
-    {
-        if (mysql_query(connection, sql))
-        {
-            throw std::runtime_error(std::string("Game data query failed: ") + mysql_error(connection));
-        }
-
-        std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(mysql_store_result(connection), mysql_free_result);
-
-        if (!result)
-        {
-            throw std::runtime_error("Missing game data query result");
-        }
-
-        while (auto row = mysql_fetch_row(result.get()))
-        {
-            std::vector<std::string> values;
-
-            for (unsigned i = 0; i < mysql_num_fields(result.get()); ++i)
-            {
-                if (!row[i])
-                {
-                    throw std::runtime_error("NULL in game definition");
-                }
-
-                values.emplace_back(row[i]);
-            }
-
-            consume(values);
-        }
-
-        if (mysql_errno(connection))
-        {
-            throw std::runtime_error("Game data fetch failed");
-        }
-    };
-
-    if (mysql_query(connection, "START TRANSACTION WITH CONSISTENT SNAPSHOT"))
-    {
-        throw std::runtime_error("Game data snapshot failed");
-    }
-
-    try
-    {
-        rows("SELECT ItemID,ItemKey,Kind,EquipmentSlot,Power,Heal,GatherEventKey,CraftEventKey FROM " "ItemDefinition ORDER BY ItemID", [&](const auto &r)
-        {
-            ItemDefinition v;
-
-            v.key = r[1];
-
-            v.kind = std::stoi(r[2]);
-            v.slot = std::stoi(r[3]);
-            v.power = std::stoi(r[4]);
-
-            v.heal = std::stof(r[5]);
-
-            v.gatherKey = std::stoi(r[6]);
-            v.craftKey = std::stoi(r[7]);
-
-            data.items.emplace(std::stoi(r[0]), v);
-        });
-        rows("SELECT SkillID,Duration,ImpactSeconds,Reach,Damage,Cooldown,Knockback,DamageRatio,AreaRadius,SkillKind,RequiresTarget " "FROM SkillDefinition ORDER BY SkillID", [&](const auto &r)
-        {
-            Skill v{};
-
-            v.duration = std::stof(r[1]);
-            v.hit = std::stof(r[2]);
-            v.reach = std::stof(r[3]);
-            v.damage = std::stof(r[4]);
-            v.cooldown = std::stof(r[5]);
-            v.push = std::stof(r[6]);
-            v.ratio = std::stof(r[7]);
-            v.area = std::stof(r[8]);
-
-            v.kind = static_cast<SkillKind>(std::stoi(r[9]));
-
-            v.requiresTarget = std::stoi(r[10]) != 0;
-
-            data.skills.emplace(std::stoi(r[0]), v);
-        });
-        rows("SELECT RecipeID,CraftSeconds,ResultItemID,ResultCount FROM Recipe ORDER BY RecipeID", [&](const auto &r)
-        {
-            Recipe v{};
-
-            v.duration = std::stof(r[1]);
-
-            v.output = std::stoi(r[2]);
-            v.count = std::stoi(r[3]);
-
-            data.recipes.emplace(std::stoi(r[0]), v);
-        });
-        rows("SELECT RecipeID,IngredientIndex,ItemID,RequiredCount FROM RecipeIngredient ORDER BY " "RecipeID,IngredientIndex", [&](const auto &r)
-        {
-            auto &v = data.recipes.at(std::stoi(r[0]));
-
-            if (std::stoi(r[1]) != static_cast<int>(v.inputs.size()))
-            {
-                throw std::runtime_error("Recipe ingredient index gap");
-            }
-
-            v.inputs.emplace_back(std::stoi(r[2]), std::stoi(r[3]));
-        });
-        rows("SELECT QuestID FROM QuestDefinition ORDER BY QuestID", [&](const auto &r)
-        {
-            int id = std::stoi(r[0]);
-
-            data.quests[id].id = id;
-        });
-        rows("SELECT QuestID,ConditionIndex,EventKind,TargetID,RequiredCount FROM QuestCondition ORDER BY " "QuestID,ConditionIndex", [&](const auto &r)
-        {
-            auto &v = data.quests.at(std::stoi(r[0]));
-
-            if (std::stoi(r[1]) != static_cast<int>(v.conditions.size()))
-            {
-                throw std::runtime_error("Quest condition index gap");
-            }
-
-            v.conditions.push_back({std::stoi(r[2]), std::stoi(r[3]), std::stoi(r[4])});
-        });
-        rows("SELECT QuestID,RewardIndex,ItemID,Amount FROM QuestReward ORDER BY QuestID,RewardIndex", [&](const auto &r)
-        {
-            auto &v = data.quests.at(std::stoi(r[0]));
-
-            if (std::stoi(r[1]) != static_cast<int>(v.rewards.size()))
-            {
-                throw std::runtime_error("Quest reward index gap");
-            }
-
-            v.rewards.emplace_back(std::stoi(r[2]), std::stoi(r[3]));
-        });
-        rows("SELECT " "StepID,NextStepID,EventKind,TargetID,MinimumSeconds,TargetX,TargetY,TargetZ,TargetRadius," "AllowMove,AllowAttack FROM TutorialDefinition ORDER BY StepID", [&](const auto &r)
-        {
-            TutorialDefinition v;
-
-            v.id = std::stoi(r[0]);
-            v.next = std::stoi(r[1]);
-            v.eventKind = std::stoi(r[2]);
-            v.target = std::stoi(r[3]);
-
-            v.minimumSeconds = std::stof(r[4]);
-            v.position = {std::stof(r[5]), std::stof(r[6]), std::stof(r[7])};
-            v.radius = std::stof(r[8]);
-
-            v.allowMove = std::stoi(r[9]) != 0;
-            v.allowAttack = std::stoi(r[10]) != 0;
-
-            data.tutorials.emplace(v.id, v);
-        });
-
-        bool enabled = false, gate = false;
-
-        rows("SELECT SettingKey,IntValue FROM GameSetting", [&](const auto &r)
-        {
-            if (r[0] == "TutorialEnabled")
-            {
-                data.tutorialEnabled = std::stoi(r[1]) != 0;
-
-                enabled = true;
-            }
-
-            if (r[0] == "TutorialExitMapId")
-            {
-                data.tutorialExitMapId = std::stoi(r[1]);
-
-                gate = true;
-            }
-        });
-
-        if (!enabled || !gate)
-        {
-            throw std::runtime_error("Missing DB game settings");
-        }
-
-        data.Validate();
-
-        if (mysql_commit(connection))
-        {
-            throw std::runtime_error("Game data snapshot commit failed");
-        }
-
-        return data;
-    }
-    catch (...)
-    {
-        mysql_rollback(connection);
-
-        throw;
-    }
-}
 #include <algorithm>
 #include <sstream>
 using namespace EverWind::Gameplay;
@@ -1341,6 +1136,68 @@ AccountState Queries::LoadGameplayState(const std::string &user)
         state.quests[q.questId] = {q.currentCounts, q.isCompleted, q.rewardClaimed};
     }
 
+    {
+        std::lock_guard<std::mutex> lock(db_.GetMutex());
+
+        auto db = db_.GetConnection();
+
+        if (!db)
+        {
+            throw std::runtime_error("Missing DB connection for growth load");
+        }
+
+        const auto uid = Quote(db, user);
+        const auto sql = "SELECT GrowthLevel,GrowthExperience,SkillPoints,StatPoints,AttackRank,DefenceRank,MoveSpeedRank FROM UserInfo WHERE UserID=" + uid;
+
+        if (mysql_real_query(db, sql.data(), static_cast<unsigned long>(sql.size())))
+        {
+            throw std::runtime_error("Growth query failed; apply progression migration");
+        }
+
+        std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(mysql_store_result(db), mysql_free_result);
+
+        auto row = result ? mysql_fetch_row(result.get()) : nullptr;
+
+        if (!row)
+        {
+            throw std::runtime_error("Missing saved growth row");
+        }
+
+        state.growth.level = std::stoi(row[0]);
+        state.growth.experience = std::stoi(row[1]);
+        state.growth.skillPoints = std::stoi(row[2]);
+        state.growth.statPoints = std::stoi(row[3]);
+        state.growth.attackRank = std::stoi(row[4]);
+        state.growth.defenceRank = std::stoi(row[5]);
+        state.growth.speedRank = std::stoi(row[6]);
+
+        result.reset();
+
+        const auto skills = "SELECT SkillID,SkillRank FROM UserSkillRank WHERE UserID=" + uid;
+
+        if (mysql_real_query(db, skills.data(), static_cast<unsigned long>(skills.size())))
+        {
+            throw std::runtime_error("Skill rank query failed");
+        }
+
+        result.reset(mysql_store_result(db));
+
+        if (!result)
+        {
+            throw std::runtime_error("Missing skill rank result");
+        }
+
+        while (auto skill = mysql_fetch_row(result.get()))
+        {
+            state.growth.skillRanks[std::stoi(skill[0])] = std::stoi(skill[1]);
+        }
+
+        if (mysql_errno(db))
+        {
+            throw std::runtime_error("Skill rank fetch failed");
+        }
+    }
+
     state.loaded = true;
 
     return state;
@@ -1375,8 +1232,11 @@ bool Queries::SaveGameplayState(const std::string &user, const AccountState &sta
 
     update << "UPDATE UserInfo SET MapId=" << state.map << ",PosX=" << state.position.x
            << ",PosY=" << state.position.y << ",PosZ=" << state.position.z << ",HP=" << state.hp
-           << ",MaxHP=" << state.maxHp << ",AttackPower=" << state.attack << ",DefencePower=" << state.defence
-           << ",Speed=" << state.speed << ",TutorialStep=" << state.tutorial << " WHERE UserID=" << uid;
+           << ",MaxHP=" << state.maxHp << ",Speed=" << state.speed << ",TutorialStep=" << state.tutorial
+           << ",GrowthLevel=" << state.growth.level << ",GrowthExperience=" << state.growth.experience
+           << ",SkillPoints=" << state.growth.skillPoints << ",StatPoints=" << state.growth.statPoints
+           << ",AttackRank=" << state.growth.attackRank << ",DefenceRank=" << state.growth.defenceRank
+           << ",MoveSpeedRank=" << state.growth.speedRank << " WHERE UserID=" << uid;
     bool ok = execute(update.str()) && execute("DELETE FROM Inventory WHERE UserID=" + uid);
 
     std::vector<std::pair<int, int>> inventory(state.inventory.begin(), state.inventory.end());
@@ -1427,6 +1287,19 @@ bool Queries::SaveGameplayState(const std::string &user, const AccountState &sta
             {
                 ok = execute("INSERT INTO UserQuestProgress(UserID,QuestId,ConditionIndex,CurrentCount) VALUES(" + uid + "," + std::to_string(id) + "," + std::to_string(i) + "," + std::to_string(q.counts[i]) + ")");
             }
+        }
+    }
+
+    if (ok)
+    {
+        ok = execute("DELETE FROM UserSkillRank WHERE UserID=" + uid);
+    }
+
+    for (const auto &[skillId, rank] : state.growth.skillRanks)
+    {
+        if (ok && rank > 0)
+        {
+            ok = execute("INSERT INTO UserSkillRank(UserID,SkillID,SkillRank) VALUES(" + uid + "," + std::to_string(skillId) + "," + std::to_string(rank) + ")");
         }
     }
 

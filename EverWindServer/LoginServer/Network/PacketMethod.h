@@ -40,6 +40,8 @@ class PacketMethod
 
     bool HandleAttackTargetsPacket(Session &session, const EverWind::Gameplay::Request &request);
 
+    bool HandleGrowthPacket(Session &session, const EverWind::Gameplay::Request &request);
+
     bool HandleGatherPacket(Session &session, const EverWind::Gameplay::Request &request);
 
     bool HandleCraftPacket(Session &session, const EverWind::Gameplay::Request &request);

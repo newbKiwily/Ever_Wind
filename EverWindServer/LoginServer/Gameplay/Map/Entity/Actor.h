@@ -21,6 +21,8 @@ class Actor
 
     float speed = 5, hp = 100, maxHp = 100;
 
+    EntityStats baseStats;
+
     Mode mode = Mode::NonCombat;
 
     Action action{};

@@ -65,7 +65,10 @@ enum class Error : uint16_t
     Speed,
     DuplicateConflict,
     Expired,
-    Cancelled
+    Cancelled,
+    InsufficientPoints,
+    RankLimit,
+    UnlearnedSkill
 };
 }
 
@@ -91,7 +94,9 @@ enum class EventKind : uint16_t
     Quest,
     Tutorial,
     Saved,
-    Activity
+    Activity,
+    Growth,
+    SkillRank
 };
 }
 
@@ -128,7 +133,11 @@ enum class RequestKind : uint16_t
     ResourceRefill,
     Save,
     Logout,
-    AttackTargets
+    AttackTargets,
+    UpgradeStat,
+    UpgradeSkill,
+    ResetStats,
+    ResetSkills
 };
 }
 

@@ -380,6 +380,11 @@ bool PacketMethod::HandlePacket(Session *session, const NetPackets::PacketHeader
             return HandleAttackPacket(*session, request);
         case RequestKind::AttackTargets:
             return HandleAttackTargetsPacket(*session, request);
+        case RequestKind::UpgradeStat:
+        case RequestKind::UpgradeSkill:
+        case RequestKind::ResetStats:
+        case RequestKind::ResetSkills:
+            return HandleGrowthPacket(*session, request);
         case RequestKind::Gather:
             return HandleGatherPacket(*session, request);
         case RequestKind::Craft:
@@ -510,6 +515,11 @@ bool PacketMethod::HandleAttackPacket(Session &session, const EverWind::Gameplay
 bool PacketMethod::HandleAttackTargetsPacket(Session &session, const EverWind::Gameplay::Request &request)
 {
     return maps.Enqueue(MakeGameWork(session, request), &EverWind::Gameplay::GameplayProcessor::HandleAttackTargetsRequest);
+}
+
+bool PacketMethod::HandleGrowthPacket(Session &session, const EverWind::Gameplay::Request &request)
+{
+    return maps.Enqueue(MakeGameWork(session, request), &EverWind::Gameplay::GameplayProcessor::HandleGrowthRequest);
 }
 
 bool PacketMethod::HandleGatherPacket(Session &session, const EverWind::Gameplay::Request &request)

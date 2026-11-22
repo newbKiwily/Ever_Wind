@@ -22,7 +22,11 @@ class Monster final : public Actor, public IDamageable
   public:
     MonsterState state = MonsterState::Idle;
 
-    int targetId = 0;
+    int targetId = 0, attackSkill = 1;
+
+    float attackCooldown = 1.8f;
+    // 엔티티 편집기 연결 전 기본값이며 monsterstats 행으로 개별 지정할 수 있다.
+    int experienceReward = 10;
 
     Vec3 home{};
 

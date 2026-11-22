@@ -26,8 +26,6 @@ class Queries
 
     bool SaveGameplayState(const std::string &user, const EverWind::Gameplay::AccountState &state);
 
-    EverWind::Gameplay::GameDataHub LoadGameDefinitions();
-
     bool EnsureMapIds(const std::vector<int> &ids);
 
     bool FetchUser(const std::string &userId, std::string &outUserId, int &outMapId, float &outPosX, float &outPosY, float &outPosZ, int &outTutorialStep, bool &outFound, bool *outHasPosition = nullptr);

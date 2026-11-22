@@ -5,6 +5,10 @@ namespace EverWind::Gameplay
 Player::Player()
 {
     kind = EntityKind::Player;
+
+    baseStats.attack = GrowthRules::PlayerAttack;
+
+    baseStats.defence = GrowthRules::PlayerDefence;
 }
 
 void Player::BindDefinitions(const GameDataHub &data)
@@ -12,7 +16,7 @@ void Player::BindDefinitions(const GameDataHub &data)
     skills.clear();
     quests.clear();
     tutorials.clear();
-    // 정의된 스킬을 사용할 수 있는 기존 정책을 유지하며 플레이어별 스킬 해금 저장 테이블은 아직 없다.
+    // 정의 참조와 쿨다운을 보관하고 실제 습득 여부는 개인 성장 상태에서 확인한다.
     for (const auto &[definitionId, def] : data.skills)
     {
         skills.push_back({definitionId, &def});
@@ -155,7 +159,7 @@ void Player::ApplyDamage(float amount)
 
 int Player::AttackPower(const GameDataHub &data) const
 {
-    int result = baseAttack;
+    int result = baseStats.attack + growth.attackRank - 1;
 
     for (auto [slot, itemId] : equipment)
     {
@@ -170,7 +174,7 @@ int Player::AttackPower(const GameDataHub &data) const
 
 int Player::DefencePower(const GameDataHub &data) const
 {
-    int result = baseDefence;
+    int result = baseStats.defence + growth.defenceRank - 1;
 
     for (auto [slot, itemId] : equipment)
     {
@@ -178,6 +182,36 @@ int Player::DefencePower(const GameDataHub &data) const
         {
             result += i->second.power;
         }
+    }
+
+    return result;
+}
+}
+
+namespace EverWind::Gameplay
+{
+float Player::MoveSpeed() const
+{
+    return baseStats.moveSpeed * (1 + std::min(GrowthRules::MaxSpeedBonus, (growth.speedRank - 1) * GrowthRules::SpeedPerRank));
+}
+
+Skill Player::EffectiveSkill(int definitionId, const GameDataHub &data) const
+{
+    const auto state = FindSkill(definitionId);
+
+    Skill result = state ? *state->definition : Skill{};
+
+    const auto it = data.growth.skillRanks.find(definitionId);
+
+    int rank = growth.SkillRank(definitionId);
+
+    if (it != data.growth.skillRanks.end() && rank >= 1 && rank <= GrowthRules::MaxSkillRank)
+    {
+        const auto &definition = it->second[rank - 1];
+
+        result.ratio = (definition.multiplier - 1) * 100;
+
+        result.cooldown = definition.cooldown;
     }
 
     return result;

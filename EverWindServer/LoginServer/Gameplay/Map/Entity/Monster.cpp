@@ -65,13 +65,13 @@ int Monster::UpdateAI(Map &space, const Skill &skill, double now, double dt)
     {
         mode = Mode::Combat;
 
-        if (space.InRange(*this, *target, skill.reach) && cooldowns[1] <= now)
+        if (space.InRange(*this, *target, skill.reach) && cooldowns[attackSkill] <= now)
         {
             state = MonsterState::Attack;
 
             velocity = {};
 
-            cooldowns[1] = now + 1.8;
+            cooldowns[attackSkill] = now + attackCooldown;
 
             return targetId;
         }

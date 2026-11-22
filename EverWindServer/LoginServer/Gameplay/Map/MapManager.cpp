@@ -54,7 +54,7 @@ void MapManager::InitializeMaps(const std::string &directory)
             {
                 ParseMapRow(line);
             }
-            else if (type == "monster" || type == "resource" || type == "resourcecfg" || type == "box" || type == "zone")
+            else if (type == "monsterspawn" || type == "resourcespawn" || type == "monster" || type == "monsterstats" || type == "resource" || type == "resourcecfg" || type == "box" || type == "zone")
             {
                 objectRows.push_back(line);
             }
@@ -194,6 +194,111 @@ void MapManager::ParseMapRow(const std::string &line)
 
         GetMap(mapId).zones.push_back(z);
     }
+    else if (type == "monsterspawn" || type == "resourcespawn")
+    {
+        int definition = 0;
+
+        Vec3 position{};
+
+        s >> mapId >> id >> definition >> position.x >> position.z;
+
+        if (s.fail() || id <= 0 || !Finite(position))
+        {
+            throw std::runtime_error("Invalid entity spawn");
+        }
+
+        auto &map = GetMap(mapId);
+
+        for (const auto &actor : map.actors)
+        {
+            if (actor->id == id)
+            {
+                throw std::runtime_error("Duplicate map entity ID");
+            }
+        }
+
+        if (type == "monsterspawn")
+        {
+            const auto &def = data.monsters.at(definition);
+
+            auto monster = std::make_shared<Monster>();
+
+            monster->id = id;
+
+            monster->map = mapId;
+
+            monster->p = monster->home = position;
+
+            monster->baseStats = def.stats;
+
+            monster->speed = def.stats.moveSpeed;
+
+            monster->hp = monster->maxHp = def.hp;
+
+            monster->radius = def.radius;
+
+            monster->visual = def.visual;
+
+            monster->experienceReward = def.experience;
+
+            monster->attackSkill = def.attackSkill;
+
+            monster->attackCooldown = def.attackCooldown;
+
+            monster->respawnSeconds = map.defaultMonsterRespawnSeconds;
+
+            if (!s.eof())
+            {
+                s >> std::ws;
+            }
+
+            if (!s.eof())
+            {
+                s >> monster->respawnSeconds;
+            }
+
+            if (!std::isfinite(monster->respawnSeconds) || monster->respawnSeconds < 0)
+            {
+                throw std::runtime_error("Invalid respawn override");
+            }
+
+            map.AddActor(monster);
+        }
+        else
+        {
+            const auto &def = data.resources.at(definition);
+
+            auto resource = std::make_shared<Resource>();
+
+            resource->id = id;
+
+            resource->map = mapId;
+
+            resource->p = position;
+
+            resource->item = def.item;
+
+            resource->stock = resource->capacity = def.capacity;
+
+            resource->radius = def.radius;
+
+            resource->gatherTime = def.gatherTime;
+
+            resource->refillDelay = def.refillDelay;
+
+            map.AddActor(resource);
+        }
+
+        if (!s.eof())
+        {
+            s >> std::ws;
+        }
+
+        if (!s.eof())
+        {
+            throw std::runtime_error("Unexpected spawn fields");
+        }
+    }
     else if (type == "monster")
     {
         Monster m;
@@ -230,6 +335,8 @@ void MapManager::ParseMapRow(const std::string &line)
 
         m.maxHp = m.hp;
 
+        m.baseStats.moveSpeed = m.speed;
+
         m.map = mapId;
 
         m.kind = EntityKind::Monster;
@@ -246,7 +353,7 @@ void MapManager::ParseMapRow(const std::string &line)
 
         if (!data.items.count(r.item))
         {
-            throw std::runtime_error("Resource references missing DB item");
+            throw std::runtime_error("Resource references missing content item");
         }
 
         GetMap(mapId).AddActor(std::make_shared<Resource>(std::move(r)));
@@ -322,6 +429,28 @@ bool MapManager::ParseMapFeature(const std::string &type, std::istringstream &s)
             throw std::runtime_error("Surface file missing/truncated");
         }
     }
+    else if (type == "monsterstats")
+    {
+        s >> mapId >> id;
+
+        auto &m = GetMap(mapId).monsters;
+
+        const auto it = m.find(id);
+
+        if (it == m.end())
+        {
+            throw std::runtime_error("monsterstats must follow its monster row");
+        }
+
+        auto &monster = *it->second;
+
+        s >> monster.baseStats.attack >> monster.baseStats.defence >> monster.experienceReward;
+
+        if (monster.baseStats.attack < 0 || monster.baseStats.defence < 0 || monster.experienceReward < 0)
+        {
+            throw std::runtime_error("Invalid monster stats");
+        }
+    }
     else if (type == "resourcecfg")
     {
         s >> mapId >> id;
@@ -392,6 +521,11 @@ void MapManager::Initialize(GameDataHub definitions, const std::string &director
     InitializeMaps(directory);
 
     std::cout << "[Initialize] Maps, terrain and spawn regions prepared\n";
+
+    if (data.tutorialEnabled && !HasMap(data.tutorialExitMapId))
+    {
+        throw std::runtime_error("Missing tutorial exit map");
+    }
 
     InitializeWorldObjects();
 

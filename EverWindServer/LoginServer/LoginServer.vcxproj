@@ -82,7 +82,9 @@
   <ItemGroup>
     <ClCompile Include="DB\DBManager.cpp" />
     <ClCompile Include="DB\Queries.cpp" />
+    <ClCompile Include="Gameplay\CoreData\GameDataFile.cpp" />
     <ClCompile Include="Gameplay\CoreData\GameDataHub.cpp" />
+    <ClCompile Include="Gameplay\CoreData\Progression.cpp" />
     <ClCompile Include="Gameplay\CoreData\WorldTypes.cpp" />
     <ClCompile Include="Gameplay\GameplayProcessor.cpp" />
     <ClCompile Include="Gameplay\Map\Entity\Actor.cpp" />
@@ -144,8 +146,10 @@
   <ItemGroup>
     <ClInclude Include="DB\DBManager.h" />
     <ClInclude Include="DB\Queries.h" />
+    <ClInclude Include="Gameplay\CoreData\GameDataFile.h" />
     <ClInclude Include="Gameplay\CoreData\GameDataHub.h" />
     <ClInclude Include="Gameplay\CoreData\GameplayData.h" />
+    <ClInclude Include="Gameplay\CoreData\Progression.h" />
     <ClInclude Include="Gameplay\CoreData\Protocol.h" />
     <ClInclude Include="Gameplay\CoreData\WorldTypes.h" />
     <ClInclude Include="Gameplay\GameplayProcessor.h" />
@@ -210,10 +214,11 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <Target Name="CopyGameplayRuntime" AfterTargets="Build">
-    <ItemGroup><GameplayRuntime Include="$(ProjectDir)MapData\*.heights" /></ItemGroup>
-    <Copy SourceFiles="@(GameplayRuntime)" DestinationFolder="$(OutDir)MapData" SkipUnchangedFiles="true" />
-    <ItemGroup><ServerMaps Include="$(ProjectDir)MapData\Maps\*.txt" /></ItemGroup>
-    <Copy SourceFiles="@(ServerMaps)" DestinationFolder="$(OutDir)MapData\Maps" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Content\GameData.ewdata" DestinationFolder="$(OutDir)Content" SkipUnchangedFiles="true" />
+    <ItemGroup><GameplayRuntime Include="$(ProjectDir)Content\MapData\*.heights" /></ItemGroup>
+    <Copy SourceFiles="@(GameplayRuntime)" DestinationFolder="$(OutDir)Content\MapData" SkipUnchangedFiles="true" />
+    <ItemGroup><ServerMaps Include="$(ProjectDir)Content\MapData\Maps\*.txt" /></ItemGroup>
+    <Copy SourceFiles="@(ServerMaps)" DestinationFolder="$(OutDir)Content\MapData\Maps" SkipUnchangedFiles="true" />
     <Delete Files="$(OutDir)Shared\Gameplay.rules" />
     <Copy SourceFiles="C:\Bitnami\wampstack-8.1.2-0\mariadb\lib\libmariadb.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="Exists('C:\Bitnami\wampstack-8.1.2-0\mariadb\lib\libmariadb.dll')" />
   </Target>

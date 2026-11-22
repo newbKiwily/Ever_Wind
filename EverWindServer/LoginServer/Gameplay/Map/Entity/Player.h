@@ -68,7 +68,9 @@ class Player final : public Actor, public IDamageable
 
     std::function<bool(const AccountState &)> save;
 
-    int baseAttack = 50, baseDefence = 20, tutorial = -1;
+    int tutorial = -1;
+
+    GrowthState growth;
 
     double reviveAt = 0, lastSave = 0;
 
@@ -81,6 +83,10 @@ class Player final : public Actor, public IDamageable
     int AttackPower(const GameDataHub &data) const;
 
     int DefencePower(const GameDataHub &data) const;
+
+    float MoveSpeed() const;
+
+    Skill EffectiveSkill(int definitionId, const GameDataHub &data) const;
 
     bool CanAttack() const;
 

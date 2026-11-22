@@ -11,7 +11,6 @@ struct GameDataHub
     static constexpr int ConsecutiveHitThreshold = TemporaryKnockbackTest ? 1 : 3;
 
     static constexpr float PlayerDamageMultiplier = TemporaryKnockbackTest ? .1f : 1.0f;
-
     static constexpr float PlayerHitSeconds = .5f;
     static constexpr float MonsterHitSeconds = 1.0f;
     static constexpr float KnockbackSeconds = .3f;
@@ -20,6 +19,12 @@ struct GameDataHub
     static constexpr float AreaTargetReportGraceSeconds = 1.0f;
 
     std::unordered_map<int, Skill> skills;
+
+    GrowthRules growth;
+
+    std::unordered_map<int, MonsterDefinition> monsters;
+
+    std::unordered_map<int, ResourceDefinition> resources;
 
     std::unordered_map<int, Recipe> recipes;
 

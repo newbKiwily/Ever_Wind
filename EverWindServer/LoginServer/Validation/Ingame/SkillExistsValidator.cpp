@@ -17,7 +17,11 @@ Error SkillExistsValidator::Validate(const ValidationContext &context) const
 
     const auto &c = *context.game;
 
-    return c.player.FindSkill(c.request.definition) ? Error::None
-                                                    : Error::BadRequest;
+    if (!c.player.FindSkill(c.request.definition))
+    {
+        return Error::BadRequest;
+    }
+
+    return c.player.growth.SkillRank(c.request.definition) > 0 ? Error::None : Error::UnlearnedSkill;
 }
 }

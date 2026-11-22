@@ -1,5 +1,6 @@
 #pragma once
 #include "Protocol.h"
+#include "Progression.h"
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -11,6 +12,13 @@
 #include <vector>
 namespace EverWind::Gameplay
 {
+struct EntityStats
+{
+    int attack = 10, defence = 0;
+
+    float moveSpeed = 4.5f;
+};
+
 struct ItemDefinition
 {
     std::string key;
@@ -18,6 +26,23 @@ struct ItemDefinition
     int kind = 0, slot = 0, power = 0, gatherKey = 0, craftKey = 0;
 
     float heal = 0;
+};
+
+struct MonsterDefinition
+{
+    EntityStats stats;
+
+    int visual = 0, experience = 10, attackSkill = 1;
+
+    float attackCooldown = 1.8f;
+    float hp = 1000, radius = .45f;
+};
+
+struct ResourceDefinition
+{
+    int item = 0, capacity = 1;
+
+    float radius = .25f, gatherTime = 2, refillDelay = 0;
 };
 }
 
@@ -153,7 +178,9 @@ struct AccountState
 {
     bool loaded = false, hasPosition = false;
 
-    int map = 0, tutorial = 0, attack = 50, defence = 20;
+    int map = 0, tutorial = 0, attack = 10, defence = 3;
+
+    GrowthState growth;
 
     float hp = 100, maxHp = 100, speed = 4.5f;
 

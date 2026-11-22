@@ -23,7 +23,9 @@
   <ItemGroup>
     <ClCompile Include="DB\DBManager.cpp"><Filter>Source Files\DB</Filter></ClCompile>
     <ClCompile Include="DB\Queries.cpp"><Filter>Source Files\DB</Filter></ClCompile>
+    <ClCompile Include="Gameplay\CoreData\GameDataFile.cpp"><Filter>Source Files\Gameplay\CoreData</Filter></ClCompile>
     <ClCompile Include="Gameplay\CoreData\GameDataHub.cpp"><Filter>Source Files\Gameplay\CoreData</Filter></ClCompile>
+    <ClCompile Include="Gameplay\CoreData\Progression.cpp"><Filter>Source Files\Gameplay\CoreData</Filter></ClCompile>
     <ClCompile Include="Gameplay\CoreData\WorldTypes.cpp"><Filter>Source Files\Gameplay\CoreData</Filter></ClCompile>
     <ClCompile Include="Gameplay\GameplayProcessor.cpp"><Filter>Source Files\Gameplay</Filter></ClCompile>
     <ClCompile Include="Gameplay\Map\Entity\Actor.cpp"><Filter>Source Files\Gameplay\Map\Entity</Filter></ClCompile>
@@ -83,8 +85,10 @@
     <ClCompile Include="main.cpp"><Filter>Source Files</Filter></ClCompile>
     <ClInclude Include="DB\DBManager.h"><Filter>Header Files\DB</Filter></ClInclude>
     <ClInclude Include="DB\Queries.h"><Filter>Header Files\DB</Filter></ClInclude>
+    <ClInclude Include="Gameplay\CoreData\GameDataFile.h"><Filter>Header Files\Gameplay\CoreData</Filter></ClInclude>
     <ClInclude Include="Gameplay\CoreData\GameDataHub.h"><Filter>Header Files\Gameplay\CoreData</Filter></ClInclude>
     <ClInclude Include="Gameplay\CoreData\GameplayData.h"><Filter>Header Files\Gameplay\CoreData</Filter></ClInclude>
+    <ClInclude Include="Gameplay\CoreData\Progression.h"><Filter>Header Files\Gameplay\CoreData</Filter></ClInclude>
     <ClInclude Include="Gameplay\CoreData\Protocol.h"><Filter>Header Files\Gameplay\CoreData</Filter></ClInclude>
     <ClInclude Include="Gameplay\CoreData\WorldTypes.h"><Filter>Header Files\Gameplay\CoreData</Filter></ClInclude>
     <ClInclude Include="Gameplay\GameplayProcessor.h"><Filter>Header Files\Gameplay</Filter></ClInclude>

@@ -63,7 +63,7 @@ Error PacketValidator::Contract(const ValidationContext &c)
     return r.version != ProtocolVersion || !r.requestId ||
                    static_cast<int>(r.kind) < 1 ||
                    static_cast<int>(r.kind) >
-                       static_cast<int>(RequestKind::AttackTargets)
+                       static_cast<int>(RequestKind::ResetSkills)
                ? Error::BadRequest
                : Error::None;
 }

@@ -338,6 +338,8 @@ void GameplayProcessor::Snapshot(Player &p)
 
     Stats(p);
 
+    Growth(p);
+
     for (auto &[slot, id] : p.equipment)
     {
         Equipment(p, slot);
@@ -463,6 +465,11 @@ void GameplayProcessor::Zones(Player &p)
 
 void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
 {
+    if (target.hp <= 0)
+    {
+        return;
+    }
+
     auto *damageable = dynamic_cast<IDamageable *>(&target);
 
     if (!damageable)
@@ -470,8 +477,8 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
         return;
     }
 
-    int attack = attacker.kind == EntityKind::Player ? static_cast<const Player &>(attacker).AttackPower(world.Data()) : 10;
-    int defence = target.kind == EntityKind::Player ? static_cast<const Player &>(target).DefencePower(world.Data()) : 0;
+    int attack = attacker.kind == EntityKind::Player ? static_cast<const Player &>(attacker).AttackPower(world.Data()) : attacker.baseStats.attack;
+    int defence = target.kind == EntityKind::Player ? static_cast<const Player &>(target).DefencePower(world.Data()) : target.baseStats.defence;
 
     float damage = skill.ratio >= 0 ? attack * (attacker.kind == EntityKind::Player ? 1 + skill.ratio / 100.0f : 1) * 100.0f / (100 + defence) : skill.damage;
 
@@ -517,12 +524,38 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
 
         if (target.kind == EntityKind::Monster && attacker.kind == EntityKind::Player)
         {
-            Activity(static_cast<Player &>(attacker), 0, target.visual);
+            auto &player = static_cast<Player &>(attacker);
+
+            Activity(player, 0, target.visual);
+
+            if (player.growth.GainExperience(static_cast<const Monster &>(target).experienceReward, world.Data().growth))
+            {
+                player.dirty = true;
+
+                Growth(player);
+            }
         }
     }
     else
     {
-        HitReaction reaction = target.RegisterHit(world.now);
+        const auto attacking = [this](const Actor &actor)
+        {
+            return actor.hp > 0 && actor.action.id != 0 && actor.action.kind == ActionKind::Attack && actor.action.start <= world.now && world.now < actor.action.end;
+        };
+
+        HitReaction reaction;
+
+        if (attacking(attacker) && attacking(target))
+        {
+            // 서로 공격 중인 타격은 피해만 적용하고 연속 피격 누적을 초기화한다.
+            target.ResetHitReaction();
+
+            reaction = HitReaction::DamageOnly;
+        }
+        else
+        {
+            reaction = target.RegisterHit(world.now);
+        }
 
         e.flags = static_cast<uint16_t>(reaction);
 
@@ -594,7 +627,8 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
     if (action.kind == ActionKind::Attack && a.kind == EntityKind::Player)
     {
         const auto &p = static_cast<Player &>(a);
-        const auto &skill = *p.FindSkill(action.definition)->definition;
+
+        const auto skill = p.EffectiveSkill(action.definition, world.Data());
 
         waitingForTargets = skill.kind == SkillKind::Area && p.reportedAttack != action.id;
     }
@@ -607,7 +641,7 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
 
         const auto &skill =
             a.kind == EntityKind::Player
-                ? *static_cast<Player &>(a).FindSkill(action.definition)->definition
+                ? static_cast<Player &>(a).EffectiveSkill(action.definition, world.Data())
                 : world.Data().skills.at(action.definition);
         ValidationContext impact;
 
@@ -801,11 +835,11 @@ void GameplayProcessor::Advance(double dt)
                 Spawn(m);
             }
 
-            const auto &skill = world.Data().skills.at(1);
+            const auto &skill = world.Data().skills.at(m.attackSkill);
 
             if (int target = m.UpdateAI(map, skill, world.now, dt))
             {
-                Start(m, ActionKind::Attack, target, 1, skill.duration, skill.hit);
+                Start(m, ActionKind::Attack, target, m.attackSkill, skill.duration, skill.hit);
             }
         }
     }
@@ -1009,11 +1043,13 @@ bool GameplayProcessor::Save(Player &p, bool force)
 
     state.maxHp = p.maxHp;
 
-    state.speed = p.speed;
+    state.speed = p.baseStats.moveSpeed;
 
-    state.attack = p.baseAttack;
+    state.attack = p.baseStats.attack;
 
-    state.defence = p.baseDefence;
+    state.defence = p.baseStats.defence;
+
+    state.growth = p.growth;
 
     state.tutorial = p.tutorial;
 
@@ -1071,6 +1107,8 @@ void GameplayProcessor::Connect(int id, Send send, float moveSpeed, const Accoun
 
         if (std::isfinite(moveSpeed) && moveSpeed > 0)
         {
+            p->baseStats.moveSpeed = moveSpeed;
+
             p->speed = moveSpeed;
         }
 
@@ -1078,11 +1116,29 @@ void GameplayProcessor::Connect(int id, Send send, float moveSpeed, const Accoun
 
         p->account = account;
 
+        p->baseStats.attack = world.Data().growth.playerAttack;
+        p->baseStats.defence = world.Data().growth.playerDefence;
+
+        p->growth = account.growth;
+
+        if (!p->growth.Valid(world.Data().growth))
+        {
+            throw std::runtime_error("Invalid saved growth state");
+        }
+
         p->save = std::move(save);
 
         p->budgetTime = world.now;
 
         p->BindDefinitions(world.Data());
+
+        for (const auto &[skillId, rank] : p->growth.skillRanks)
+        {
+            if (rank > 0 && !p->FindSkill(skillId))
+            {
+                throw std::runtime_error("Saved rank references missing skill");
+            }
+        }
 
         auto ids = world.MapIds();
 
@@ -1140,15 +1196,16 @@ void GameplayProcessor::Join(Player &p)
 
             p.maxHp = p.account.maxHp;
 
-            p.speed = p.account.speed;
+            p.baseStats.moveSpeed = p.account.speed;
+
+            p.speed = p.MoveSpeed();
 
             p.inventory = p.account.inventory;
 
             p.equipment = p.account.equipment;
 
-            p.baseAttack = p.account.attack;
-
-            p.baseDefence = p.account.defence;
+            p.baseStats.attack = world.Data().growth.playerAttack;
+            p.baseStats.defence = world.Data().growth.playerDefence;
 
             p.tutorial = p.account.tutorial;
         }
@@ -1299,7 +1356,8 @@ Error GameplayProcessor::HandleAttackRequest(Player &p, const Request &r)
         return error;
     }
 
-    const auto &s = *p.FindSkill(r.definition)->definition;
+    const auto s = p.EffectiveSkill(r.definition, world.Data());
+
     p.FindSkill(r.definition)->cooldownUntil = world.now + s.cooldown;
 
     Start(p, ActionKind::Attack, r.target, r.definition, s.duration, s.hit, r.requestId);
@@ -1978,5 +2036,117 @@ void GameplayProcessor::Process(const GameWork &work)
     {
         Snapshot(p);
     }
+}
+}
+
+namespace EverWind::Gameplay
+{
+void GameplayProcessor::Growth(Player &p)
+{
+    auto e = Base(EventKind::Growth, p);
+    // 성장 전용: 레벨/경험치/다음 필요량/남은 두 포인트/세 스탯 랭크.
+    e.code = static_cast<uint16_t>(p.growth.level);
+
+    e.target = p.growth.experience;
+
+    e.definition = world.Data().growth.experienceToNext[p.growth.level - 1];
+
+    e.value = static_cast<float>(p.growth.skillPoints);
+    e.radius = static_cast<float>(p.growth.statPoints);
+    e.position = {static_cast<float>(p.growth.attackRank), static_cast<float>(p.growth.defenceRank), static_cast<float>(p.growth.speedRank)};
+
+    SendTo(p, e);
+
+    for (const auto &entry : p.skills)
+    {
+        auto skill = Base(EventKind::SkillRank, p);
+
+        const auto effective = p.EffectiveSkill(entry.id, world.Data());
+
+        skill.definition = entry.id;
+
+        skill.code = static_cast<uint16_t>(p.growth.SkillRank(entry.id));
+
+        skill.value = 1 + effective.ratio / 100;
+
+        skill.duration = effective.cooldown;
+
+        skill.hitTime = static_cast<float>(std::max(0.0, entry.cooldownUntil - world.now));
+
+        SendTo(p, skill);
+    }
+}
+
+void GameplayProcessor::RefreshStats(Player &p)
+{
+    float previous = p.speed;
+
+    p.speed = p.MoveSpeed();
+
+    if (std::abs(previous - p.speed) > .0001f)
+    {
+        ++p.revision;
+
+        p.budget = 0;
+
+        p.budgetTime = world.now;
+
+        Broadcast(p.map, Base(EventKind::State, p));
+    }
+
+    Stats(p);
+}
+
+Error GameplayProcessor::HandleGrowthRequest(Player &p, const Request &r)
+{
+    if (r.kind != RequestKind::UpgradeStat && r.kind != RequestKind::UpgradeSkill && r.kind != RequestKind::ResetStats && r.kind != RequestKind::ResetSkills)
+    {
+        return Error::BadRequest;
+    }
+
+    const auto context = ValidationContext::ForGame(p, world.GetMap(p.map), r, world.now);
+
+    auto error = Validation::Chain().Then<ActionIdleValidator>().Check(context);
+
+    if (error != Error::None)
+    {
+        return error;
+    }
+
+    if (r.kind == RequestKind::UpgradeSkill)
+    {
+        const auto skill = p.FindSkill(r.definition);
+
+        if (!skill || skill->definition->kind == SkillKind::Buff)
+        {
+            return Error::Restricted;
+        }
+
+        error = p.growth.UpgradeSkill(r.definition, world.Data().growth);
+    }
+    else if (r.kind == RequestKind::UpgradeStat)
+    {
+        error = p.growth.UpgradeStat(static_cast<StatKind>(r.definition));
+    }
+    else if (r.kind == RequestKind::ResetStats)
+    {
+        p.growth.ResetStats();
+    }
+    else
+    {
+        // 무료 초기화로 기존 스킬 쿨다운을 우회하지 못하게 한다.
+        p.growth.ResetSkills();
+    }
+
+    if (error == Error::None)
+    {
+        p.dirty = true;
+
+        RefreshStats(p);
+
+        Growth(p);
+    }
+
+    return error;
 }
 }

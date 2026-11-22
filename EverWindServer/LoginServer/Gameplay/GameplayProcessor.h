@@ -37,6 +37,10 @@ class GameplayProcessor
 
     void Stats(Player &p);
 
+    void Growth(Player &p);
+
+    void RefreshStats(Player &p);
+
     void Equipment(Player &p, int slot);
 
     void QuestState(Player &p, int quest);
@@ -76,6 +80,8 @@ class GameplayProcessor
     Error HandleAttackRequest(Player &p, const Request &r);
 
     Error HandleAttackTargetsRequest(Player &p, const Request &r);
+
+    Error HandleGrowthRequest(Player &p, const Request &r);
 
     Error HandleGatherRequest(Player &p, const Request &r);
 

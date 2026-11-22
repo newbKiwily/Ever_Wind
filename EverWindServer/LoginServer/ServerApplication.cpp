@@ -1,4 +1,5 @@
 #include "ServerApplication.h"
+#include "Gameplay/CoreData/GameDataFile.h"
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
@@ -89,14 +90,14 @@ std::string ServerApplication::ResolveMapsPath() const
 
     GetModuleFileNameW(nullptr, executable, 32768);
 
-    auto bundled = std::filesystem::path(executable).parent_path() / "MapData" / "Maps";
+    auto bundled = std::filesystem::path(executable).parent_path() / "Content" / "MapData" / "Maps";
 
     if (std::filesystem::exists(bundled))
     {
         return bundled.string();
     }
 
-    return (std::filesystem::path(__FILE__).parent_path() / "MapData" / "Maps")
+    return (std::filesystem::path(__FILE__).parent_path() / "Content" / "MapData" / "Maps")
         .string();
 }
 
@@ -104,7 +105,23 @@ void ServerApplication::InitializeGame()
 {
     maps = std::make_unique<EverWind::Gameplay::MapManager>();
 
-    maps->Initialize(queries->LoadGameDefinitions(), ResolveMapsPath());
+    auto content = std::filesystem::path(ResolveMapsPath()).parent_path().parent_path() / "GameData.ewdata";
+
+    char configured[32768]{};
+
+    DWORD length = GetEnvironmentVariableA("EVERWIND_CONTENT_FILE", configured, sizeof configured);
+
+    if (length >= sizeof configured)
+    {
+        throw std::runtime_error("Content path exceeds supported length");
+    }
+
+    if (length > 0)
+    {
+        content = configured;
+    }
+
+    maps->Initialize(EverWind::Gameplay::GameDataFile::Load(content.string()), ResolveMapsPath());
 
     queries->InitializeGameplayItems(maps->Data().items);
 
