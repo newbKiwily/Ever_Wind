@@ -78,18 +78,7 @@ namespace EverWind.MapEditing
                 foreach (string name in new[] { "MapId", "Version", "Land", "Geometry", "Placements", "PlayerSpawn", "BoundaryCenter", "Radius", "RespawnSeconds", "HeightOrigin", "HeightSize", "HeightStep", "SnapOnMove" })
                     EditorGUILayout.PropertyField(serialized.FindProperty(name), new GUIContent(Label(name)));
                 serialized.ApplyModifiedProperties();
-                if (GUILayout.Button("Land 기준 높이 영역 자동 설정")) Run(() =>
-                {
-                    Bounds b = MapEditorExport.LandBounds(map);
-                    Undo.RecordObject(map, "높이 영역 설정");
-                    // 경계선의 Ray 누락과 격자 올림으로 Land 밖을 샘플링하지 않도록 안쪽으로 맞춘다.
-                    map.HeightOrigin = new Vector2(b.min.x + .01f, b.min.z + .01f);
-                    float step = Mathf.Max(.1f, map.HeightStep);
-                    map.HeightSize = new Vector2(Mathf.Floor((b.size.x - .02f) / step) * step, Mathf.Floor((b.size.z - .02f) / step) * step);
-                    map.BoundaryCenter = new Vector2(b.center.x, b.center.z);
-                    map.PlayerSpawn = b.center;
-                    EditorUtility.SetDirty(map);
-                });
+                if (GUILayout.Button("DefaultMap 기준 적용")) Run(ApplyDefaultMapSettings);
                 EditorGUILayout.Space();
                 if (GUILayout.Button("모든 배치물 Land 높이 맞춤")) Run(() =>
                 {
@@ -164,7 +153,9 @@ namespace EverWind.MapEditing
             UnityEngine.Object.DestroyImmediate(map.Land.gameObject);
             map.Land = terrain;
             Physics.SyncTransforms();
-            SetDefaultArea();
+            DefaultMapSettings.ApplyTo(map);
+            var center = DefaultMapSettings.Center;
+            map.PlayerSpawn = new Vector3(center.x, MapEditorExport.Height(map, new Vector3(center.x, 0, center.y)), center.y);
             Undo.RegisterCreatedObjectUndo(root, "새 맵");
             Selection.activeGameObject = root;
             FocusMap();
@@ -180,33 +171,13 @@ namespace EverWind.MapEditing
             }
         }
 
-        void SetDefaultArea()
+        public void ApplyDefaultMapSettings()
         {
-            // 기본 지형의 빈 영역을 피하고 바로 추출할 수 있는 시작 영역을 선택한다.
-            var candidates = map.Land.GetComponentsInChildren<Collider>().Where(c => c.enabled && !c.isTrigger)
-                .OrderByDescending(c => c.name.Contains("terrain_grass"))
-                .ThenByDescending(c => c.bounds.size.x * c.bounds.size.z);
-            foreach (var c in candidates)
-            {
-                Vector3 center = c.bounds.center;
-                foreach (int radius in new[] { 16, 8, 4 })
-                {
-                    bool valid = true;
-                    for (int z = -radius; z <= radius && valid; z++) for (int x = -radius; x <= radius; x++)
-                    {
-                        try { MapEditorExport.Height(map, center + new Vector3(x, 0, z)); }
-                        catch (InvalidOperationException) { valid = false; break; }
-                    }
-                    if (!valid) continue;
-                    map.BoundaryCenter = new Vector2(center.x, center.z);
-                    map.Radius = radius;
-                    map.PlayerSpawn = new Vector3(center.x, MapEditorExport.Height(map, center), center.z);
-                    map.HeightOrigin = new Vector2(center.x - radius, center.z - radius);
-                    map.HeightSize = Vector2.one * radius * 2;
-                    return;
-                }
-            }
-            throw new InvalidOperationException("DefaultMap에 연속된 보행 지면이 없습니다. Land Collider를 확인하세요.");
+            if (map == null) throw new InvalidOperationException("작업 맵을 선택하세요.");
+            Undo.RecordObject(map, "DefaultMap 기준 적용");
+            DefaultMapSettings.ApplyTo(map);
+            EditorUtility.SetDirty(map);
+            EditorSceneManager.MarkSceneDirty(map.gameObject.scene);
         }
 
         void AssignId(MapPlacement marker)
