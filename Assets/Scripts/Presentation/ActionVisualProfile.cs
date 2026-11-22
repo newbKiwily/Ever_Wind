@@ -14,9 +14,10 @@ public sealed class ActionVisualProfile : ScriptableObject
     public Vector3 VisualEuler;
 
     public float VisualScale = 1;
+    public float DeadHeightOffset;
 
     public string Idle = "Idle", Run = "Run", CombatIdle = "CombatIdle", CombatRun = "CombatRun",
-                  Gather = "Gather", Damaged = "Damaged", Dead = "Dead";
+                  Gather = "Gather", Damaged = "Damaged", Knockback = "Knockback", Dead = "Dead";
     public string[] Attacks = { "Attack1", "Attack2" };
 
     [Serializable]
@@ -56,9 +57,14 @@ public sealed class ActionVisualProfile : ScriptableObject
         {
             source = Gather;
         }
-        else if (state == "Hit" || state == "Knockback")
+        else if (state == "Hit")
         {
             source = Damaged;
+        }
+        else if (state == "Knockback")
+        {
+            // 별도 넉백이 없는 기존 몬스터 프로필은 피격 동작을 유지한다.
+            source = Array.Exists(Clips, entry => entry.State == Knockback && entry.Clip != null) ? Knockback : Damaged;
         }
         else if (state == "Idle")
         {

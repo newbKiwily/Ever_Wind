@@ -87,8 +87,8 @@ skillrank 3 2 1.1 2.8
 skillrank 3 3 1.2 2.6
 skillrank 3 4 1.3 2.4
 skillrank 3 5 1.4 2.2
-monster 1 0 10 0 2.5 1000 0.7 10 1 1.8
-monster 2 1 10 0 2 1000 0.6 10 1 1.8
+monster 1 0 10 0 2.5 10 0.7 10 1 1.8
+monster 2 1 10 0 2 10 0.6 10 1 1.8
 resource 1 1 1 0.25 5 5
 resource 2 6 1 0.25 5 10
 resource 3 2 1 0.25 5 10

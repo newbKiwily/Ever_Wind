@@ -74,7 +74,7 @@ public abstract class AliveServerTransmitter : ServerTransmitter
 
             direction.y = 0;
 
-            if (direction.sqrMagnitude > .0001f)
+            if (direction.sqrMagnitude > .0001f && !(Presentation?.IsKnockedBack ?? false))
             {
                 transform.rotation = Quaternion.LookRotation(direction);
             }

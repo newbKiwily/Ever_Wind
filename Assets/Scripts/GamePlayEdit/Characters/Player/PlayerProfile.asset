@@ -16,12 +16,14 @@ MonoBehaviour:
   VisualOffset: {x: 0, y: 0, z: 0}
   VisualEuler: {x: 0, y: 0, z: 0}
   VisualScale: 1
+  DeadHeightOffset: -0.35
   Idle: Idle
   Run: Run
   CombatIdle: CombatIdle
   CombatRun: CombatRun
   Gather: Gather
   Damaged: Damaged
+  Knockback: Knockback
   Dead: Dead
   Attacks:
   - Attack1
@@ -29,31 +31,39 @@ MonoBehaviour:
   - Attack3
   Clips:
   - State: Idle
-    Clip: {fileID: 7400000, guid: 1b58ab64ac44865449096d830007206a, type: 2}
+    Clip: {fileID: 7400000, guid: 19461e490ece6fb4091eb895decb51c6, type: 3}
   - State: Run
-    Clip: {fileID: 7400000, guid: 624542196dbb3f941bf2f68824736d2a, type: 2}
+    Clip: {fileID: 7400000, guid: 8fe51282281116f41bae153be0a57640, type: 3}
   - State: CombatIdle
-    Clip: {fileID: 7400000, guid: 5c92f0c4a10eca145b618ab14067cdf8, type: 2}
+    Clip: {fileID: -203655887218126122, guid: 7b1f5e568d350eb459273e8da97bb81a, type: 3}
   - State: CombatRun
-    Clip: {fileID: 7400000, guid: 6543a87796e18e6479eed23b4b588f32, type: 2}
+    Clip: {fileID: -203655887218126122, guid: fa6ef786a5493024a9a799b24a351c3a, type: 3}
   - State: Attack1
-    Clip: {fileID: 7400000, guid: 0d4fad4f6e1c09e4f9d06bdefae63104, type: 2}
+    Clip: {fileID: -203655887218126122, guid: 0630453d3f3204842b4c9274ee55986b, type: 3}
   - State: Attack2
-    Clip: {fileID: 7400000, guid: 2a163aad95b065a44826818194f12e63, type: 2}
+    Clip: {fileID: -203655887218126122, guid: 3cf3b0bc951038f458fff72e90d9209c, type: 3}
   - State: Gather
-    Clip: {fileID: 7400000, guid: 424cce2a79ed1fb45a4207ca9b6e059b, type: 2}
+    Clip: {fileID: -203655887218126122, guid: f48aa679358126a4983f27b6f6be21a9, type: 3}
   - State: Damaged
-    Clip: {fileID: 7400000, guid: 07c9e7614efc4b14d9e52aaf5d18ef14, type: 2}
+    Clip: {fileID: -203655887218126122, guid: dbe9fcd9277c35448bf15a6db82eb09b, type: 3}
   - State: Dead
-    Clip: {fileID: 7400000, guid: f3dfb3f97fed4624581be39c4fe265d5, type: 2}
+    Clip: {fileID: -203655887218126122, guid: cba6910e52718d54292583e53a7f4b7b, type: 3}
   - State: Attack3
-    Clip: {fileID: 7400000, guid: 0d48f643ef58d034ca067f62e0b9a99c, type: 2}
+    Clip: {fileID: -203655887218126122, guid: c27aeb168e0e11b4fbd8e1ad4b8375df, type: 3}
+  - State: Knockback
+    Clip: {fileID: -203655887218126122, guid: 7039bbca555d01b4cbd526a06426e6ac, type: 3}
+  - State: Buff
+    Clip: {fileID: -203655887218126122, guid: e30c180fd53b29d4fa8f86b3aab76167, type: 3}
+  - State: Ulti
+    Clip: {fileID: -203655887218126122, guid: a7226ce5de7f22945986888c69337d9d, type: 3}
+  - State: Success
+    Clip: {fileID: -203655887218126122, guid: 59cd60051d4e1d8469f2638d813f144b, type: 3}
   Skills:
-  - {fileID: 7400000, guid: 0d4fad4f6e1c09e4f9d06bdefae63104, type: 2}
-  - {fileID: 7400000, guid: 2a163aad95b065a44826818194f12e63, type: 2}
-  - {fileID: 7400000, guid: 0d48f643ef58d034ca067f62e0b9a99c, type: 2}
-  - {fileID: 7400000, guid: 0d48f643ef58d034ca067f62e0b9a99c, type: 2}
-  - {fileID: 7400000, guid: 0d48f643ef58d034ca067f62e0b9a99c, type: 2}
+  - {fileID: -203655887218126122, guid: 0630453d3f3204842b4c9274ee55986b, type: 3}
+  - {fileID: -203655887218126122, guid: 3cf3b0bc951038f458fff72e90d9209c, type: 3}
+  - {fileID: -203655887218126122, guid: c27aeb168e0e11b4fbd8e1ad4b8375df, type: 3}
+  - {fileID: -203655887218126122, guid: e30c180fd53b29d4fa8f86b3aab76167, type: 3}
+  - {fileID: -203655887218126122, guid: a7226ce5de7f22945986888c69337d9d, type: 3}
   SwingEffect: {fileID: 0}
   HitEffect: {fileID: 0}
   EffectOffset: {x: 0, y: 1, z: 0}

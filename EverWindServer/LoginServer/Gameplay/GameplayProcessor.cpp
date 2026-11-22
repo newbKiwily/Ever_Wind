@@ -538,6 +538,19 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
     }
     else
     {
+        if (target.kind == EntityKind::Player)
+        {
+            auto &player = static_cast<Player &>(target);
+
+            if (target.mode == Mode::Looting)
+            {
+                Cancel(target);
+            }
+
+            target.mode = Mode::Combat;
+            player.combatIdleSince = world.now;
+        }
+
         const auto attacking = [this](const Actor &actor)
         {
             return actor.hp > 0 && actor.action.id != 0 && actor.action.kind == ActionKind::Attack && actor.action.start <= world.now && world.now < actor.action.end;
@@ -545,9 +558,9 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
 
         HitReaction reaction;
 
-        if (attacking(attacker) && attacking(target))
+        if (attacking(target) && (target.kind == EntityKind::Player || attacking(attacker)))
         {
-            // 서로 공격 중인 타격은 피해만 적용하고 연속 피격 누적을 초기화한다.
+            // 공격 중인 플레이어는 슈퍼아머다. 몬스터는 기존 상호 공격 보호를 유지한다.
             target.ResetHitReaction();
 
             reaction = HitReaction::DamageOnly;
@@ -603,6 +616,22 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
 void GameplayProcessor::UpdateActor(Actor &a, double dt)
 {
     auto &m = world.GetMap(a.map);
+
+    if (a.kind == EntityKind::Player && a.mode == Mode::Combat && a.hp > 0)
+    {
+        auto &player = static_cast<Player &>(a);
+
+        if (a.action.id || a.hitReactionEnd > world.now || a.pushEnd > world.now)
+        {
+            player.combatIdleSince = world.now;
+        }
+        else if (world.now - player.combatIdleSince >= 2.0)
+        {
+            player.mode = Mode::NonCombat;
+
+            Broadcast(a.map, Base(EventKind::State, a));
+        }
+    }
 
     if (a.UpdateKnockback(m, world.now, dt) && a.kind == EntityKind::Player)
     {
@@ -1299,6 +1328,8 @@ Error GameplayProcessor::HandleMoveRequest(Player &p, const Request &r)
 
     p.sequence = r.sequence;
 
+    p.combatIdleSince = world.now;
+
     Zones(p);
 
     auto e = Base(EventKind::MoveResult, p);
@@ -1327,6 +1358,8 @@ Error GameplayProcessor::HandleModeRequest(Player &p, const Request &r)
     }
 
     p.mode = static_cast<Mode>(r.definition);
+
+    p.combatIdleSince = world.now;
 
     Broadcast(p.map, Base(EventKind::State, p));
 

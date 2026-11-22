@@ -73,6 +73,7 @@ class Player final : public Actor, public IDamageable
     GrowthState growth;
 
     double reviveAt = 0, lastSave = 0;
+    double combatIdleSince = 0;
 
     bool dirty = false;
 

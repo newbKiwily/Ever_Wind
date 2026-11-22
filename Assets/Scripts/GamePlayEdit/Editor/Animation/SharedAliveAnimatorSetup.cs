@@ -10,7 +10,7 @@ namespace EverWind.Gameplay.Editor
 {
 public static class SharedAliveAnimatorSetup
 {
-    private const string Folder = "Assets/GamePlayEdit/Animation/Shared";
+    private const string Folder = "Assets/Scripts/GamePlayEdit/Animation/Shared";
 
     private static readonly string[] States = { "Idle", "Run", "CombatIdle", "CombatRun", "Skill1", "Skill2", "Skill3", "Skill4", "Skill5", "Gather", "Craft", "Hit", "Knockback", "Dead" };
 
@@ -114,6 +114,22 @@ public static class SharedAliveAnimatorSetup
 
         var sharedMachine = controller.layers[0].stateMachine;
 
+        ConfigureSuccess(controller);
+
+        if (!System.Array.Exists(controller.parameters, p => p.name == "KnockbackSpeed"))
+        {
+            controller.AddParameter("KnockbackSpeed", AnimatorControllerParameterType.Float);
+        }
+
+        foreach (var child in sharedMachine.states)
+        {
+            if (child.state.name == "Knockback")
+            {
+                child.state.speedParameter = "KnockbackSpeed";
+                child.state.speedParameterActive = true;
+            }
+        }
+
         if (!System.Array.Exists(controller.parameters, p => p.name == "HitStart"))
         {
             controller.AddParameter("HitStart", AnimatorControllerParameterType.Trigger);
@@ -212,6 +228,39 @@ public static class SharedAliveAnimatorSetup
         }
 
         AssetDatabase.SaveAssets();
+    }
+
+    public static void ConfigureSuccess(AnimatorController controller)
+    {
+        if (!System.Array.Exists(controller.parameters, p => p.name == "Success"))
+            controller.AddParameter("Success", AnimatorControllerParameterType.Bool);
+        var machine = controller.layers[0].stateMachine;
+        var state = System.Array.Find(machine.states, s => s.state.name == "Success").state;
+        if (state == null)
+        {
+            var path = Folder + "/Success.anim";
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+            if (clip == null)
+            {
+                clip = new AnimationClip { name = "Success" };
+                AssetDatabase.CreateAsset(clip, path);
+            }
+            state = machine.AddState("Success");
+            state.motion = clip;
+            var enter = Transition(machine, state);
+            Allowed(enter);
+            enter.AddCondition(AnimatorConditionMode.IfNot, 0, "Hit");
+            enter.AddCondition(AnimatorConditionMode.IfNot, 0, "ActionRunning");
+            enter.AddCondition(AnimatorConditionMode.If, 0, "Success");
+        }
+        foreach (var transition in machine.anyStateTransitions)
+        {
+            string name = transition.destinationState != null ? transition.destinationState.name : "";
+            if (name != "Idle" && name != "Run" && name != "CombatIdle" && name != "CombatRun") continue;
+            if (!System.Array.Exists(transition.conditions, c => c.parameter == "Success"))
+                transition.AddCondition(AnimatorConditionMode.IfNot, 0, "Success");
+        }
+        EditorUtility.SetDirty(controller);
     }
 
     private static AnimatorStateTransition Transition(AnimatorStateMachine machine, AnimatorState state)

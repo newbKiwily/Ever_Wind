@@ -157,6 +157,9 @@ namespace EverWind.MapEditing
                 var authoring = copy.GetComponent<MapAuthoring>();
                 int groundLayer = LayerMask.NameToLayer("Ground");
                 if (groundLayer >= 0) foreach (var c in authoring.Land.GetComponentsInChildren<Collider>(true)) c.gameObject.layer = groundLayer;
+                // 서버 높이는 Land만 추출한다. 장식 경로/모래의 Ground 지정이 이동 높이에 섞이지 않게 한다.
+                if (groundLayer >= 0) foreach (var c in copy.GetComponentsInChildren<Collider>(true))
+                    if (c.gameObject.layer == groundLayer && !c.transform.IsChildOf(authoring.Land)) c.gameObject.layer = 0;
                 foreach (var p in copy.GetComponentsInChildren<MapPlacement>(true))
                 {
                     if (p.Kind == MapPlacementKind.Decoration) UnityEngine.Object.DestroyImmediate(p);

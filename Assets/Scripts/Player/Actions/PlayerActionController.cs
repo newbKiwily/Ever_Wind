@@ -86,6 +86,13 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
         Vector3 direction = acceptInput ? InputManager.Current.ReadMovement() : Vector3.zero;
 
+        // 완료 연출은 실제 이동이나 서버 행동 승인까지 입력을 기다리게 하지 않는다.
+        if (acceptInput && (direction.sqrMagnitude > .01f || InputManager.Current.AnyKeyDownExcludeMouse() ||
+            (!InputManager.IsPointerOverUI && InputManager.Current.GetEnterCombatDown())))
+        {
+            Actor.Presentation?.InterruptSuccess();
+        }
+
         if (direction.sqrMagnitude > .01f)
         {
             if (!(current is KnockbackAction))
@@ -259,6 +266,7 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
     public void RequestAttack(int skill)
     {
+        Actor.Presentation?.InterruptSuccess();
         if (!Actor.Registry.Progression.CanUseSkill(skill))
         {
             LastResult = ResultCode.UnlearnedSkill.ToString();
@@ -287,6 +295,7 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
     public void RequestGather()
     {
+        Actor.Presentation?.InterruptSuccess();
         if (SelectedTarget == null || SelectedTarget.Kind != EntityKind.Resource)
         {
             ServerTransmitter nearest = null;
@@ -324,6 +333,7 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
     public void RequestCraft(int recipe)
     {
+        Actor.Presentation?.InterruptSuccess();
         BeginIntent(RequestKind.Craft, 0, recipe);
     }
 

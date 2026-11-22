@@ -19,7 +19,7 @@ public sealed class MovementMotor : MonoBehaviour
     public PlayerServerTransmitter Actor;
 
     public bool Forced { get; set; }
-    public void Step(Vector3 delta, bool request = true)
+    public void Step(Vector3 delta, bool request = true, bool faceMovement = true)
     {
         delta.y = 0;
 
@@ -71,7 +71,10 @@ public sealed class MovementMotor : MonoBehaviour
 
         transform.position = next;
 
-        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(desiredDirection), Time.deltaTime * 10f);
+        if (faceMovement)
+        {
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(desiredDirection), Time.deltaTime * 10f);
+        }
 
         if (request)
         {

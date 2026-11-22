@@ -211,7 +211,8 @@ public sealed class KnockbackAction : MoveAction
             return;
         }
         float step = Mathf.Min(dt, remaining);
-        Motor.Step(Direction * Speed * step, false);
+        // 넉백 중에는 이동 방향을 바라보지 않고 공격자를 향한 자세를 유지한다.
+        Motor.Step(Direction * Speed * step, false, false);
         remaining -= step;
         if (remaining <= 0)
         {

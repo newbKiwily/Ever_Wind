@@ -11,6 +11,7 @@ public sealed class AlivePresentation
     private readonly ActionVisualProfile profile;
 
     private readonly Animator animator;
+    private readonly Vector3 visualLocalPosition;
 
     private readonly HashSet<ulong> seen = new HashSet<ulong>();
 
@@ -27,14 +28,27 @@ public sealed class AlivePresentation
     private SkillDefinition skillDefinition;
 
     private double start, hitUntil, knockbackUntil;
+    private double successUntil;
 
     private float duration;
     private float hitDuration;
+    private float knockbackDuration;
 
     private bool swing;
 
     public uint PresentedActionCount { get; private set; }
     public bool HasAction => action != 0;
+    public bool IsKnockedBack => actor.Mode != PlayerMode.Dead && (actor.Transport != null ? actor.Transport.EstimatedServerTime : Time.unscaledTimeAsDouble) < knockbackUntil;
+
+    public void InterruptSuccess()
+    {
+        successUntil = 0;
+
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            animator.SetBool("Success", false);
+        }
+    }
 
     public AlivePresentation(AliveServerTransmitter actor, ActionVisualProfile profile, Animator animator)
     {
@@ -43,6 +57,7 @@ public sealed class AlivePresentation
         this.profile = profile;
 
         this.animator = animator;
+        visualLocalPosition = animator != null ? animator.transform.localPosition : Vector3.zero;
 
         if (animator != null && profile != null)
         {
@@ -71,10 +86,12 @@ public sealed class AlivePresentation
         start = 0;
         hitUntil = 0;
         knockbackUntil = 0;
+        successUntil = 0;
 
         duration = 0;
 
         hitDuration = 0;
+        knockbackDuration = 0;
 
         swing = false;
 
@@ -84,6 +101,7 @@ public sealed class AlivePresentation
 
         if (animator != null && animator.runtimeAnimatorController != null)
         {
+            animator.transform.localPosition = visualLocalPosition;
             animator.Rebind();
 
             animator.SetFloat("ActionSpeed", 1);
@@ -99,6 +117,7 @@ public sealed class AlivePresentation
 
         if (message.Kind == EventKind.ActionStarted)
         {
+            InterruptSuccess();
             if (!seen.Add(message.ActionId))
             {
                 return;
@@ -152,6 +171,12 @@ public sealed class AlivePresentation
 
         if ((message.Kind == EventKind.ActionEnded || message.Kind == EventKind.ActionCancelled) && action == message.ActionId)
         {
+            if (message.Kind == EventKind.ActionEnded && (kind == ActionKind.Gather || kind == ActionKind.Craft))
+            {
+                var success = profile != null ? profile.ResolveClip("Success") : null;
+                successUntil = (actor.Transport != null ? actor.Transport.EstimatedServerTime : Time.unscaledTimeAsDouble) + (success != null ? success.length : 0);
+            }
+
             action = 0;
 
             if (animator != null)
@@ -170,6 +195,11 @@ public sealed class AlivePresentation
 
             knockbackUntil = knocked ? message.ServerTime + message.HitTime : 0;
 
+            if (knocked && knockbackDuration <= 0)
+            {
+                knockbackDuration = message.HitTime;
+            }
+
             if ((message.Flags & (ushort)HitReaction.Hit) != 0)
             {
                 hitUntil = message.ServerTime + message.HitTime;
@@ -187,6 +217,7 @@ public sealed class AlivePresentation
 
         if (message.Kind == EventKind.Hit)
         {
+            InterruptSuccess();
             if (message.Mode == PlayerMode.Dead)
             {
                 hitUntil = 0;
@@ -197,6 +228,16 @@ public sealed class AlivePresentation
                 hitUntil = 0;
 
                 knockbackUntil = message.ServerTime + message.Duration;
+                knockbackDuration = message.Duration;
+
+                var pushDirection = message.Velocity;
+                pushDirection.y = 0;
+
+                if (pushDirection.sqrMagnitude > .001f)
+                {
+                    // 실제 밀림의 반대쪽을 바라봐 뒤로 밀리는 동작과 방향을 맞춘다.
+                    actor.transform.rotation = Quaternion.LookRotation(-pushDirection);
+                }
 
                 animator?.ResetTrigger("HitStart");
             }
@@ -249,13 +290,27 @@ public sealed class AlivePresentation
             animator.SetFloat("Speed", moving ? 1 : 0);
 
             animator.SetBool("Combat", actor.Mode == PlayerMode.Combat);
+            if (moving || action != 0 || actor.Mode != PlayerMode.NonCombat) successUntil = 0;
+            animator.SetBool("Success", now < successUntil);
             animator.SetBool("Dead", actor.Mode == PlayerMode.Dead);
+            if (profile != null && profile.DeadHeightOffset != 0)
+            {
+                var state = animator.GetCurrentAnimatorStateInfo(0);
+                float blend = actor.Mode == PlayerMode.Dead && state.IsName(profile.Dead) ? Mathf.SmoothStep(0, 1, Mathf.Clamp01(state.normalizedTime)) : 0;
+                float parentScale = animator.transform.parent != null ? animator.transform.parent.lossyScale.y : 1;
+                // 시각 모델만 내려 서버 좌표와 이동/충돌 판정에는 영향을 주지 않는다.
+                animator.transform.localPosition = visualLocalPosition + Vector3.up * (profile.DeadHeightOffset * blend / Mathf.Max(.001f, parentScale));
+            }
             animator.SetBool("Knockback", knocked);
             animator.SetBool("Hit", actor.Mode != PlayerMode.Dead && !knocked && now < hitUntil);
 
             var hitClip = profile != null ? profile.ResolveClip("Hit") : null;
 
             animator.SetFloat("HitSpeed", hitClip != null && hitDuration > 0 ? hitClip.length / hitDuration : 1);
+
+            var knockbackClip = profile != null ? profile.ResolveClip("Knockback") : null;
+
+            animator.SetFloat("KnockbackSpeed", knockbackClip != null && knockbackDuration > 0 ? knockbackClip.length / knockbackDuration : 1);
             animator.SetBool("ActionRunning", action != 0);
 
             var clip = profile != null ? profile.ResolveClip(StateName()) : null;

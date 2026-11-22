@@ -50,7 +50,8 @@ HitReaction Actor::RegisterHit(double now)
         return HitReaction::DamageOnly;
     }
 
-    consecutiveHits = now < hitReactionEnd ? consecutiveHits + 1 : 1;
+    // 피격 모션 종료와 누적 횟수를 분리해 세 번째 유효 피격에서 넉백한다.
+    ++consecutiveHits;
 
     if (consecutiveHits >= GameDataHub::ConsecutiveHitThreshold)
     {
