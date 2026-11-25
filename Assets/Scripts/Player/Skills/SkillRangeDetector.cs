@@ -1,39 +1,26 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace EverWind.Gameplay
 {
-// 수동 설정한 탐지선을 실행한다. 파티클 분석·편집 도구는 별도로 구현한다.
+// RO 구 영역을 검사하고 중복 대상을 제거한다.
 public sealed class SkillRangeDetector : MonoBehaviour
 {
     [Serializable]
-    public struct DetectionRay
+    public struct Shape
     {
         public Vector3 Origin;
-        public Vector3 Direction;
-        [Min(0)] public float Length;
-        [Min(0)] public float Thickness;
+        [Min(0)] public float Radius;
     }
-
-    public DetectionRay[] Rays = Array.Empty<DetectionRay>();
+    public Shape[] Shapes = Array.Empty<Shape>();
     public LayerMask TargetLayers = ~0;
 
     public int[] Detect(PlayerServerTransmitter actor)
     {
         var ids = new HashSet<int>();
-        foreach (var ray in Rays)
-        {
-            if (ray.Length <= 0 || ray.Direction.sqrMagnitude < .0001f) continue;
-            Vector3 origin = transform.TransformPoint(ray.Origin);
-            Vector3 direction = transform.TransformDirection(ray.Direction).normalized;
-            var hits = ray.Thickness > 0
-                ? Physics.SphereCastAll(origin, ray.Thickness, direction, ray.Length, TargetLayers, QueryTriggerInteraction.Collide)
-                : Physics.RaycastAll(origin, direction, ray.Length, TargetLayers, QueryTriggerInteraction.Collide);
-            foreach (var hit in hits) Add(hit.collider);
-            if (ray.Thickness > 0)
-                foreach (var collider in Physics.OverlapSphere(origin, ray.Thickness, TargetLayers, QueryTriggerInteraction.Collide)) Add(collider);
-        }
+        foreach (var collider in DetectColliders(gameObject.scene.GetPhysicsScene())) Add(collider);
         var result = new List<int>(ids);
         result.Sort();
         if (result.Count > Protocol.MaxAttackTargets) result.RemoveRange(Protocol.MaxAttackTargets, result.Count - Protocol.MaxAttackTargets);
@@ -46,11 +33,24 @@ public sealed class SkillRangeDetector : MonoBehaviour
         }
     }
 
+    public Collider[] DetectColliders(PhysicsScene physics)
+    {
+        var colliders = new HashSet<Collider>();
+        var overlaps = new Collider[256];
+        foreach (var shape in Shapes)
+        {
+            if (shape.Radius <= 0) continue;
+            int count = physics.OverlapSphere(transform.TransformPoint(shape.Origin), shape.Radius, overlaps, TargetLayers, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < count; ++i) colliders.Add(overlaps[i]);
+        }
+        var result = new Collider[colliders.Count]; colliders.CopyTo(result); return result;
+    }
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
-        foreach (var ray in Rays)
-            Gizmos.DrawLine(transform.TransformPoint(ray.Origin), transform.TransformPoint(ray.Origin) + transform.TransformDirection(ray.Direction).normalized * ray.Length);
+        foreach (var shape in Shapes)
+            Gizmos.DrawWireSphere(transform.TransformPoint(shape.Origin), shape.Radius);
     }
 }
 }

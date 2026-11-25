@@ -111,7 +111,7 @@ public sealed class ContainerInMap : MonoBehaviour
 
         if (Rendered)
         {
-            Transport.Publish(message);
+            PacketMethod.ApplyWorldPacket(message);
             return;
         }
 
@@ -363,7 +363,7 @@ public sealed class ContainerInMap : MonoBehaviour
         // 로딩 중 들어온 변경도 수신 순서대로 적용한다.
         for (int i = 0; i < buffered.Count; ++i)
         {
-            Transport.Publish(buffered[i]);
+            PacketMethod.ApplyWorldPacket(buffered[i]);
 
             if (!IsCurrent(version))
             {

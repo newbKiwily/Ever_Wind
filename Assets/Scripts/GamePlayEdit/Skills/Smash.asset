@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42b93c281d5790042aa0c34f9fa8b7c5, type: 3}
+  m_Name: Smash
+  m_EditorClassIdentifier: Assembly-CSharp::EverWind.Gameplay.SingleTargetSkill
+  Id: 2
+  Kind: 0
+  RequiresTarget: 1
+  AnimationSlot: 2
+  SwingEffect: {fileID: 6263782476919498309, guid: 1fd2749f2a4056446881dce86ed70c39, type: 3}
+  SwingEffectOffset: {x: 0, y: 0, z: 0}
+  SwingEffectRotation: {x: 0, y: 0, z: 0}
+  EffectDelay: 0.5
+  RangeDetector: {fileID: 0}
+  Reach: 1.3
+  Damage: 20
+  AttackDuration: 1.3
+  Cooldown: 1
+  AttackTimes:
+  - 0.6
+  - 0.62
+  - 0.64
+  Animation: {fileID: -203655887218126122, guid: 3cf3b0bc951038f458fff72e90d9209c, type: 3}
+  CastEffect: {fileID: 7251879486380165639, guid: c0e0c0d1b5de427b86a650efe1b05f56, type: 3}
+  CastEffectOffset: {x: 0, y: 0, z: 0}
+  CastEffectRotation: {x: 0, y: 0, z: 0}
+  CastEffectTime: 0
+  AuthoredTiming: 1

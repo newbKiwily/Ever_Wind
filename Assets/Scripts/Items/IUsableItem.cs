@@ -2,5 +2,5 @@
 
 public interface IUsableItem
 {
-    void Use();
+    void Use(System.Action<InventoryItem> requestUse);
 }

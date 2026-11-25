@@ -16,6 +16,5 @@ MonoBehaviour:
   ItemImage: {fileID: 21300000, guid: 409f9bc68f7fc3646b5386b3fb9e2a3a, type: 3}
   IsStackable: 0
   ItemInstruction: 15+ defence point
-  IsFromEquipmentUI: 0
   Type: 1000
   Power: 15

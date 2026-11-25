@@ -1,7 +1,7 @@
 #include "Session.h"
 #include "IOCPServer.h"
 #include "Packet.h"
-#include "../Gameplay/CoreData/Protocol.h"
+#include "GameplayPackets.h"
 #include "../DB/Queries.h"
 #include "SessionManager.h"
 #include <iostream>
@@ -14,18 +14,94 @@ namespace
 {
 const char *GetPacketName(PacketId packetId)
 {
-    if (static_cast<uint16_t>(packetId) == EverWind::Gameplay::RequestPacket)
-    {
-        return "C2S_GAMEPLAY_REQUEST";
-    }
-
-    if (static_cast<uint16_t>(packetId) == EverWind::Gameplay::EventPacket)
-    {
-        return "S2C_GAMEPLAY_EVENT";
-    }
-
     switch (packetId)
     {
+    case PacketId::C2S_JOIN_REQUEST:
+        return "C2S_JOIN_REQUEST";
+    case PacketId::C2S_MOVE_REQUEST:
+        return "C2S_MOVE_REQUEST";
+    case PacketId::C2S_MODE_REQUEST:
+        return "C2S_MODE_REQUEST";
+    case PacketId::C2S_ATTACK_REQUEST:
+        return "C2S_ATTACK_REQUEST";
+    case PacketId::C2S_GATHER_REQUEST:
+        return "C2S_GATHER_REQUEST";
+    case PacketId::C2S_CRAFT_REQUEST:
+        return "C2S_CRAFT_REQUEST";
+    case PacketId::C2S_CANCEL_REQUEST:
+        return "C2S_CANCEL_REQUEST";
+    case PacketId::C2S_CHANGE_MAP_REQUEST:
+        return "C2S_CHANGE_MAP_REQUEST";
+    case PacketId::C2S_REVIVE_REQUEST:
+        return "C2S_REVIVE_REQUEST";
+    case PacketId::C2S_PROBE_REQUEST:
+        return "C2S_PROBE_REQUEST";
+    case PacketId::C2S_USE_ITEM_REQUEST:
+        return "C2S_USE_ITEM_REQUEST";
+    case PacketId::C2S_EQUIP_REQUEST:
+        return "C2S_EQUIP_REQUEST";
+    case PacketId::C2S_UNEQUIP_REQUEST:
+        return "C2S_UNEQUIP_REQUEST";
+    case PacketId::C2S_CLAIM_QUEST_REQUEST:
+        return "C2S_CLAIM_QUEST_REQUEST";
+    case PacketId::C2S_TUTORIAL_REQUEST:
+        return "C2S_TUTORIAL_REQUEST";
+    case PacketId::C2S_RESOURCE_REFILL_REQUEST:
+        return "C2S_RESOURCE_REFILL_REQUEST";
+    case PacketId::C2S_SAVE_REQUEST:
+        return "C2S_SAVE_REQUEST";
+    case PacketId::C2S_LOGOUT_REQUEST:
+        return "C2S_LOGOUT_REQUEST";
+    case PacketId::C2S_ATTACK_TARGETS_REQUEST:
+        return "C2S_ATTACK_TARGETS_REQUEST";
+    case PacketId::C2S_UPGRADE_STAT_REQUEST:
+        return "C2S_UPGRADE_STAT_REQUEST";
+    case PacketId::C2S_UPGRADE_SKILL_REQUEST:
+        return "C2S_UPGRADE_SKILL_REQUEST";
+    case PacketId::C2S_RESET_STATS_REQUEST:
+        return "C2S_RESET_STATS_REQUEST";
+    case PacketId::C2S_RESET_SKILLS_REQUEST:
+        return "C2S_RESET_SKILLS_REQUEST";
+    case PacketId::S2C_ACK:
+        return "S2C_ACK";
+    case PacketId::S2C_WELCOME:
+        return "S2C_WELCOME";
+    case PacketId::S2C_SPAWN:
+        return "S2C_SPAWN";
+    case PacketId::S2C_DESPAWN:
+        return "S2C_DESPAWN";
+    case PacketId::S2C_STATE:
+        return "S2C_STATE";
+    case PacketId::S2C_MOVE_RESULT:
+        return "S2C_MOVE_RESULT";
+    case PacketId::S2C_ACTION_STARTED:
+        return "S2C_ACTION_STARTED";
+    case PacketId::S2C_ACTION_ENDED:
+        return "S2C_ACTION_ENDED";
+    case PacketId::S2C_ACTION_CANCELLED:
+        return "S2C_ACTION_CANCELLED";
+    case PacketId::S2C_HIT:
+        return "S2C_HIT";
+    case PacketId::S2C_INVENTORY:
+        return "S2C_INVENTORY";
+    case PacketId::S2C_ZONE:
+        return "S2C_ZONE";
+    case PacketId::S2C_SNAPSHOT_END:
+        return "S2C_SNAPSHOT_END";
+    case PacketId::S2C_STATS:
+        return "S2C_STATS";
+    case PacketId::S2C_EQUIPMENT:
+        return "S2C_EQUIPMENT";
+    case PacketId::S2C_QUEST:
+        return "S2C_QUEST";
+    case PacketId::S2C_TUTORIAL:
+        return "S2C_TUTORIAL";
+    case PacketId::S2C_SAVED:
+        return "S2C_SAVED";
+    case PacketId::S2C_GROWTH:
+        return "S2C_GROWTH";
+    case PacketId::S2C_SKILL_RANK:
+        return "S2C_SKILL_RANK";
     case PacketId::C2S_LOGIN_REQ:
         return "C2S_LOGIN_REQ";
     case PacketId::S2C_LOGIN_ACK:
@@ -128,7 +204,7 @@ std::string BuildSessionLabel(const Session &session)
 void LogPacketEvent(const Session &session, const char *direction, const PacketHeader &header)
 {
     // 연속적으로 수신되는 상태 스냅샷의 로그를 제한하여 콘솔 출력 과부하를 방지한다.
-    if (header.Id == EverWind::Gameplay::EventPacket)
+    if (header.Id >= 0x701 && header.Id <= 0x714)
     {
         return;
     }
@@ -420,16 +496,7 @@ bool Session::HandlePackets()
 bool Session::ProcessPacket(const PacketHeader &header, const char *payload, size_t payloadSize)
 {
     // 이동 유효성은 게임 검증 후 결정되므로 거절 로그는 해당 위치에서 출력한다.
-    EverWind::Gameplay::RequestKind kind{};
-
-    bool move = false;
-
-    if (header.Id == EverWind::Gameplay::RequestPacket && payload && payloadSize >= offsetof(EverWind::Gameplay::Request, kind) + sizeof kind)
-    {
-        std::memcpy(&kind, payload + offsetof(EverWind::Gameplay::Request, kind), sizeof kind);
-
-        move = kind == EverWind::Gameplay::RequestKind::Move;
-    }
+    const bool move = header.Id == static_cast<uint16_t>(PacketId::C2S_MOVE_REQUEST);
 
     if (!move)
     {
@@ -554,7 +621,7 @@ bool Session::SendGameplayEvent(const EverWind::Gameplay::Event &event)
         return false;
     }
 
-    const auto bytes = EverWind::Gameplay::Encode(EverWind::Gameplay::EventPacket, event);
+    const auto bytes = EverWind::Gameplay::EncodeEvent(event);
 
     return PostSend(bytes.data(), bytes.size());
 }

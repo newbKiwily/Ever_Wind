@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace EverWind.Gameplay
 {
-// 기존 카메라 회전·줌·추적 계산을 개체 등록기에 연결한다.
+// 개체 등록기에서 현재 플레이어를 조회해 위치와 방향을 추적한다.
 public sealed class GameplayCameraController : MonoBehaviour
 {
     public ServerTransmitterManager Registry;
@@ -23,10 +23,17 @@ public sealed class GameplayCameraController : MonoBehaviour
     float pitch, yaw;
 
     bool captured;
+    bool previewRequested;
 
     CursorLockMode previousLock;
 
     bool previousVisible;
+    void OnEnable() => PlayEvents.UIPanelChanged += SetPreviewPanel;
+    void SetPreviewPanel(InGamePanel panel)
+    {
+        previewRequested = panel == InGamePanel.Inventory;
+        if (!previewRequested && PreviewCamera != null) PreviewCamera.SetActive(false);
+    }
 
     void Awake()
     {
@@ -59,7 +66,7 @@ public sealed class GameplayCameraController : MonoBehaviour
     {
         var actor = Registry != null ? Registry.LocalActor : null;
 
-        bool ready = actor != null && Registry.Transport.Ready;
+        bool ready = actor != null && Registry.Transport != null && Registry.Transport.Ready;
 
         bool rotate = ready && !InputManager.IsTyping && Input.GetMouseButton(1) &&
                       (captured || !InputManager.IsPointerOverUI);
@@ -67,6 +74,7 @@ public sealed class GameplayCameraController : MonoBehaviour
 
         if (!ready)
         {
+            UpdatePreview(null, false);
             return;
         }
 
@@ -77,15 +85,19 @@ public sealed class GameplayCameraController : MonoBehaviour
         transform.eulerAngles = targetRotation;
 
         transform.position = actor.transform.position - transform.forward * Distance;
+        // 메인 카메라의 자식으로 연결해도 부모 이동 이후 정면 위치를 확정한다.
+        UpdatePreview(actor, previewRequested);
+    }
 
-        if (PreviewCamera != null && PreviewCamera.activeSelf)
+    void UpdatePreview(PlayerServerTransmitter actor, bool visible)
+    {
+        if (PreviewCamera == null) return;
+        if (visible)
         {
-            var p = actor.transform.position;
-
-            PreviewCamera.transform.position =
-                Vector3.Lerp(PreviewCamera.transform.position, p + actor.transform.forward * 4 + Vector3.up * 2, Time.deltaTime * 50);
-            PreviewCamera.transform.LookAt(p + Vector3.up * 1.2f);
+            PreviewCamera.transform.position = actor.transform.position + actor.transform.forward * 4 + Vector3.up * 1.2f;
+            PreviewCamera.transform.LookAt(actor.transform.position + Vector3.up * 1.2f);
         }
+        if (PreviewCamera.activeSelf != visible) PreviewCamera.SetActive(visible);
     }
 
     void CaptureCursor(bool capture)
@@ -115,6 +127,12 @@ public sealed class GameplayCameraController : MonoBehaviour
         captured = capture;
     }
 
-    void OnDisable() => CaptureCursor(false);
+    void OnDisable()
+    {
+        PlayEvents.UIPanelChanged -= SetPreviewPanel;
+        previewRequested = false;
+        if (PreviewCamera != null) PreviewCamera.SetActive(false);
+        CaptureCursor(false);
+    }
 }
 }

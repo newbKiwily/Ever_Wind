@@ -21,7 +21,7 @@ public abstract class Effect : MonoBehaviour
     protected bool EmissionStopped { get; private set; }
     public int InitialPoolSize => Mathf.Clamp(initialPoolSize, 0, MaxPoolSize);
     public int MaxPoolSize => Mathf.Max(1, maxPoolSize);
-    public bool UseUnscaledTime => useUnscaledTime;
+    public bool UseUnscaledTime => useUnscaledTime || PlayInfo.UnscaledTime;
     public bool IsPlaying { get; private set; }
     public bool IsComplete { get; private set; }
     public ulong PlaybackId { get; private set; }
@@ -29,6 +29,8 @@ public abstract class Effect : MonoBehaviour
     internal Effect Prefab { get; private set; }
 
     Vector3 initialScale;
+    Transform[] effectTransforms;
+    int[] originalLayers;
     bool initialized;
     float emptyDuration;
 
@@ -39,6 +41,9 @@ public abstract class Effect : MonoBehaviour
         if (initialized) return;
         initialized = true;
         initialScale = transform.localScale;
+        effectTransforms = GetComponentsInChildren<Transform>(true);
+        originalLayers = new int[effectTransforms.Length];
+        for (int i = 0; i < originalLayers.Length; ++i) originalLayers[i] = effectTransforms[i].gameObject.layer;
         Systems = GetComponentsInChildren<ParticleSystem>(true);
         foreach (var system in Systems)
         {
@@ -57,7 +62,10 @@ public abstract class Effect : MonoBehaviour
         // 활성 효과는 추적 대상이나 Manager의 스케일을 상속하지 않는 월드 루트다.
         transform.SetParent(null, false);
         transform.SetPositionAndRotation(info.Position, info.Rotation.Equals(default(Quaternion)) ? Quaternion.identity : info.Rotation);
-        transform.localScale = initialScale;
+        transform.localScale = info.Scale == Vector3.zero ? initialScale : Vector3.Scale(initialScale, info.Scale);
+        if (info.OverrideLayer)
+            foreach (var child in effectTransforms) if (child != null) child.gameObject.layer = info.Layer;
+        foreach (var system in Systems) { var main = system.main; main.useUnscaledTime = UseUnscaledTime; }
         enabled = true;
         IsPlaying = true;
         gameObject.SetActive(true);
@@ -94,6 +102,8 @@ public abstract class Effect : MonoBehaviour
 
     public void ResetForPool()
     {
+        if (effectTransforms != null)
+            for (int i = 0; i < effectTransforms.Length; ++i) if (effectTransforms[i] != null) effectTransforms[i].gameObject.layer = originalLayers[i];
         if (Systems != null)
             foreach (var system in Systems)
                 if (system != null) system.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);

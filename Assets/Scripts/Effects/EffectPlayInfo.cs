@@ -9,6 +9,9 @@ public struct EffectPlayInfo
     public Transform FollowTarget;
     public Transform AttractTarget;
     public Vector3 TargetLocalOffset;
+    public bool OverrideLayer, UnscaledTime;
+    public int Layer;
+    public Vector3 Scale;
 
     public EffectPlayInfo(Vector3 position, Quaternion rotation)
     {
@@ -17,6 +20,9 @@ public struct EffectPlayInfo
         FollowTarget = null;
         AttractTarget = null;
         TargetLocalOffset = Vector3.zero;
+        OverrideLayer = UnscaledTime = false;
+        Layer = 0;
+        Scale = Vector3.one;
     }
 }
 

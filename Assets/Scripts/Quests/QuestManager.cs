@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class QuestManager : SingletonBase<QuestManager>
 {
+    public System.Func<int, bool> RequestClaim;
     [System.Serializable]
     public class QuestProgressData
     {
@@ -31,33 +32,8 @@ public class QuestManager : SingletonBase<QuestManager>
 
     public override void Init()
     {
-        if (EverWind.Gameplay.GameplayIntegration.Active != null) { UnsubscribeEvents(); SyncQuestTable(); _activeQuests.Clear(); foreach(var quest in _questTable.Values) AcceptQuest(quest); return; }
-        SubscribeEvents();
         SyncQuestTable();
         LoadQuestProgress();
-
-        
-    }
-
-    protected override void OnDestroy()
-    {
-        UnsubscribeEvents();
-        base.OnDestroy();
-    }
-
-    private void SubscribeEvents()
-    {
-        UnsubscribeEvents();
-        PlayEvents.OnCombatEnemyKilled += HandleCombatEnemyKilled;
-        PlayEvents.OnGatherCompleted += HandleGatherCompleted;
-        PlayEvents.OnCraftCompleted += HandleCraftCompleted;
-    }
-
-    private void UnsubscribeEvents()
-    {
-        PlayEvents.OnCombatEnemyKilled -= HandleCombatEnemyKilled;
-        PlayEvents.OnGatherCompleted -= HandleGatherCompleted;
-        PlayEvents.OnCraftCompleted -= HandleCraftCompleted;
     }
 
     public Quest GetQuest(int questId)
@@ -128,13 +104,12 @@ public class QuestManager : SingletonBase<QuestManager>
     {
         QuestProgressData progress = FindQuestProgress(questId);
 
-        if (progress == null || !progress.IsCompleted || progress.RewardClaimed || EverWind.Gameplay.GameplayIntegration.Active == null)
+        if (progress == null || !progress.IsCompleted || progress.RewardClaimed)
         {
             return false;
         }
 
-        EverWind.Gameplay.GameplayIntegration.Active.Claim(questId);
-        return true;
+        return RequestClaim?.Invoke(questId) ?? false;
     }
 
     private void SyncQuestTable()
@@ -170,87 +145,6 @@ public class QuestManager : SingletonBase<QuestManager>
         _isInitializing = false;
     }
 
-    private void HandleCombatEnemyKilled(int targetId, int amount)
-    {
-        if (targetId < 0)
-        {
-            Debug.LogWarning("Quest progress skipped: combat target ID could not be resolved.");
-            return;
-        }
-
-        ApplyProgress(Quest.QuestConditionType.Combat, targetId, amount);
-    }
-
-    private void HandleGatherCompleted(int targetId, int amount)
-    {
-        if (targetId < 0)
-        {
-            Debug.LogWarning("Quest progress skipped: gather target ID could not be resolved.");
-            return;
-        }
-
-        ApplyProgress(Quest.QuestConditionType.Gather, targetId, amount);
-    }
-
-    private void HandleCraftCompleted(int targetId, int amount)
-    {
-        if (targetId < 0)
-        {
-            Debug.LogWarning("Quest progress skipped: craft target ID could not be resolved.");
-            return;
-        }
-
-        ApplyProgress(Quest.QuestConditionType.Craft, targetId, amount);
-    }
-
-    private void ApplyProgress(Quest.QuestConditionType conditionType, int targetId, int amount)
-    {
-        for (int i = 0; i < _activeQuests.Count; i++)
-        {
-            QuestProgressData questProgress = _activeQuests[i];
-            if (questProgress.Quest == null)
-                continue;
-
-            bool wasCompleted = questProgress.IsCompleted;
-            bool hasMatchedCondition = false;
-            bool questCompleted = true;
-
-            for (int j = 0; j < questProgress.Quest.Conditions.Count; j++)
-            {
-                Quest.QuestRequirement condition = questProgress.Quest.Conditions[j];
-
-                if (condition.ConditionType == conditionType &&
-                    (condition.TargetId == 0 || condition.TargetId == targetId))
-                {
-                    hasMatchedCondition = true;
-                    int newCount = questProgress.CurrentCounts[j] + amount;
-                    questProgress.CurrentCounts[j] = Mathf.Min(newCount, condition.RequiredCount);
-                }
-
-                if (questProgress.CurrentCounts[j] < condition.RequiredCount)
-                {
-                    questCompleted = false;
-                }
-            }
-
-            questProgress.IsCompleted = questCompleted;
-
-            if (!hasMatchedCondition)
-                continue;
-
-            if (questProgress.IsCompleted && !wasCompleted)
-            {
-                Debug.Log($"Quest completed: {questProgress.Quest.QuestName} (ID: {questProgress.Quest.QuestId})");
-            }
-            else
-            {
-                Debug.Log($"Quest in progress: {questProgress.Quest.QuestName} (ID: {questProgress.Quest.QuestId})");
-            }
-        }
-
-        
-    }
-
     private QuestProgressData FindQuestProgress(int questId)
     {
         for (int i = 0; i < _activeQuests.Count; i++)
@@ -269,5 +163,3 @@ public class QuestManager : SingletonBase<QuestManager>
         progress.IsCompleted=completed;progress.RewardClaimed=claimed;
     }
 }
-
-    

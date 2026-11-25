@@ -21,9 +21,14 @@ Error AttackRangeValidator::Validate(const ValidationContext &context) const
     auto target = world.Target(c.request.target, c.player.map);
     auto skill = c.player.FindSkill(c.request.definition);
 
-    if (skill && skill->definition->kind == SkillKind::Area && !skill->definition->requiresTarget)
+    if (skill && skill->definition->ro)
     {
-        return Error::None;
+        const auto &point = c.request.position;
+
+        if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z) || std::abs(point.y - c.player.p.y) > 10 || Distance(c.player.p, point) > skill->definition->reach + c.player.radius)
+        {
+            return Error::OutOfRange;
+        }
     }
 
     if (!target)

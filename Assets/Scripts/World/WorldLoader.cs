@@ -26,6 +26,7 @@ public class WorldLoader : SingletonBase<WorldLoader>
     public ServerTransmitterManager Registry;
 
     public Canvas LoadingCanvas;
+    private Action releaseSceneConnections;
 
     public TMPro.TMP_Text LoadingLabel;
 
@@ -116,6 +117,7 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
             yield break;
         }
+        BindSceneConnections();
         // 씬 초기화가 완료된 뒤 수신 데이터를 재생한다.
         yield return null;
 
@@ -195,6 +197,74 @@ public class WorldLoader : SingletonBase<WorldLoader>
         StartCoroutine(SpawnWhenReady(message, Container.Generation));
     }
 
+    // 씬 조립 시에만 구체 객체를 찾아 연결하고, 실행 중 교환은 값과 콜백으로 한다.
+    private void BindSceneConnections()
+    {
+        releaseSceneConnections?.Invoke();
+        releaseSceneConnections = null;
+
+        var registry = Registry;
+        var gameplay = registry.GetComponent<GameplayIntegration>();
+        var tutorial = FindSceneComponent<TutorialGuide>(registry.gameObject.scene);
+        var camera = FindSceneComponent<GameplayCameraController>(registry.gameObject.scene);
+        var input = gameplay != null ? gameplay.Input : null;
+        var quests = gameplay != null ? gameplay.Quests : null;
+
+        Func<int> readPhase = () => tutorial != null && tutorial.HasActiveTutorial() ? (int)tutorial.GetTutorialStepType() : -1;
+        Action<int, ushort> applyStep = (phase, evidence) =>
+        {
+            if (tutorial != null) tutorial.ApplyServerStep(phase, evidence);
+        };
+        Action<int> advance = phase =>
+        {
+            if (gameplay != null) gameplay.AdvanceTutorial(phase);
+        };
+        Action exitMap = () =>
+        {
+            if (gameplay != null) gameplay.Send(new Request { Kind = RequestKind.ChangeMap, Definition = 1 });
+        };
+        Func<int, bool> claim = id =>
+        {
+            if (gameplay == null || gameplay.Player == null) return false;
+            gameplay.Claim(id);
+            return true;
+        };
+
+        if (input != null) input.ReadTutorialPhase = readPhase;
+        if (camera != null) camera.Registry = registry;
+        if (gameplay != null) gameplay.ApplyTutorialStep = applyStep;
+        if (tutorial != null)
+        {
+            tutorial.RequestAdvance = advance;
+            tutorial.RequestExitMap = exitMap;
+        }
+        if (quests != null) quests.RequestClaim = claim;
+
+        // 맵 교체나 종료 시 이전 씬을 캡처한 콜백을 해제한다. 새 연결은 지우지 않는다.
+        releaseSceneConnections = () =>
+        {
+            if (input != null && input.ReadTutorialPhase == readPhase) input.ReadTutorialPhase = null;
+            if (camera != null && camera.Registry == registry) camera.Registry = null;
+            if (gameplay != null && gameplay.ApplyTutorialStep == applyStep) gameplay.ApplyTutorialStep = null;
+            if (tutorial != null)
+            {
+                if (tutorial.RequestAdvance == advance) tutorial.RequestAdvance = null;
+                if (tutorial.RequestExitMap == exitMap) tutorial.RequestExitMap = null;
+            }
+            if (quests != null && quests.RequestClaim == claim) quests.RequestClaim = null;
+        };
+    }
+
+    private static T FindSceneComponent<T>(Scene scene) where T : Component
+    {
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            var component = root.GetComponentInChildren<T>();
+            if (component != null) return component;
+        }
+        return null;
+    }
+
     private IEnumerator SpawnWhenReady(ServerMessage message, int version)
     {
         yield return Container.PrepareEntity(message, version);
@@ -257,6 +327,8 @@ public class WorldLoader : SingletonBase<WorldLoader>
 
     public void ClearWorld()
     {
+        releaseSceneConnections?.Invoke();
+        releaseSceneConnections = null;
         StopAllCoroutines();
 
         waiting.Clear();
@@ -536,7 +608,16 @@ public class WorldLoader : SingletonBase<WorldLoader>
         {
             if (actor is AliveServerTransmitter alive)
             {
-                alive.ConfigureVisual(profile, root.GetComponentInChildren<Animator>());
+                var gameplay = Registry.GetComponent<GameplayIntegration>();
+                Action<Vector3, ServerMessage> reportDamage = gameplay == null ? null : (position, message) =>
+                {
+                    if (gameplay != null) gameplay.ShowDamage(position, message);
+                };
+                Action<int, Vector3> playSwing = gameplay == null ? null : (skill, position) =>
+                {
+                    if (gameplay != null) gameplay.PlaySwing(skill, position);
+                };
+                alive.ConfigureVisual(profile, root.GetComponentInChildren<Animator>(), reportDamage, playSwing);
             }
 
             if (kind == EntityKind.Player && m.Entity == Transport.LocalEntityId)
@@ -556,6 +637,9 @@ public class WorldLoader : SingletonBase<WorldLoader>
                 control.Actor = (PlayerServerTransmitter)actor;
 
                 control.Motor = motor;
+                control.AllowFallbackCraftInput = Registry.GetComponent<GameplayIntegration>() == null;
+                control.RouteSkillInputToUI = Registry.GetComponent<InGameUIBridge>() != null;
+                ((PlayerServerTransmitter)actor).Controller = control;
             }
         }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,6 +14,11 @@ public enum TutorialStep
 
 public class TutorialGuide : MonoBehaviour
 {
+    public Action<int> RequestAdvance;
+    public Action RequestExitMap;
+    public TextRenderManager TextRenderer;
+    private bool presentationCleared;
+    public void MarkPresentationCleared() => presentationCleared = true;
     private bool applyingServer;
     private ITutorialStep _currentStep;
     private TutorialStep _currentStepType;
@@ -25,11 +31,12 @@ public class TutorialGuide : MonoBehaviour
 
     public void TransitionStep(TutorialStep targetState)
     {
-        if (!applyingServer && EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.AdvanceTutorial((int)_currentStepType); return; }
+        if (!applyingServer && RequestAdvance != null) { RequestAdvance((int)_currentStepType); return; }
         if (_currentStep != null)
             _currentStep.ExitStep(this);
 
         _currentStepType = targetState;
+        presentationCleared = false;
         _hasActiveTutorial = true;
         _currentStep = _stateTable[targetState];
         _currentStep.EnterStep(this);
@@ -54,13 +61,14 @@ public class TutorialGuide : MonoBehaviour
     {
         if (_currentStep != null)
         {
+            if (TextRenderer != null && !TextRenderer.HasFinishedStage((int)_currentStepType, presentationCleared)) return;
             _currentStep.UpdateStep(this, _inputManager);
         }
     }
 
     public void CompleteTutorial()
     {
-        if (!applyingServer && EverWind.Gameplay.GameplayIntegration.Active != null) { EverWind.Gameplay.GameplayIntegration.Active.AdvanceTutorial(5); return; }
+        if (!applyingServer && RequestAdvance != null) { RequestAdvance(5); return; }
         if (_currentStep != null)
         {
             _currentStep.ExitStep(this);
@@ -79,16 +87,30 @@ public class TutorialGuide : MonoBehaviour
     {
         return _hasActiveTutorial;
     }
-    public void ApplyServerStep(int phase)
+    public void ApplyServerStep(int phase, ushort evidence = 0)
     {
-        if(_hasActiveTutorial && phase==(int)_currentStepType)return;
-        bool completed=_hasActiveTutorial && _currentStepType==TutorialStep.Equip && phase<0;
-        applyingServer=true;
-        if(phase<0)CompleteTutorial();else TransitionStep((TutorialStep)phase);
-        applyingServer=false;
-        if(completed) EverWind.Gameplay.GameplayIntegration.Active.Send(new EverWind.Gameplay.Request{Kind=EverWind.Gameplay.RequestKind.ChangeMap,Definition=1});
+        if (phase < -1 || phase >= _stateTable.Count) return;
+        bool same = _hasActiveTutorial && phase == (int)_currentStepType;
+        bool completed = _hasActiveTutorial && _currentStepType == TutorialStep.Equip && phase < 0;
+        if (!same)
+        {
+            applyingServer = true;
+            if (phase < 0) CompleteTutorial(); else TransitionStep((TutorialStep)phase);
+            applyingServer = false;
+        }
+        if (phase > 0 && (evidence & (1 << phase)) != 0)
+        {
+            presentationCleared = true;
+            _currentStep?.ClearEvent(this);
+        }
+        if (completed) RequestExitMap?.Invoke();
     }
-    private void OnDestroy(){_currentStep?.ExitStep(this);}
+    private void OnDestroy()
+    {
+        _currentStep?.ExitStep(this);
+        RequestAdvance = null;
+        RequestExitMap = null;
+    }
 }
 
 

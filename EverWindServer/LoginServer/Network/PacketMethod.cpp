@@ -1,4 +1,5 @@
 #include "PacketMethod.h"
+#include "GameplayPackets.h"
 #include "../Validation/PacketValidator.h"
 #include "../Validation/Validation.h"
 #include <cstring>
@@ -357,61 +358,64 @@ bool PacketMethod::HandlePacket(Session *session, const NetPackets::PacketHeader
         return false;
     }
 
-    if (header.Id == RequestPacket)
+    if (RequestPayloadSize(header.Id))
     {
         Request request;
 
-        std::memcpy(&request, payload, sizeof request);
+        if (!DecodeRequest(header.Id, payload, size, request))
+        {
+            return false;
+        }
 
         if (Validation::Chain().Then<PacketValidator>().Check(ValidationContext::ForRequest(request)) != Error::None)
         {
             return maps.Enqueue(MakeGameWork(*session, request), nullptr);
         }
 
-        switch (request.kind)
+        switch (static_cast<NetPackets::PacketId>(header.Id))
         {
-        case RequestKind::Join:
+        case NetPackets::PacketId::C2S_JOIN_REQUEST:
             return HandleJoinPacket(*session, request);
-        case RequestKind::Move:
+        case NetPackets::PacketId::C2S_MOVE_REQUEST:
             return HandleMovePacket(*session, request);
-        case RequestKind::Mode:
+        case NetPackets::PacketId::C2S_MODE_REQUEST:
             return HandleModePacket(*session, request);
-        case RequestKind::Attack:
+        case NetPackets::PacketId::C2S_ATTACK_REQUEST:
             return HandleAttackPacket(*session, request);
-        case RequestKind::AttackTargets:
+        case NetPackets::PacketId::C2S_ATTACK_TARGETS_REQUEST:
             return HandleAttackTargetsPacket(*session, request);
-        case RequestKind::UpgradeStat:
-        case RequestKind::UpgradeSkill:
-        case RequestKind::ResetStats:
-        case RequestKind::ResetSkills:
+        case NetPackets::PacketId::C2S_UPGRADE_STAT_REQUEST:
+        case NetPackets::PacketId::C2S_UPGRADE_SKILL_REQUEST:
+        case NetPackets::PacketId::C2S_RESET_STATS_REQUEST:
+        case NetPackets::PacketId::C2S_RESET_SKILLS_REQUEST:
             return HandleGrowthPacket(*session, request);
-        case RequestKind::Gather:
+        case NetPackets::PacketId::C2S_GATHER_REQUEST:
             return HandleGatherPacket(*session, request);
-        case RequestKind::Craft:
+        case NetPackets::PacketId::C2S_CRAFT_REQUEST:
             return HandleCraftPacket(*session, request);
-        case RequestKind::Cancel:
+        case NetPackets::PacketId::C2S_CANCEL_REQUEST:
             return HandleCancelPacket(*session, request);
-        case RequestKind::ChangeMap:
+        case NetPackets::PacketId::C2S_CHANGE_MAP_REQUEST:
             return HandleChangeMapPacket(*session, request);
-        case RequestKind::Revive:
+        case NetPackets::PacketId::C2S_REVIVE_REQUEST:
             return HandleRevivePacket(*session, request);
-        case RequestKind::Probe:
+        case NetPackets::PacketId::C2S_PROBE_REQUEST:
             return HandleProbePacket(*session, request);
-        case RequestKind::UseItem:
+        case NetPackets::PacketId::C2S_USE_ITEM_REQUEST:
             return HandleUseItemPacket(*session, request);
-        case RequestKind::Equip:
+        case NetPackets::PacketId::C2S_EQUIP_REQUEST:
             return HandleEquipPacket(*session, request);
-        case RequestKind::Unequip:
+        case NetPackets::PacketId::C2S_UNEQUIP_REQUEST:
             return HandleUnequipPacket(*session, request);
-        case RequestKind::ClaimQuest:
+        case NetPackets::PacketId::C2S_CLAIM_QUEST_REQUEST:
             return HandleClaimQuestPacket(*session, request);
-        case RequestKind::ResourceRefill:
+        case NetPackets::PacketId::C2S_RESOURCE_REFILL_REQUEST:
             return HandleResourceRefillPacket(*session, request);
-        case RequestKind::Tutorial:
+        case NetPackets::PacketId::C2S_TUTORIAL_REQUEST:
             return HandleTutorialPacket(*session, request);
-        case RequestKind::Save:
+        case NetPackets::PacketId::C2S_SAVE_REQUEST:
             return HandleSavePacket(*session, request);
-        case RequestKind::Logout:
+        case NetPackets::PacketId::C2S_LOGOUT_REQUEST:
             return HandleLogoutPacket(*session, request);
         }
 

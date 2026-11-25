@@ -162,6 +162,7 @@
     <ClInclude Include="Gameplay\Map\Map.h" />
     <ClInclude Include="Gameplay\Map\MapManager.h" />
     <ClInclude Include="Gameplay\Map\RefillSystem.h" />
+    <ClInclude Include="Network\GameplayPackets.h" />
     <ClInclude Include="Network\IOCPServer.h" />
     <ClInclude Include="Network\IOContext.h" />
     <ClInclude Include="Network\Packet.h" />

@@ -15,7 +15,7 @@ class GameplayProcessor
 
     RefillSystem &refill;
 
-    void Start(Actor &a, ActionKind kind, int target, int definition, float duration, float impact, uint64_t req = 0);
+    void Start(Actor &a, ActionKind kind, int target, int definition, float duration, float impact, uint64_t req = 0, Vec3 center = {});
 
     void Broadcast(int map, Event e);
 
@@ -47,13 +47,14 @@ class GameplayProcessor
 
     void TutorialState(Player &p);
 
-    void Activity(Player &p, int kind, int target);
+    void RecordProgress(Player &p, int kind, int target);
 
     void Progress(Player &p, int kind, int target);
 
     bool Save(Player &p, bool force = false);
 
     Error SaveAndReply(Player &p, const Request &r);
+
   public:
     explicit GameplayProcessor(MapManager &state, RefillSystem &refillSystem);
 

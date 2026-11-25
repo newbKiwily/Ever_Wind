@@ -8,13 +8,14 @@ using System.Text.RegularExpressions;
 
 namespace EverWind.EntityEditing
 {
-    // 엔티티 행만 편집하고 나머지 정의와 주석은 원문 그대로 보존한다.
+    // 지정한 콘텐츠 행만 편집하고 나머지 정의와 주석은 원문 그대로 보존한다.
     public sealed class EntityContentFile
     {
         readonly string original;
         readonly string newline;
         readonly string[] lines;
         readonly Dictionary<string, Dictionary<int, string[]>> rows = new Dictionary<string, Dictionary<int, string[]>>();
+        readonly Dictionary<int, List<string[]>> ingredients = new Dictionary<int, List<string[]>>();
         static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
 
         public EntityContentFile(string text)
@@ -34,10 +35,18 @@ namespace EverWind.EntityEditing
                     format = true;
                     continue;
                 }
-                if (p[0] != "monster" && p[0] != "resource" && p[0] != "item" && p[0] != "skill" && p[0] != "player") continue;
-                int expected = p[0] == "monster" ? 11 : p[0] == "resource" ? 7 : p[0] == "player" ? 3 : p[0] == "item" ? 9 : 12;
+                if (p[0] != "monster" && p[0] != "resource" && p[0] != "item" && p[0] != "skill" && p[0] != "player" && p[0] != "recipe" && p[0] != "ingredient") continue;
+                int expected = p[0] == "monster" ? 11 : p[0] == "resource" ? 7 : p[0] == "player" ? 3 : p[0] == "item" ? 9 : p[0] == "skill" ? 12 : 5;
                 if (p.Length != expected) throw new InvalidOperationException("기존 콘텐츠 행의 필드 수가 잘못되었습니다: " + value);
                 int id = p[0] == "player" ? 0 : int.Parse(p[1], Culture);
+                if (p[0] == "ingredient")
+                {
+                    if (!Has("recipe", id)) throw new InvalidOperationException("재료 행보다 제작법 정의가 먼저 있어야 합니다: " + id);
+                    if (!ingredients.TryGetValue(id, out var list)) ingredients.Add(id, list = new List<string[]>());
+                    if (int.Parse(p[2], Culture) != list.Count) throw new InvalidOperationException("제작 재료 인덱스는 0부터 연속이어야 합니다: " + id);
+                    list.Add(p);
+                    continue;
+                }
                 if (!rows.TryGetValue(p[0], out var group)) rows.Add(p[0], group = new Dictionary<int, string[]>());
                 if (group.ContainsKey(id)) throw new InvalidOperationException("기존 콘텐츠 ID 중복: " + p[0] + " " + id);
                 group.Add(id, p);
@@ -50,6 +59,36 @@ namespace EverWind.EntityEditing
         public IEnumerable<string[]> Rows(string type) => rows.TryGetValue(type, out var group) ? group.Values : Enumerable.Empty<string[]>();
         public int NextId(string type) => Rows(type).Select(p => int.Parse(p[1], Culture)).DefaultIfEmpty(0).Max() + 1;
         public int NextVisualId() => Rows("monster").Select(p => int.Parse(p[2], Culture)).DefaultIfEmpty(-1).Max() + 1;
+
+        public string[] Row(string type, int id)
+        {
+            if (!Has(type, id)) throw new InvalidOperationException("콘텐츠 정의가 없습니다: " + type + " " + id);
+            return rows[type][id];
+        }
+
+        public string Upsert(string type, int id, IEnumerable<string> replacement, bool replace)
+        {
+            if (type != "item" && type != "recipe" && type != "resource" && type != "skill") throw new InvalidOperationException("지원하지 않는 편집 행입니다.");
+            if (Has(type, id) != replace) throw new InvalidOperationException(replace ? "수정할 서버 정의가 없습니다." : "이미 사용 중인 서버 정의 ID입니다.");
+            string[] block = replacement.ToArray();
+            if (block.Length == 0) throw new InvalidOperationException("저장할 콘텐츠 행이 없습니다.");
+            string result;
+            if (!replace) result = original + (original.EndsWith("\n") ? "" : newline) + string.Join(newline, block) + newline;
+            else
+            {
+                var output = new List<string>();
+                foreach (string line in lines)
+                {
+                    var p = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                    bool match = p.Length > 1 && int.TryParse(p[1], out int lineId) && lineId == id;
+                    if (match && p[0] == type) output.AddRange(block);
+                    else if (!(match && (type == "recipe" && p[0] == "ingredient" || type == "skill" && (p[0] == "skillhit" || p[0] == "skillro" || p[0] == "skillrank")))) output.Add(line);
+                }
+                result = string.Join(newline, output);
+            }
+            new EntityContentFile(result);
+            return result;
+        }
 
         public void Validate(EntityEditorData data)
         {

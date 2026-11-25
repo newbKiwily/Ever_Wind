@@ -11,7 +11,7 @@ using UnityEngine;
 namespace EverWind.Gameplay
 {
 [DefaultExecutionOrder(-150)]
-public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
+public sealed class GameplayIntegration : MonoBehaviour
 {
     public static GameplayIntegration Active { get; private set; }
     public ServerTransmitterManager Registry;
@@ -20,7 +20,7 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
 
     public QuestManager Quests;
 
-    public TutorialGuide Tutorial;
+    public Action<int, ushort> ApplyTutorialStep;
 
     public EffectManager Effects;
 
@@ -29,6 +29,8 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
     public PlayerServerTransmitter Player => Registry.LocalActor;
 
     public int TutorialPhase { get; private set; } = -1;
+    public ushort TutorialEvidence { get; private set; }
+    public bool CameraTutorialCompleted => cameraDone;
 
     public int EscapeConsumedFrame { get; private set; } = -1;
 
@@ -44,16 +46,12 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
     readonly HashSet<string> hits = new HashSet<string>();
 
     bool initialized;
+    ActionKind profileAction;
+    ulong profileActionId;
 
     float cameraTime;
 
     bool cameraDone;
-
-    public event Action<HealthChanged> HealthChanged;
-
-    public event Action<SkillCooldownChanged> SkillCooldownChanged;
-
-    public event Action<GameplayFeedback> Feedback;
 
     public HealthChanged CurrentHealth => new HealthChanged { Entity = Player != null ? Player.EntityId : 0, Hp = Player != null ? Player.Hp : 0, MaxHp = Player != null ? Player.MaxHp : 0 };
 
@@ -83,7 +81,6 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
 
         Registry.Transport = session.Transport;
 
-        Registry.Transport.Message += Receive;
     }
 
     IEnumerator Start()
@@ -104,7 +101,7 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
             Handle(queued.Dequeue());
     }
 
-    void Receive(ServerMessage m)
+    public void Receive(ServerMessage m)
     {
         if (!initialized)
         {
@@ -119,9 +116,18 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
     void Handle(ServerMessage m)
     {
         bool own = m.Entity == Registry.Transport.LocalEntityId;
+        if (own && m.Kind == EventKind.Hit) PlayEvents.EvUIProfile(UIProfileState.Hit, .4f);
+        if (own && m.Kind == EventKind.ActionStarted) { profileAction = (ActionKind)m.Code; profileActionId = m.ActionId; }
+        if (own && (m.Kind == EventKind.ActionEnded || m.Kind == EventKind.ActionCancelled) && m.ActionId == profileActionId)
+        {
+            if (m.Kind == EventKind.ActionEnded && (profileAction == ActionKind.Gather || profileAction == ActionKind.Craft))
+                PlayEvents.EvUIProfile(UIProfileState.Success, 1f);
+            profileAction = ActionKind.None; profileActionId = 0;
+        }
 
         if (m.Kind == EventKind.Welcome)
         {
+            profileAction = ActionKind.None; profileActionId = 0;
             Equipment.Clear();
             cooldowns.Clear();
             hits.Clear();
@@ -142,13 +148,9 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
         if (m.Kind == EventKind.Tutorial && own)
         {
             TutorialPhase = m.Definition;
+            TutorialEvidence = m.Flags;
 
-            Tutorial.ApplyServerStep(TutorialPhase);
-        }
-
-        if (own && (m.Kind == EventKind.Stats || m.Kind == EventKind.State || m.Kind == EventKind.Hit))
-        {
-            HealthChanged?.Invoke(new HealthChanged { Entity = m.Entity, Hp = m.Hp, MaxHp = m.MaxHp });
+            ApplyTutorialStep?.Invoke(TutorialPhase, m.Flags);
         }
 
         if (m.Kind == EventKind.Stats && own)
@@ -156,68 +158,13 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
             ReviveRemaining = m.Duration;
         }
 
-        if (m.Kind == EventKind.Hit && own)
-        {
-            Feedback?.Invoke(GameplayFeedback.Hit);
-        }
-
         if (m.Kind == EventKind.ActionStarted && own && (ActionKind)m.Code == ActionKind.Attack)
         {
             float cooldown = Registry.Progression.Skills.TryGetValue(m.Definition, out PlayerProgression.SkillProgress progress) ? progress.Cooldown : Catalog.Cooldown(m.Definition);
             cooldowns[m.Definition] = m.ServerTime + cooldown;
 
-            SkillCooldownChanged?.Invoke(GetSkillCooldown(m.Definition));
         }
 
-        if (m.Kind == EventKind.SkillRank && own)
-        {
-            SkillCooldownChanged?.Invoke(new SkillCooldownChanged { Skill = m.Definition, EndsAt = m.ServerTime + m.HitTime, Duration = m.Duration });
-        }
-
-        if (m.Kind == EventKind.ActionEnded && own && (ActionKind)m.Code == ActionKind.Craft)
-        {
-            Feedback?.Invoke(GameplayFeedback.Success);
-        }
-
-        if (m.Kind == EventKind.Activity && own)
-        {
-            if (m.Code == 0)
-            {
-                PlayEvents.EvCombatEnemyKilled(m.Target);
-            }
-
-            if (m.Code == 1)
-            {
-                PlayEvents.EvGatherCompleted(m.Target);
-
-                PlayEvents.EvInteractionCompleted();
-            }
-
-            if (m.Code == 2)
-            {
-                PlayEvents.EvCraftCompleted(m.Target);
-            }
-
-            if (m.Code == 3)
-            {
-                PlayEvents.EvEquipCompleted();
-            }
-
-            if (m.Code == 4)
-            {
-                PlayEvents.EvMoveCompleted();
-            }
-        }
-
-        if (m.Kind == EventKind.SnapshotEnd)
-        {
-            HealthChanged?.Invoke(CurrentHealth);
-
-            foreach (var skill in Catalog.Skills)
-            {
-                SkillCooldownChanged?.Invoke(GetSkillCooldown(skill.Id));
-            }
-        }
     }
 
     void LateUpdate()
@@ -265,6 +212,7 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
             if (m.Error != ResultCode.None)
             {
                 LastMessage = m.Error.ToString();
+                PlayEvents.EvUINotice(LastMessage);
 
                 Debug.Log("[Gameplay] " + r.Kind + ": " + m.Error);
 
@@ -318,7 +266,7 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
         }
     }
 
-    public void ShowDamage(ServerTransmitter actor, ServerMessage m)
+    public void ShowDamage(Vector3 position, ServerMessage m)
     {
         string key = m.Epoch + ":" + m.ActionId + ":" + m.Entity;
 
@@ -332,7 +280,8 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
             hits.Clear();
         }
 
-        Effects.PlayEffect("Damaged", actor.transform.position);
+        Effects.PlayEffect("Damaged", position);
+        if (Camera.main != null) PlayEvents.EvUIDamage(new UIDamageData { ScreenPosition = Camera.main.WorldToScreenPoint(position + Vector3.up * 1.5f), Amount = Mathf.RoundToInt(m.Value) });
     }
 
     public void PlaySwing(int skill, Vector3 p)
@@ -345,11 +294,7 @@ public sealed class GameplayIntegration : MonoBehaviour, IGameplayEventSource
 
     void OnDestroy()
     {
-        if (Registry.Transport != null)
-        {
-            Registry.Transport.Message -= Receive;
-        }
-
+        ApplyTutorialStep = null;
         if (Active == this)
         {
             Active = null;

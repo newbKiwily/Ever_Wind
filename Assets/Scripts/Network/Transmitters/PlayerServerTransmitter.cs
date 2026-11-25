@@ -12,6 +12,7 @@ public sealed class PlayerServerTransmitter : AliveServerTransmitter
     private readonly Dictionary<uint, Vector3> predicted = new Dictionary<uint, Vector3>();
 
     public PlayerStateContext State { get; } = new PlayerStateContext();
+    public PlayerActionController Controller;
 
     public override bool IsLocal => Transport != null && Transport.LocalEntityId == EntityId;
 
@@ -33,6 +34,7 @@ public sealed class PlayerServerTransmitter : AliveServerTransmitter
         }
 
         base.Receive(message);
+        Controller?.Handle(message);
     }
 
     public Request CreateMoveRequest(Vector3 position)

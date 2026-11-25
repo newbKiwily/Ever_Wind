@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 using UnityEngine.EventSystems;
@@ -6,12 +7,23 @@ using UnityEngine.UI;
 
 public class InputManager : SingletonBase<InputManager>
 {
-    [SerializeField]
-    private TutorialGuide _tutorialGuide;
+    public Func<int> ReadTutorialPhase;
 
     private bool _isRestricted = false;
+    private bool _uiRestricted;
+    private InGamePanel _openPanel;
+    public int UIEscapeConsumedFrame { get; private set; } = -1;
 
-    public override bool IsPersistent => EverWind.Gameplay.GameplayIntegration.Active == null;
+    private void OnEnable() { PlayEvents.UIPanelChanged += ApplyUIPanel; }
+    private void OnDisable() { PlayEvents.UIPanelChanged -= ApplyUIPanel; _uiRestricted = false; _openPanel = InGamePanel.None; }
+    private void ApplyUIPanel(InGamePanel panel)
+    {
+        if (_openPanel != InGamePanel.None && panel == InGamePanel.None && UnityEngine.Input.GetKeyDown(KeyCode.Escape)) UIEscapeConsumedFrame = Time.frameCount;
+        _openPanel = panel;
+        _uiRestricted = panel != InGamePanel.None && panel != InGamePanel.Quest;
+    }
+
+    public override bool IsPersistent => gameObject.scene.name != "InGame";
 
     public static InputManager Current => Instance;
 
@@ -36,16 +48,9 @@ public class InputManager : SingletonBase<InputManager>
 
     public override void Init()
     {
-        if (_tutorialGuide == null)
-        {
-            _tutorialGuide = GameObject.Find("TutorialManager").GetComponent<TutorialGuide>();
-        }
     }
 
-    private bool HasTutorialRestriction()
-    {
-        return _tutorialGuide != null && _tutorialGuide.HasActiveTutorial();
-    }
+    private int TutorialPhase => ReadTutorialPhase?.Invoke() ?? -1;
 
     public bool GetInventoryKeyDown()
     {
@@ -56,7 +61,8 @@ public class InputManager : SingletonBase<InputManager>
 
     public bool GetCraftUIKeyDown()
     {
-        if (HasTutorialRestriction() && (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move || _tutorialGuide.GetTutorialStepType() == TutorialStep.Combat || _tutorialGuide.GetTutorialStepType() == TutorialStep.Interact) || _isRestricted)
+        int phase = TutorialPhase;
+        if ((phase >= 0 && phase <= 3) || _isRestricted)
             return false;
         return Input.GetKeyDown(KeyCode.C);
     }
@@ -80,28 +86,30 @@ public class InputManager : SingletonBase<InputManager>
 
     public float GetHorizontal()
     {
-        if ((HasTutorialRestriction() && _tutorialGuide.GetTutorialStepType() == TutorialStep.Camera) || _isRestricted)
+        if (TutorialPhase == 0 || _isRestricted || _uiRestricted)
             return 0;
         return Input.GetAxis("Horizontal");
     }
 
     public float GetVertical()
     {
-        if ((HasTutorialRestriction() && _tutorialGuide.GetTutorialStepType() == TutorialStep.Camera) || _isRestricted)
+        if (TutorialPhase == 0 || _isRestricted || _uiRestricted)
             return 0;
         return Input.GetAxis("Vertical");
     }
 
     public bool GetInteractDown()
     {
-        if ((HasTutorialRestriction() && (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move || _tutorialGuide.GetTutorialStepType() == TutorialStep.Combat)) || _isRestricted)
+        int phase = TutorialPhase;
+        if ((phase >= 0 && phase <= 2) || _isRestricted || _uiRestricted)
             return false;
         return Input.GetKeyDown(KeyCode.Space);
     }
 
     public bool GetEnterCombatDown()
     {
-        if ((HasTutorialRestriction() && (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move)) || _isRestricted)
+        int phase = TutorialPhase;
+        if ((phase >= 0 && phase <= 1) || _isRestricted || _uiRestricted)
             return false;
         return Input.GetMouseButtonDown(0);
     }
@@ -113,7 +121,8 @@ public class InputManager : SingletonBase<InputManager>
 
     public bool GetChangeTargetDown()
     {
-        if ((HasTutorialRestriction() && (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move)) || _isRestricted)
+        int phase = TutorialPhase;
+        if ((phase >= 0 && phase <= 1) || _isRestricted || _uiRestricted)
             return false;
         return Input.GetKeyDown(KeyCode.E);
     }
@@ -131,7 +140,8 @@ public class InputManager : SingletonBase<InputManager>
 
     public int GetAttackKeyDown()
     {
-        if ((HasTutorialRestriction() && (_tutorialGuide.GetTutorialStepType() == TutorialStep.Camera || _tutorialGuide.GetTutorialStepType() == TutorialStep.Move)) || _isRestricted)
+        int phase = TutorialPhase;
+        if ((phase >= 0 && phase <= 1) || _isRestricted || _uiRestricted)
             return 0;
         for (int i = 1; i <= 5; i++)
         {

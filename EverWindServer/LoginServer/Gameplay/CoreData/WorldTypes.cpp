@@ -114,7 +114,20 @@ Error Geometry(const Map &map, Vec3 from, Vec3 to, float radius, int ignoreActor
 
 bool Same(const Request &a, const Request &b)
 {
-    return std::memcmp(&a, &b, sizeof a) == 0;
+    if (a.targetCount > MaxAttackTargets || a.kind != b.kind || a.requestId != b.requestId || a.epoch != b.epoch || a.revision != b.revision || a.sequence != b.sequence || a.target != b.target || a.definition != b.definition || a.actionId != b.actionId || a.position.x != b.position.x || a.position.y != b.position.y || a.position.z != b.position.z || a.targetCount != b.targetCount)
+    {
+        return false;
+    }
+
+    for (uint16_t i = 0; i < a.targetCount; ++i)
+    {
+        if (a.targets[i] != b.targets[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 // 요청별 검증은 필요한 검사기를 조합하여 구성한다.
 }

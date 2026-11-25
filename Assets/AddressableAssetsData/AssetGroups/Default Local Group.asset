@@ -13,65 +13,44 @@ MonoBehaviour:
   m_Name: Default Local Group
   m_EditorClassIdentifier: 
   m_GroupName: Default Local Group
-  m_Data:
-    m_SerializedData: []
   m_GUID: 48c6a78efd371e344b9cf6e67de2daa0
   m_SerializeEntries:
+  - m_GUID: 059ce1df980ad624e8552e4a12291c31
+    m_Address: Assets/Scripts/GamePlayEdit/Skills/Skill3.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+    m_FolderGuid: 
+  - m_GUID: 0d0d8d59a3fd90c45826e985cfc236e6
+    m_Address: Assets/Scripts/GamePlayEdit/Skills/RO/Skill3RO.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+    m_FolderGuid: 
+  - m_GUID: 16efa336eed4e9e418c3650fa4174b8d
+    m_Address: Assets/Scripts/GamePlayEdit/Skills/NormalAttack.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+    m_FolderGuid: 
+  - m_GUID: 654d620e83d8d9e43b032aa53f279ed6
+    m_Address: Assets/Scripts/GamePlayEdit/Skills/Slash.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+    m_FolderGuid: 
   - m_GUID: 9fc0d4010bbf28b4594072e72b8655ab
     m_Address: InGame
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-    <IsFolder>k__BackingField: 0
-    <BundleFileId>k__BackingField: 
-    <IsInResources>k__BackingField: 0
-    <IsInSceneList>k__BackingField: 0
-    <IsSubAsset>k__BackingField: 0
-    m_CheckedIsScene: 0
-    m_IsScene: 0
-    m_CurrentHash:
-      bytes[0]: 235
-      bytes[1]: 250
-      bytes[2]: 204
-      bytes[3]: 112
-      bytes[4]: 125
-      bytes[5]: 101
-      bytes[6]: 161
-      bytes[7]: 202
-      bytes[8]: 192
-      bytes[9]: 173
-      bytes[10]: 59
-      bytes[11]: 141
-      bytes[12]: 73
-      bytes[13]: 231
-      bytes[14]: 194
-      bytes[15]: 35
-    m_cachedAssetPath: 
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
+    m_FolderGuid: 
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: f5e3eb12700737644a67b0bff88eada7, type: 2}
   m_SchemaSet:
     m_Schemas:
-    - {fileID: 11400000, guid: ac86fce901a3c6141be88b822b2ec45b, type: 2}
     - {fileID: 11400000, guid: f0306894b6ef6a44a91835d1457916e0, type: 2}
-  m_FolderEntryCache: []
-  m_AssetCollectionEntryCache: []
-  <FlaggedDuringContentUpdateRestriction>k__BackingField: 0
-  m_CurrentHash:
-    bytes[0]: 203
-    bytes[1]: 203
-    bytes[2]: 204
-    bytes[3]: 142
-    bytes[4]: 205
-    bytes[5]: 25
-    bytes[6]: 200
-    bytes[7]: 139
-    bytes[8]: 118
-    bytes[9]: 78
-    bytes[10]: 196
-    bytes[11]: 32
-    bytes[12]: 246
-    bytes[13]: 129
-    bytes[14]: 155
-    bytes[15]: 114
+    - {fileID: 11400000, guid: ac86fce901a3c6141be88b822b2ec45b, type: 2}
+    m_SchemaDisplayOrder: []
+  m_IncludeInBuild: 1
+  m_IncludeInBuildMigrated: 1

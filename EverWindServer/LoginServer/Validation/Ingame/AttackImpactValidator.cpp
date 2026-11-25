@@ -22,9 +22,16 @@ Error AttackImpactValidator::Validate(const ValidationContext &context) const
         return Error::Dead;
     }
 
-    if (s.kind == SkillKind::Area && a.kind == EntityKind::Player)
+    if (a.hp <= 0 || t.map != a.map)
     {
-        if (Distance(a.p, t.p) > s.area + a.radius + t.radius)
+        return Error::Dead;
+    }
+
+    if (s.UsesRO() && a.kind == EntityKind::Player)
+    {
+        Vec3 center = a.action.center;
+
+        if (Distance(center, t.p) > s.area + (s.ro ? 0 : a.radius) + t.radius)
         {
             return Error::OutOfRange;
         }

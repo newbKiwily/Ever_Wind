@@ -1,6 +1,6 @@
 using System;
 
-public static class PlayEvents
+public static partial class PlayEvents
 {
     public static event Action<int, int> OnCameraCompleted;
     public static event Action<int, int> OnMoveCompleted;

@@ -16,5 +16,4 @@ MonoBehaviour:
   ItemImage: {fileID: -818760373, guid: 29cc95ba3d500c747b6e0e33802ef900, type: 3}
   IsStackable: 1
   ItemInstruction: Healing HP 30point
-  IsFromEquipmentUI: 0
   HealAmount: 30

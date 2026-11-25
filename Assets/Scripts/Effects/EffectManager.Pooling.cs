@@ -131,7 +131,9 @@ public partial class EffectManager
         effectPoolRoot = null;
     }
 
-    void OnDisable() { ReleaseAllEffects(); }
+    void OnEnable() { PlayEvents.UIEffectPlayRequested += HandleUIEffect; }
+    void HandleUIEffect(Effect prefab, EffectPlayInfo info) { PlayEffect(prefab, info); }
+    void OnDisable() { PlayEvents.UIEffectPlayRequested -= HandleUIEffect; ReleaseAllEffects(); }
 
     protected override void OnDestroy()
     {

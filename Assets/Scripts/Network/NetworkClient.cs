@@ -31,7 +31,6 @@ public class NetworkClient : SingletonBase<NetworkClient>
     public double ServerTime { get; private set; }
     public double EstimatedServerTime => ServerTime + (Time.realtimeSinceStartupAsDouble - receivedAt);
     public override bool IsPersistent => true;
-    public event Action<ServerMessage> Message;
     public event Action Disconnected;
     public event Action<int> SignedUp;
 
@@ -188,7 +187,7 @@ public class NetworkClient : SingletonBase<NetworkClient>
     {
         ushort id = BitConverter.ToUInt16(buffer, 2);
 
-        if (id != Protocol.RequestPacket && id != (ushort)PacketType.C2S_LOGIN_REQ && id != (ushort)PacketType.C2S_SIGNUP_REQ)
+        if (!PacketMethod.IsGameplayRequest(id) && id != (ushort)PacketType.C2S_LOGIN_REQ && id != (ushort)PacketType.C2S_SIGNUP_REQ)
         {
             throw new InvalidOperationException("과거 클라이언트 권위 패킷은 전송할 수 없습니다.");
         }
@@ -286,11 +285,6 @@ public class NetworkClient : SingletonBase<NetworkClient>
         }
 
         return true;
-    }
-
-    public void Publish(ServerMessage message)
-    {
-        Message?.Invoke(message);
     }
 
     public void CompleteWorld()

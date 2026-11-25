@@ -1,5 +1,5 @@
 #include "PacketValidator.h"
-#include "../Network/Packet.h"
+#include "../Network/GameplayPackets.h"
 namespace EverWind::Gameplay
 {
 PacketValidator::PacketValidator(Rule value)
@@ -14,13 +14,9 @@ Error PacketValidator::Validate(const ValidationContext &c) const
 
 Error PacketValidator::Envelope(const ValidationContext &c)
 {
-    size_t expected = 0;
+    size_t expected = RequestPayloadSize(c.id);
 
-    if (c.id == RequestPacket)
-    {
-        expected = sizeof(Request);
-    }
-    else if (c.id == static_cast<uint16_t>(NetPackets::PacketId::C2S_LOGIN_REQ))
+    if (c.id == static_cast<uint16_t>(NetPackets::PacketId::C2S_LOGIN_REQ))
     {
         expected = sizeof(NetPackets::PKT_LOGIN_REQ);
     }
@@ -34,8 +30,8 @@ Error PacketValidator::Envelope(const ValidationContext &c)
         return Error::BadRequest;
     }
 
-    return c.id == RequestPacket && !c.authenticated ? Error::Unauthenticated
-                                                     : Error::None;
+    return RequestPayloadSize(c.id) && !c.authenticated ? Error::Unauthenticated
+                                                        : Error::None;
 }
 
 Error PacketValidator::Contract(const ValidationContext &c)
@@ -60,7 +56,7 @@ Error PacketValidator::Contract(const ValidationContext &c)
         }
     }
 
-    return r.version != ProtocolVersion || !r.requestId ||
+    return !r.requestId ||
                    static_cast<int>(r.kind) < 1 ||
                    static_cast<int>(r.kind) >
                        static_cast<int>(RequestKind::ResetSkills)

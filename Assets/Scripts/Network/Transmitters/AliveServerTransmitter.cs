@@ -4,6 +4,7 @@ namespace EverWind.Gameplay
 {
 public abstract class AliveServerTransmitter : ServerTransmitter
 {
+    protected override void OnDestroy() { Presentation?.Dispose(); base.OnDestroy(); }
     private Vector3 destination;
 
     private bool havePosition;
@@ -42,9 +43,10 @@ public abstract class AliveServerTransmitter : ServerTransmitter
         base.Receive(message);
     }
 
-    public void ConfigureVisual(ActionVisualProfile profile, Animator animator)
+    public void ConfigureVisual(ActionVisualProfile profile, Animator animator, System.Action<Vector3, ServerMessage> reportDamage = null, System.Action<int, Vector3> playSwing = null)
     {
-        Presentation = new AlivePresentation(this, profile, animator);
+        Presentation?.Dispose();
+        Presentation = new AlivePresentation(this, profile, animator, reportDamage, playSwing);
     }
 
     protected virtual void ApplyServerPosition(ServerMessage message)
@@ -92,7 +94,7 @@ public abstract class AliveServerTransmitter : ServerTransmitter
             MaxHp = message.MaxHp;
         }
 
-        if (message.Kind == EventKind.Spawn || message.Kind == EventKind.State || message.Kind == EventKind.Hit || message.Kind == EventKind.ActionStarted || message.Kind == EventKind.ActionEnded || message.Kind == EventKind.ActionCancelled)
+        if (message.Kind == EventKind.Spawn || message.Kind == EventKind.State || message.Kind == EventKind.Hit || message.Kind == EventKind.ActionStarted)
         {
             ApplyMode(message.Mode);
         }
@@ -103,6 +105,7 @@ public abstract class AliveServerTransmitter : ServerTransmitter
         }
         else if ((message.Kind == EventKind.ActionEnded || message.Kind == EventKind.ActionCancelled) && ActionId == message.ActionId)
         {
+            ApplyMode(message.Mode);
             ActionId = 0;
         }
     }

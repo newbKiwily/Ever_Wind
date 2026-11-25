@@ -12,9 +12,6 @@ item 9 "IronBoots" 1 1002 10 0 0 -1242588884
 item 10 "IronGloves" 1 1001 10 0 0 554878635
 item 11 "IronSword" 1 1003 15 0 0 -1471448529
 item 12 "SmallHpPotion" 2 0 0 30 0 131576358
-skill 1 0.8 0.35 1.2 12 0.8 0 10 0 0 1
-skill 2 1.2 0.55 1.8 22 2 2 15 0 0 1
-skill 3 1.2 0.55 2.5 15 2 0 15 3 2 1
 recipe 1 2.5 3 1
 recipe 2 2.5 4 1
 recipe 3 2.5 5 1
@@ -72,23 +69,32 @@ level 17 1940
 level 18 2140
 level 19 2350
 level 20 0
-skillrank 1 1 1 1
-skillrank 1 2 1.1 0.95
-skillrank 1 3 1.2 0.9
-skillrank 1 4 1.3 0.85
-skillrank 1 5 1.4 0.8
-skillrank 2 1 1.5 2
-skillrank 2 2 1.75 1.9
-skillrank 2 3 2 1.8
-skillrank 2 4 2.25 1.7
-skillrank 2 5 2.5 1.6
-skillrank 3 1 1 3
-skillrank 3 2 1.1 2.8
-skillrank 3 3 1.2 2.6
-skillrank 3 4 1.3 2.4
-skillrank 3 5 1.4 2.2
 monster 1 0 10 0 2.5 10 0.7 10 1 1.8
 monster 2 1 10 0 2 10 0.6 10 1 1.8
 resource 1 1 1 0.25 5 5
 resource 2 6 1 0.25 5 10
 resource 3 2 1 0.25 5 10
+skill 1 0.8 0.35 1.2 12 0.8 0 10 0 0 1
+skillhit 1 0 0.35
+skillrank 1 1 1 1
+skillrank 1 2 1.1 0.95
+skillrank 1 3 1.2 0.9
+skillrank 1 4 1.3 0.85
+skillrank 1 5 1.4 0.8
+skill 2 1.3 0.6 1.3 20 1 1 -1 0 0 1
+skillhit 2 0 0.6
+skillhit 2 1 0.62
+skillhit 2 2 0.64
+skillrank 2 1 1 1
+skillrank 2 2 1.1 0.95
+skillrank 2 3 1.2 0.9
+skillrank 2 4 1.3 0.85
+skillrank 2 5 1.4 0.8
+skill 3 1.3 0.7 1.5 15 1 0 -1 2 1 0
+skillhit 3 0 0.7
+skillro 3 2 0.5 0
+skillrank 3 1 1 1
+skillrank 3 2 1.1 0.95
+skillrank 3 3 1.2 0.9
+skillrank 3 4 1.3 0.85
+skillrank 3 5 1.4 0.8

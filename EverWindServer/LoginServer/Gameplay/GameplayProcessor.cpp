@@ -373,6 +373,11 @@ Event GameplayProcessor::ActionEvent(EventKind kind, const Actor &a)
     e.hitTime = static_cast<float>(a.action.impact - a.action.start);
     e.value = static_cast<float>(a.action.start);
 
+    if (a.action.kind == ActionKind::Attack && world.Data().skills.at(a.action.definition).UsesRO())
+    {
+        e.velocity = a.action.center;
+    }
+
     return e;
 }
 
@@ -413,7 +418,7 @@ void GameplayProcessor::Cancel(Actor &a, Error reason)
     Broadcast(a.map, e);
 }
 
-void GameplayProcessor::Start(Actor &a, ActionKind kind, int target, int definition, float duration, float impact, uint64_t req)
+void GameplayProcessor::Start(Actor &a, ActionKind kind, int target, int definition, float duration, float impact, uint64_t req, Vec3 center)
 {
     if (a.kind == EntityKind::Player)
     {
@@ -427,6 +432,18 @@ void GameplayProcessor::Start(Actor &a, ActionKind kind, int target, int definit
     a.action = {world.nextAction++, kind, target,
                 definition, world.now, world.now + duration,
                 world.now + impact, false};
+    a.action.origin = a.p;
+    a.action.center = a.p;
+
+    if (kind == ActionKind::Attack)
+    {
+        const auto &skill = world.Data().skills.at(definition);
+
+        a.action.center = skill.ro ? center : a.p;
+        a.action.targetsByHit.resize(skill.ImpactCount());
+        a.action.reported.resize(skill.ImpactCount(), false);
+    }
+
     auto e = ActionEvent(EventKind::ActionStarted, a);
 
     e.requestId = req;
@@ -480,7 +497,7 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
     int attack = attacker.kind == EntityKind::Player ? static_cast<const Player &>(attacker).AttackPower(world.Data()) : attacker.baseStats.attack;
     int defence = target.kind == EntityKind::Player ? static_cast<const Player &>(target).DefencePower(world.Data()) : target.baseStats.defence;
 
-    float damage = skill.ratio >= 0 ? attack * (attacker.kind == EntityKind::Player ? 1 + skill.ratio / 100.0f : 1) * 100.0f / (100 + defence) : skill.damage;
+    float damage = skill.ratio >= 0 ? attack * (attacker.kind == EntityKind::Player ? 1 + skill.ratio / 100.0f : 1) * 100.0f / (100 + defence) : skill.damage * 100.0f / (100 + defence);
 
     if (attacker.kind == EntityKind::Player)
     {
@@ -526,7 +543,7 @@ void GameplayProcessor::Hit(Actor &attacker, Actor &target, const Skill &skill)
         {
             auto &player = static_cast<Player &>(attacker);
 
-            Activity(player, 0, target.visual);
+            RecordProgress(player, 0, target.visual);
 
             if (player.growth.GainExperience(static_cast<const Monster &>(target).experienceReward, world.Data().growth))
             {
@@ -653,42 +670,56 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
 
     bool waitingForTargets = false;
 
-    if (action.kind == ActionKind::Attack && a.kind == EntityKind::Player)
+    if (action.kind == ActionKind::Attack)
     {
-        const auto &p = static_cast<Player &>(a);
+        const auto skill = a.kind == EntityKind::Player ? static_cast<Player &>(a).EffectiveSkill(action.definition, world.Data()) : world.Data().skills.at(action.definition);
 
-        const auto skill = p.EffectiveSkill(action.definition, world.Data());
-
-        waitingForTargets = skill.kind == SkillKind::Area && p.reportedAttack != action.id;
-    }
-
-    if (action.kind == ActionKind::Attack && !action.hit && !waitingForTargets && world.now >= action.impact)
-    {
-        a.action.hit = true;
-
-        auto t = world.Target(action.target, a.map);
-
-        const auto &skill =
-            a.kind == EntityKind::Player
-                ? static_cast<Player &>(a).EffectiveSkill(action.definition, world.Data())
-                : world.Data().skills.at(action.definition);
-        ValidationContext impact;
-
-        impact.actor = &a;
-
-        impact.skill = &skill;
-
-        impact.space = &m;
-
-        if (skill.kind == SkillKind::Area && a.kind == EntityKind::Player)
+        while (a.action.id == action.id && a.action.nextImpact < skill.ImpactCount())
         {
-            auto &p = static_cast<Player &>(a);
+            size_t index = a.action.nextImpact;
 
-            for (int id : p.attackTargets)
+            double due = action.start + skill.ImpactTime(index);
+
+            if (world.now < due)
             {
+                break;
+            }
+
+            bool reported = a.action.reported.at(index);
+
+            if (skill.UsesRO() && a.kind == EntityKind::Player && !reported)
+            {
+                if (world.now <= due + GameDataHub::AreaTargetReportGraceSeconds)
+                {
+                    waitingForTargets = true;
+
+                    break;
+                }
+
+                ++a.action.nextImpact;
+
+                continue;
+            }
+
+            std::vector<int> targets = skill.UsesRO() && a.kind == EntityKind::Player ? a.action.targetsByHit.at(index) : std::vector<int>{action.target};
+
+            ++a.action.nextImpact;
+
+            for (int id : targets)
+            {
+                if (a.action.id != action.id || a.hp <= 0)
+                {
+                    break;
+                }
+
+                ValidationContext impact;
+
                 auto target = world.Target(id, a.map);
 
+                impact.actor = &a;
                 impact.target = target;
+                impact.skill = &skill;
+                impact.space = &m;
 
                 if (Validation::Chain().Then<AttackImpactValidator>(world).Check(impact) == Error::None)
                 {
@@ -696,22 +727,17 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
                 }
             }
         }
-        else
-        {
-            impact.target = t;
 
-            if (Validation::Chain().Then<AttackImpactValidator>(world).Check(impact) == Error::None)
-            {
-                Hit(a, *t, skill);
-            }
+        if (a.action.id == action.id)
+        {
+            a.action.hit = a.action.nextImpact >= skill.ImpactCount();
         }
     }
-    // 목록 전송 지연을 제한적으로 허용하며 목록이 없으면 명중을 생성하지 않는다.
-    if (waitingForTargets && world.now < action.end + GameDataHub::AreaTargetReportGraceSeconds)
+
+    if (waitingForTargets)
     {
         return;
     }
-
     if (!a.action.id || a.action.id != action.id || world.now < action.end)
     {
         return;
@@ -751,7 +777,7 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
 
         Inventory(p, r.item);
 
-        Activity(p, 1, world.Data().items.count(r.item) ? world.Data().items.at(r.item).gatherKey : r.item);
+        RecordProgress(p, 1, world.Data().items.count(r.item) ? world.Data().items.at(r.item).gatherKey : r.item);
 
         p.dirty = true;
 
@@ -790,7 +816,7 @@ void GameplayProcessor::UpdateActor(Actor &a, double dt)
 
         Inventory(p, r.output);
 
-        Activity(p, 2, world.Data().items.count(r.output) ? world.Data().items.at(r.output).craftKey : r.output);
+        RecordProgress(p, 2, world.Data().items.count(r.output) ? world.Data().items.at(r.output).craftKey : r.output);
 
         p.dirty = true;
     }
@@ -832,7 +858,7 @@ void GameplayProcessor::Advance(double dt)
 
                 if (step.eventKind == 4 && Distance(p->p, step.position) <= step.radius && !(p->TutorialEvidence() & (1u << p->tutorial)))
                 {
-                    Activity(*p, 4, 0);
+                    RecordProgress(*p, 4, 0);
                 }
             }
 
@@ -1014,7 +1040,7 @@ void GameplayProcessor::Progress(Player &p, int kind, int target)
     }
 }
 
-void GameplayProcessor::Activity(Player &p, int kind, int target)
+void GameplayProcessor::RecordProgress(Player &p, int kind, int target)
 {
     if (kind < 3)
     {
@@ -1032,16 +1058,6 @@ void GameplayProcessor::Activity(Player &p, int kind, int target)
             TutorialState(p);
         }
     }
-
-    auto e = Base(EventKind::Activity, p);
-
-    e.code = static_cast<uint16_t>(kind);
-
-    e.target = target;
-
-    e.value = 1;
-
-    SendTo(p, e);
 
     p.dirty = true;
 }
@@ -1150,7 +1166,7 @@ void GameplayProcessor::Connect(int id, Send send, float moveSpeed, const Accoun
 
         p->growth = account.growth;
 
-        if (!p->growth.Valid(world.Data().growth))
+        if (!p->growth.PrepareDevelopmentSkills(world.Data().growth))
         {
             throw std::runtime_error("Invalid saved growth state");
         }
@@ -1393,7 +1409,7 @@ Error GameplayProcessor::HandleAttackRequest(Player &p, const Request &r)
 
     p.FindSkill(r.definition)->cooldownUntil = world.now + s.cooldown;
 
-    Start(p, ActionKind::Attack, r.target, r.definition, s.duration, s.hit, r.requestId);
+    Start(p, ActionKind::Attack, r.target, r.definition, s.duration, s.hit, r.requestId, r.position);
 
     return Error::None;
 }
@@ -1412,28 +1428,29 @@ Error GameplayProcessor::HandleAttackTargetsRequest(Player &p, const Request &r)
 
     const auto skill = p.FindSkill(r.definition);
 
-    if (!skill || skill->definition->kind != SkillKind::Area)
+    if (!skill || !skill->definition->UsesRO() || r.sequence >= skill->definition->ImpactCount())
     {
         return Error::BadRequest;
     }
 
-    if (p.reportedAttack == r.actionId || p.action.hit || world.now > p.action.end + GameDataHub::AreaTargetReportGraceSeconds)
+    size_t index = r.sequence;
+
+    if (p.action.reported.at(index) || index < p.action.nextImpact || world.now > p.action.start + skill->definition->ImpactTime(index) + GameDataHub::AreaTargetReportGraceSeconds)
     {
         return Error::Expired;
     }
 
-    p.attackTargets.clear();
+    auto &targets = p.action.targetsByHit.at(index);
 
     for (uint16_t i = 0; i < r.targetCount; ++i)
     {
-        if (std::find(p.attackTargets.begin(), p.attackTargets.end(), r.targets[i]) == p.attackTargets.end())
+        if (std::find(targets.begin(), targets.end(), r.targets[i]) == targets.end())
         {
-            p.attackTargets.push_back(r.targets[i]);
+            targets.push_back(r.targets[i]);
         }
     }
 
-    p.reportedAttack = r.actionId;
-
+    p.action.reported.at(index) = true;
     return Error::None;
 }
 
@@ -1737,7 +1754,7 @@ Error GameplayProcessor::HandleEquipRequest(Player &p, const Request &r)
 
     Stats(p);
 
-    Activity(p, 3, r.definition);
+    RecordProgress(p, 3, r.definition);
 
     return Error::None;
 }
@@ -2168,7 +2185,7 @@ Error GameplayProcessor::HandleGrowthRequest(Player &p, const Request &r)
     else
     {
         // 무료 초기화로 기존 스킬 쿨다운을 우회하지 못하게 한다.
-        p.growth.ResetSkills();
+        p.growth.ResetSkills(world.Data().growth);
     }
 
     if (error == Error::None)

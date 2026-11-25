@@ -17,9 +17,9 @@ public class EquipmentItem : InventoryItem, IUsableItem
     public EquipmentType Type;
     public int Power;
 
-    public void Use()
+    public void Use(System.Action<InventoryItem> requestUse)
     {
-        EverWind.Gameplay.GameplayIntegration.Active?.Use(this);
+        requestUse?.Invoke(this);
     }
 
 }

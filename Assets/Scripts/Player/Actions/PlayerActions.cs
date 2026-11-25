@@ -224,37 +224,48 @@ public sealed class KnockbackAction : MoveAction
 public sealed class AttackAction : PlayerAction
 {
     public ulong RequestId { get; private set; }
-    public Skill Skill { get; }
+    public SkillDefinition Skill { get; }
+    public PlayerServerTransmitter Actor { get; }
+    public ServerTransmitter Target { get; }
+    public double StartTime { get; private set; }
+    public float Duration { get; private set; }
+    public float LegacyImpact { get; private set; }
+    public int NextHit;
+    public SkillRangeDetector RO;
+    public Vector3 Center { get; private set; }
+    public Quaternion Rotation { get; private set; }
     readonly float reach;
-    public AttackAction(PlayerServerTransmitter actor, ServerTransmitter target, int skill, float reach) : this(actor.Registry.Catalog.Skill(skill)?.Create(actor, target), reach)
+    public AttackAction(PlayerServerTransmitter actor, ServerTransmitter target, int skill, float reach)
     {
-    }
-
-    public AttackAction(Skill skill, float reach)
-    {
-        Skill = skill;
+        Actor = actor; Target = target;
+        Skill = actor.Registry.Catalog.Skill(skill);
         this.reach = reach;
     }
 
     public override void Tick(float dt)
     {
-        if (Result == ActionResult.Running) Skill?.Tick(dt);
+        if (Result == ActionResult.Running) Skill?.Tick(this, dt);
     }
 
     public void StartServerAction(ServerMessage message)
     {
         AttachServerAction(message.ActionId);
-        Skill?.OnStarted(message);
+        StartTime = message.Value; Duration = message.Duration; LegacyImpact = message.HitTime; NextHit = 0;
+        Rotation = Actor.transform.rotation;
+        // 서버가 승인한 RO 기준점을 모든 관찰자가 공유한다.
+        Center = Skill != null && Skill.UsesRO ? message.Velocity : message.Position;
+        Skill?.Begin(this);
     }
 
-    protected override void OnExit() { Skill?.End(Result != ActionResult.Completed); }
+    protected override void OnExit() { Release(); }
+    public void Release() => Skill?.End(this);
 
     public ActionResult TryRequest(Action<ServerMessage> callback)
     {
         if (Skill == null) return ActionResult.Restricted;
-        var check = Skill.CheckRange(reach);
+        var check = Skill.CheckRange(this, reach);
         if (check != ActionResult.Running) return check;
-        RequestId = Skill.RequestUse(callback);
+        RequestId = Actor.Send(new Request { Kind = RequestKind.Attack, Target = Target.EntityId, Definition = Skill.Id, Position = Skill.Center(Actor.transform, Target.transform) }, callback);
         return ActionResult.Waiting;
     }
 }

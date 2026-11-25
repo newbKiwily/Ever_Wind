@@ -1,7 +1,7 @@
 namespace EverWind.Gameplay
 {
-public class SingleTargetSkill : Skill
+public sealed class SingleTargetSkill : SkillDefinition
 {
-    public SingleTargetSkill(PlayerServerTransmitter actor, ServerTransmitter target, SkillDefinition definition) : base(actor, target, definition) { }
+    void OnEnable() { Kind = SkillKind.SingleTarget; RequiresTarget = true; }
 }
 }

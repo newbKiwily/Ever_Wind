@@ -209,7 +209,14 @@ Skill Player::EffectiveSkill(int definitionId, const GameDataHub &data) const
     {
         const auto &definition = it->second[rank - 1];
 
-        result.ratio = (definition.multiplier - 1) * 100;
+        if (result.ratio < 0)
+        {
+            result.damage *= definition.multiplier;
+        }
+        else
+        {
+            result.ratio = (definition.multiplier - 1) * 100;
+        }
 
         result.cooldown = definition.cooldown;
     }

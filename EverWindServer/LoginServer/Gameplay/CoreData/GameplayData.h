@@ -117,6 +117,16 @@ struct Skill
     SkillKind kind = SkillKind::SingleTarget;
 
     bool requiresTarget = true;
+
+    std::vector<float> impacts;
+
+    bool ro = false;
+
+    float spawnDelay = 0;
+
+    bool UsesRO() const { return kind == SkillKind::Area || ro; }
+    size_t ImpactCount() const { return impacts.empty() ? 1 : impacts.size(); }
+    float ImpactTime(size_t index) const { return impacts.empty() ? hit : impacts.at(index); }
 };
 }
 
@@ -133,6 +143,14 @@ struct Action
     double start = 0, end = 0, impact = 0;
 
     bool hit = false;
+
+    size_t nextImpact = 0;
+
+    Vec3 origin{}, center{};
+
+    std::vector<std::vector<int>> targetsByHit;
+
+    std::vector<bool> reported;
 };
 }
 

@@ -32,6 +32,7 @@ public class CameraStep : ITutorialStep
 
     public void ClearEvent(TutorialGuide step)
     {
+        step.MarkPresentationCleared();
         if (_deleteAction != null)
             PlayEvents.OnCameraCompleted -= _deleteAction;
 

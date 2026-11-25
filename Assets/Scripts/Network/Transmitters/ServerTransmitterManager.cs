@@ -21,23 +21,8 @@ public sealed class ServerTransmitterManager : MonoBehaviour
     public string ZoneStatus { get; private set; } = "Outside event zone";
     public PlayerServerTransmitter LocalActor => Transport != null && entities.TryGetValue(Transport.LocalEntityId, out ServerTransmitter actor) ? actor as PlayerServerTransmitter : null;
 
-    private void OnEnable()
-    {
-        Transport = NetworkClient.Current;
-
-        if (Transport != null)
-        {
-            Transport.Message += Receive;
-        }
-    }
-
     private void OnDisable()
     {
-        if (Transport != null)
-        {
-            Transport.Message -= Receive;
-        }
-
         Clear();
     }
 
@@ -72,7 +57,7 @@ public sealed class ServerTransmitterManager : MonoBehaviour
         ZoneStatus = "Outside event zone";
     }
 
-    private void Receive(ServerMessage message)
+    public void Receive(ServerMessage message)
     {
         if (message.Kind == EventKind.Growth || message.Kind == EventKind.SkillRank)
         {

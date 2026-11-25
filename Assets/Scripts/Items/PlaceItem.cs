@@ -5,8 +5,8 @@ public class PlaceItem : ConsumeItem
 {
     public GameObject Placement;
 
-    public override void Use()
+    public override void Use(System.Action<InventoryItem> requestUse)
     {
-        EverWind.Gameplay.GameplayIntegration.Active?.Use(this);
+        requestUse?.Invoke(this);
     }
 }

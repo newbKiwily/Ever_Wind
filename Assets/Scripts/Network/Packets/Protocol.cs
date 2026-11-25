@@ -51,7 +51,6 @@ public enum EventKind : ushort
     Quest,
     Tutorial,
     Saved,
-    Activity,
     Growth,
     SkillRank
 }
@@ -148,45 +147,9 @@ public sealed class ServerMessage
     public PlayerMode Mode;
 }
 
-public interface IServerMessageHandler
-{
-    void Handle(ServerMessage message);
-}
-
 public static class Protocol
 {
-    public const ushort Version = 1, RequestPacket = 0x500, EventPacket = 0x501;
-    public const int MaxAttackTargets = 64, RequestSize = 310, EventSize = 108;
+    public const int MaxAttackTargets = 64;
 }
 
-[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
-public unsafe struct RequestPacket
-{
-    public ushort Version;
-    public RequestKind Kind;
-    public ulong RequestId;
-    public uint Epoch, Revision, Sequence;
-    public int Target, Definition;
-    public ulong ActionId;
-    public float X, Y, Z;
-    public ushort TargetCount;
-    public fixed int Targets[Protocol.MaxAttackTargets];
-}
-
-[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
-public struct EventPacket
-{
-    public ushort Version;
-    public EventKind Kind;
-    public ResultCode Error;
-    public ushort Code;
-    public int Entity, Target, Definition;
-    public uint Epoch, Revision, Sequence;
-    public ulong RequestId, ActionId;
-    public double ServerTime;
-    public float X, Y, Z, VX, VY, VZ;
-    public float Hp, MaxHp, Radius, Duration, HitTime, Value;
-    public PlayerMode Mode;
-    public ushort Flags;
-}
 }

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace EverWind.Gameplay
 {
-public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandler
+public sealed class PlayerActionController : MonoBehaviour
 {
     public PlayerServerTransmitter Actor;
 
@@ -16,6 +16,8 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
     public string LastResult { get; private set; } = "Idle";
 
     public bool AutoApproach = true;
+    public bool AllowFallbackCraftInput = true;
+    public bool RouteSkillInputToUI;
 
     public float TargetRadius = 50;
 
@@ -131,7 +133,7 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
         lastInput = direction;
 
-        if (acceptInput && Input.GetKeyDown(KeyCode.Escape))
+        if (acceptInput && Input.GetKeyDown(KeyCode.Escape) && InputManager.Current.UIEscapeConsumedFrame != Time.frameCount)
         {
             Interrupt();
         }
@@ -142,7 +144,7 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
             ChangeTarget();
         int attackKey = InputManager.Current.GetAttackKeyDown();
 
-        if (acceptInput)
+        if (acceptInput && !RouteSkillInputToUI)
         {
             for (int i = 1; i <= 5; i++)
                 if (attackKey == i)
@@ -156,7 +158,7 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
         if (acceptInput && InputManager.Current.GetInteractDown())
             RequestGather();
-        if (acceptInput && GameplayIntegration.Active == null && Input.GetKeyDown(KeyCode.C))
+        if (acceptInput && AllowFallbackCraftInput && Input.GetKeyDown(KeyCode.C))
         {
             RequestCraft(1);
         }
@@ -279,18 +281,18 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
             LastResult = "Skill is not implemented";
             return;
         }
-        bool needsTarget = definition.Kind != SkillKind.Area || definition.RequiresTarget;
-        if (needsTarget && !IsAvailableMonster(SelectedTarget))
+        // RO 생성 위치와 무관하게 모든 공격은 사거리 확인용 대상을 가진다.
+        if (!IsAvailableMonster(SelectedTarget))
         {
             SelectNearest();
         }
 
-        if (needsTarget && SelectedTarget == null)
+        if (SelectedTarget == null)
         {
             return;
         }
 
-        BeginIntent(RequestKind.Attack, needsTarget ? SelectedTarget.EntityId : 0, skill);
+        BeginIntent(RequestKind.Attack, SelectedTarget.EntityId, skill);
     }
 
     public void RequestGather()
@@ -429,6 +431,12 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
         }
 
         float reach = intentKind == RequestKind.Attack ? Actor.Registry.SkillReach(intentSkill) : 1.2f;
+        if (intentKind == RequestKind.Attack && !IsAvailableMonster(target))
+        {
+            LastResult = ActionResult.TargetLost.ToString();
+            ClearIntent();
+            return;
+        }
 
         if (target != null)
         {
@@ -495,8 +503,7 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
         if (intentKind == RequestKind.Attack)
         {
-            var skill = Actor.Registry.Catalog.Skill(intentSkill)?.Create(Actor, target);
-            var attack = new AttackAction(skill, reach);
+            var attack = new AttackAction(Actor, target, intentSkill, reach);
             pendingAttack = attack;
             var result = attack.TryRequest(cb);
 
@@ -534,7 +541,7 @@ public sealed class PlayerActionController : MonoBehaviour, IServerMessageHandle
 
     void ClearIntent()
     {
-        pendingAttack?.Skill?.End(true);
+        pendingAttack?.Release();
         pendingAttack = null;
         hasIntent = false;
 

@@ -75,6 +75,46 @@ bool GrowthState::Valid(const GrowthRules &rules) const
     return skillSpent + skillPoints == GrowthRules::InitialSkillPoints + (level - 1) * GrowthRules::SkillPointsPerLevel && statSpent + statPoints == GrowthRules::InitialStatPoints + (level - 1) * GrowthRules::StatPointsPerLevel;
 }
 
+bool GrowthState::PrepareDevelopmentSkills(const GrowthRules &rules)
+{
+    if (!Valid(rules) && GrowthRules::DevelopmentSkills)
+    {
+        // 기존 계정은 추가 지급 전의 포인트 총량인지 검증한 뒤 한 번만 보충한다.
+        auto migrated = *this;
+
+        if (migrated.skillPoints <= GrowthRules::InitialSkillPoints + (GrowthRules::MaxLevel - 1) * GrowthRules::SkillPointsPerLevel)
+        {
+            migrated.skillPoints += GrowthRules::DevelopmentSkillPoints;
+
+            if (migrated.Valid(rules))
+            {
+                *this = std::move(migrated);
+            }
+        }
+    }
+
+    if (!Valid(rules))
+    {
+        return false;
+    }
+
+    if (GrowthRules::DevelopmentSkills)
+    {
+        for (int id = 1; id <= 5; ++id)
+        {
+            if (rules.skillRanks.count(id) && SkillRank(id) == 0)
+            {
+                // 아직 정의가 없는 슬롯은 생성 후 다음 접속 때 습득한다.
+                skillRanks[id] = 1;
+
+                --skillPoints;
+            }
+        }
+    }
+
+    return Valid(rules);
+}
+
 bool GrowthState::GainExperience(int amount, const GrowthRules &rules)
 {
     if (amount <= 0 || level >= GrowthRules::MaxLevel)
@@ -139,7 +179,20 @@ Error GrowthState::UpgradeSkill(int id, const GrowthRules &rules)
         return Error::RankLimit;
     }
 
-    if (skillPoints <= 0)
+    int reservedPoints = 0;
+
+    if (GrowthRules::DevelopmentSkills)
+    {
+        for (int slot = 2; slot <= 5; ++slot)
+        {
+            if (SkillRank(slot) == 0 && !rules.skillRanks.count(slot))
+            {
+                ++reservedPoints;
+            }
+        }
+    }
+
+    if (skillPoints <= reservedPoints)
     {
         return Error::InsufficientPoints;
     }
@@ -158,12 +211,14 @@ void GrowthState::ResetStats()
     attackRank = defenceRank = speedRank = 1;
 }
 
-void GrowthState::ResetSkills()
+void GrowthState::ResetSkills(const GrowthRules &rules)
 {
     skillPoints = GrowthRules::InitialSkillPoints + (level - 1) * GrowthRules::SkillPointsPerLevel;
 
     skillRanks.clear();
 
     skillRanks.emplace(1, 1);
+
+    PrepareDevelopmentSkills(rules);
 }
 }

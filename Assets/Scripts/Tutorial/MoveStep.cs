@@ -1,48 +1,44 @@
-using System;
 using UnityEngine;
 
 public class MoveStep : ITutorialStep
 {
-    private Action<int, int> _deleteAction;
-    private GameObject _targetBox;
+    private bool cleared;
+    private GameObject targetBox;
+
     public void EnterStep(TutorialGuide step)
     {
-        // 이동 판정은 서버의 범위 검증을 사용하며 안내 마커는 생성하지 않는다.
-
-        _deleteAction += (_, _) => ClearEvent(step);
-        PlayEvents.OnMoveCompleted += _deleteAction;
-
+        cleared = false;
+        RemoveTarget();
+        if (step.moveT_taretBox != null)
+        {
+            targetBox = Object.Instantiate(step.moveT_taretBox, step.TargetBoxPosition, Quaternion.identity, step.transform);
+            targetBox.SetActive(true);
+        }
     }
 
     public void UpdateStep(TutorialGuide step, InputManager inputManager)
     {
-        if (_deleteAction != null) return;
-
-
-        if (inputManager.AnyKeyDownExcludeMouse())
-        {
-            step.TransitionStep(TutorialStep.Combat);
-        }
+        if (!cleared) return;
+        if (inputManager.AnyKeyDownExcludeMouse()) step.TransitionStep(TutorialStep.Combat);
     }
 
     public void ExitStep(TutorialGuide step)
     {
-        GameObject.Destroy(_targetBox);
-        _targetBox=null;
-        if (_deleteAction != null)
-            PlayEvents.OnMoveCompleted -= _deleteAction;
-
-        _deleteAction = null;
+        RemoveTarget();
+        cleared = false;
     }
 
     public void ClearEvent(TutorialGuide step)
     {
-        if (_deleteAction != null)
-            PlayEvents.OnMoveCompleted -= _deleteAction;
+        RemoveTarget();
+        cleared = true;
+    }
 
-        GameObject.Destroy(_targetBox);
-        _deleteAction = null;
+    private void RemoveTarget()
+    {
+        if (targetBox == null) return;
+        targetBox.SetActive(false);
+        Object.Destroy(targetBox);
+        targetBox = null;
     }
 }
-
-

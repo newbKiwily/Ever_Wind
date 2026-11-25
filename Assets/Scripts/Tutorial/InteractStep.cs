@@ -1,42 +1,25 @@
-using System;
-
 public class InteractStep : ITutorialStep
 {
-    private Action<int, int> _deleteAction;
+    private bool cleared;
 
     public void EnterStep(TutorialGuide step)
     {
-        _deleteAction += (_, _) => ClearEvent(step);
-        PlayEvents.OnInteractionCompleted += _deleteAction;
-
+        cleared = false;
     }
 
     public void UpdateStep(TutorialGuide step, InputManager inputManager)
     {
-        if (_deleteAction != null) return;
-
-
-        if (inputManager.AnyKeyDownExcludeMouse())
-        {
-            step.TransitionStep(TutorialStep.Craft);
-        }
+        if (!cleared) return;
+        if (inputManager.AnyKeyDownExcludeMouse()) step.TransitionStep(TutorialStep.Craft);
     }
 
     public void ExitStep(TutorialGuide step)
     {
-        if (_deleteAction != null)
-            PlayEvents.OnInteractionCompleted -= _deleteAction;
-
-        _deleteAction = null;
+        cleared = false;
     }
 
     public void ClearEvent(TutorialGuide step)
     {
-        if (_deleteAction != null)
-            PlayEvents.OnInteractionCompleted -= _deleteAction;
-
-        _deleteAction = null;
+        cleared = true;
     }
 }
-
-

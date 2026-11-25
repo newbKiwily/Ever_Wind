@@ -4,7 +4,7 @@ const path = require('path');
 const roots = ['EverWindServer/LoginServer'];
 function files(dir) {
     return fs.readdirSync(dir, {withFileTypes: true}).flatMap(entry => entry.isDirectory()
-        ? (['bin','obj'].includes(entry.name)?[]:files(path.join(dir, entry.name)))
+        ? (['bin','obj','Tests'].includes(entry.name)?[]:files(path.join(dir, entry.name)))
         : /\.(h|cpp)$/.test(entry.name) ? [path.join(dir, entry.name)] : []);
 }
 function clean(text) {

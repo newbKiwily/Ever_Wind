@@ -14,7 +14,7 @@ void GameDataHub::Validate() const
 
     for (const auto &[id, m] : monsters)
     {
-        if (!skills.count(m.attackSkill) || (skills.at(m.attackSkill).kind != SkillKind::SingleTarget && skills.at(m.attackSkill).kind != SkillKind::Ranged) || !std::isfinite(m.attackCooldown) || m.attackCooldown < 0 || id <= 0 || m.visual < 0 || m.stats.attack < 0 || m.stats.defence < 0 || m.experience < 0 || !std::isfinite(m.stats.moveSpeed) || m.stats.moveSpeed < 0 || !std::isfinite(m.hp) || m.hp <= 0 || !std::isfinite(m.radius) || m.radius <= 0)
+        if (!skills.count(m.attackSkill) || skills.at(m.attackSkill).UsesRO() || (skills.at(m.attackSkill).kind != SkillKind::SingleTarget && skills.at(m.attackSkill).kind != SkillKind::Ranged) || !std::isfinite(m.attackCooldown) || m.attackCooldown < 0 || id <= 0 || m.visual < 0 || m.stats.attack < 0 || m.stats.defence < 0 || m.experience < 0 || !std::isfinite(m.stats.moveSpeed) || m.stats.moveSpeed < 0 || !std::isfinite(m.hp) || m.hp <= 0 || !std::isfinite(m.radius) || m.radius <= 0)
         {
             throw std::runtime_error("Invalid monster definition");
         }
@@ -45,6 +45,23 @@ void GameDataHub::Validate() const
 
     for (const auto &[id, s] : skills)
     {
+        float previous = -1;
+
+        for (float time : s.impacts)
+        {
+            if (!std::isfinite(time) || time < 0 || time > s.duration || time <= previous)
+            {
+                throw std::runtime_error("Invalid skillhit timing");
+            }
+
+            previous = time;
+        }
+
+        if (s.impacts.size() > 64 || (!s.impacts.empty() && s.impacts.front() != s.hit) || (s.ro && (s.kind != SkillKind::Ranged || !std::isfinite(s.spawnDelay) || s.spawnDelay < 0 || s.spawnDelay > s.hit || s.area <= 0)))
+        {
+            throw std::runtime_error("Invalid skill schedule or RO");
+        }
+
         if (id <= 0 || !std::isfinite(s.push) || !std::isfinite(s.duration) || !std::isfinite(s.hit) || !std::isfinite(s.reach) || !std::isfinite(s.cooldown) || !std::isfinite(s.area) || !std::isfinite(s.ratio) || !std::isfinite(s.damage) || s.duration <= 0 || s.hit < 0 || s.hit > s.duration || s.reach < 0 || s.cooldown < 0 || s.area < 0 || static_cast<unsigned>(s.kind) > static_cast<unsigned>(SkillKind::Buff) || (s.kind == SkillKind::Area && s.area <= 0))
         {
             throw std::runtime_error("Invalid content skill " + std::to_string(id));

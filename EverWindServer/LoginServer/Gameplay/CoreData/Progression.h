@@ -20,7 +20,11 @@ struct SkillRankDefinition
 struct GrowthRules
 {
     static constexpr int MaxLevel = 20, MaxSkillRank = 5, MaxSpeedRank = 5;
-    static constexpr int InitialSkillPoints = 3, InitialStatPoints = 3;
+    // 개발 중에는 2~5번 스킬의 첫 랭크에 사용할 포인트를 추가 지급한다.
+    static constexpr bool DevelopmentSkills = true;
+
+    static constexpr int DevelopmentSkillPoints = DevelopmentSkills ? 4 : 0;
+    static constexpr int InitialSkillPoints = 3 + DevelopmentSkillPoints, InitialStatPoints = 3;
     static constexpr int SkillPointsPerLevel = 1, StatPointsPerLevel = 3;
     static constexpr int PlayerAttack = 10, PlayerDefence = 3;
 
@@ -49,6 +53,8 @@ struct GrowthState
 
     bool Valid(const GrowthRules &rules) const;
 
+    bool PrepareDevelopmentSkills(const GrowthRules &rules);
+
     bool GainExperience(int amount, const GrowthRules &rules);
 
     Error UpgradeStat(StatKind stat);
@@ -57,6 +63,6 @@ struct GrowthState
 
     void ResetStats();
 
-    void ResetSkills();
+    void ResetSkills(const GrowthRules &rules);
 };
 }

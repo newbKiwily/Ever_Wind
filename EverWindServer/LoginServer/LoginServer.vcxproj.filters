@@ -101,6 +101,7 @@
     <ClInclude Include="Gameplay\Map\Map.h"><Filter>Header Files\Gameplay\Map</Filter></ClInclude>
     <ClInclude Include="Gameplay\Map\MapManager.h"><Filter>Header Files\Gameplay\Map</Filter></ClInclude>
     <ClInclude Include="Gameplay\Map\RefillSystem.h"><Filter>Header Files\Gameplay\Map</Filter></ClInclude>
+    <ClInclude Include="Network\GameplayPackets.h"><Filter>Header Files\Network</Filter></ClInclude>
     <ClInclude Include="Network\IOCPServer.h"><Filter>Header Files\Network</Filter></ClInclude>
     <ClInclude Include="Network\IOContext.h"><Filter>Header Files\Network</Filter></ClInclude>
     <ClInclude Include="Network\Packet.h"><Filter>Header Files\Network</Filter></ClInclude>

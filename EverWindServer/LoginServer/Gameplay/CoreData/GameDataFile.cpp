@@ -106,6 +106,45 @@ GameDataHub GameDataFile::Load(const std::string &path)
 
                 data.skills.emplace(id, v);
             }
+            else if (type == "skillhit")
+            {
+                int index = 0;
+
+                float time = 0;
+
+                row >> id >> index >> time;
+
+                auto &skill = data.skills.at(id);
+
+                key(std::to_string(id) + ":" + std::to_string(index));
+
+                if (index != static_cast<int>(skill.impacts.size()) || index >= 64)
+                {
+                    throw std::runtime_error("Invalid skillhit index");
+                }
+
+                skill.impacts.push_back(time);
+            }
+            else if (type == "skillro")
+            {
+                // 기존 파일 열 수를 유지하되 추적 설정은 지원하지 않는다.
+                int reserved = 0;
+
+                row >> id;
+
+                auto &skill = data.skills.at(id);
+
+                row >> skill.area >> skill.spawnDelay >> reserved;
+
+                key(std::to_string(id));
+
+                if (reserved != 0)
+                {
+                    throw std::runtime_error("Invalid skillro flag");
+                }
+
+                skill.ro = true;
+            }
             else if (type == "recipe")
             {
                 Recipe v{};

@@ -41,3 +41,5 @@ Visual Studio의 Debug/Release 빌드도 `CopyGameplayRuntime` 타깃으로 `Con
 향후 Unity 편집기는 같은 ID/필드 계약으로 서버 파일과 클라이언트 프리팹을 내보내면 된다. 이번 작업에는 편집기와 클라이언트 기준 데이터 수신 변경이 포함되지 않는다.
 
 몬스터 공격은 정의의 attackSkillId/attackCooldown을 사용한다. 현재 몬스터 AI에는 단일·즉발 원거리 공격만 등록할 수 있으며 기존 개체는 스킬1/1.8초를 유지한다.
+
+RO 스킬의 확장 행은 `skillro skillId radius spawnDelay reserved`이다. 마지막 열은 기존 파일 열 수를 유지하기 위한 예약값 0만 허용한다. RO는 승인된 생성 위치에 고정하며 시전자를 추적하지 않는다.
